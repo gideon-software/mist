@@ -52,9 +52,9 @@ public class MIST {
 
     public final static String APP_NAME = "MIST";
     public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
-    public final static String HOMEPAGE = "http://mist-tnt.sf.net";
-    public final static String MANUAL = "https://sourceforge.net/p/mist-tnt/wiki/UserManual";
-    public final static String USERLIST = "mist-users@googlegroups.com";
+    public final static String HOMEPAGE = "https://github.com/tomhallman/mist";
+    public final static String MANUAL = "https://github.com/tomhallman/mist/wiki/manual";
+    public final static String USERLIST = "mist-users@googlegroups.com"; // TODO
 
     public final static String REGEX_EMAILADDRESS = "([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)";
 
