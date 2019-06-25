@@ -1,0 +1,11 @@
+MIST Coding Standards (which aren't automatically set)
+
+Eclipse: Members Sort Order
+  Types
+  Static Fields
+  Fields
+  Static Initializers
+  Initializers
+  Constructors
+  Static Methods
+  Methods

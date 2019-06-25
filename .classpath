@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/hsqldb.jar"/>
+	<classpathentry kind="lib" path="lib/jopt-simple/jopt-simple-4.5.jar"/>
+	<classpathentry kind="lib" path="lib/javamail/jutf7-1.0.0.jar"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/commons-lang-2.6.jar"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/bcprov-jdk15on-150.jar"/>
+	<classpathentry kind="lib" path="lib/apache-commons/commons-io-2.6.jar"/>
+	<classpathentry kind="lib" path="lib/jericho/jericho-html-3.4.jar"/>
+	<classpathentry kind="lib" path="lib/javamail/javax.mail-1.6.2.jar" sourcepath="lib/javamail/src/javamail-1.6.2.zip"/>
+	<classpathentry kind="lib" path="lib/logging/log4j-api-2.11.2.jar"/>
+	<classpathentry kind="lib" path="lib/logging/log4j-core-2.11.2.jar"/>
+	<classpathentry kind="lib" path="lib/swt/core-commands-3.9.300.jar" sourcepath="lib/swt/src/core-commands-3.9.300.jar"/>
+	<classpathentry kind="lib" path="lib/swt/equinox-common-3.10.300.jar" sourcepath="lib/swt/src/equinox-common-3.10.300.jar"/>
+	<classpathentry kind="lib" path="lib/swt/jface-3.15.100.jar" sourcepath="lib/swt/src/jface-3.15.100.jar"/>
+	<classpathentry kind="lib" path="lib/swt/src/osgi-3.13.300.jar"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/commons-logging-1.1.3.jar"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/jackcess-2.1.11.jar"/>
+	<classpathentry kind="lib" path="lib/ucanaccess/ucanaccess-4.0.4.jar"/>
+	<classpathentry kind="var" path="SWT_PATH/swt-4.11.jar" sourcepath="/SWT_PATH/src/swt-4.11.zip"/>
+	<classpathentry kind="lib" path="lib/javamail/javax.activation-1.2.0.jar" sourcepath="lib/javamail/src/javax.activation-1.2.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/moneta/moneta-core-1.3.jar" sourcepath="lib/moneta/src/moneta-core-1.3-sources.jar"/>
+	<classpathentry kind="lib" path="lib/moneta/money-api-1.0.3.jar"/>
+	<classpathentry kind="lib" path="lib/moneta/javax.annotation-api-1.3.2.jar"/>
+	<classpathentry kind="output" path="out"/>
+</classpath>

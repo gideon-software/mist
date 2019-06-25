@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+
+  <Properties>
+    <property name="log.path">${sys:log.path}</property>
+  </Properties>
+
+  <Appenders>
+<!--
+    <RollingFile name="logfile" fileName="${log.path}" filePattern="${log.path}.%i" append="true">
+      <PatternLayout pattern="%d %t %-5p [%c] %m%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="5" />
+    </RollingFile>
+-->
+    <File name="logfile" fileName="${log.path}" append="false">
+      <PatternLayout pattern="%d %t %-5p [%c{1}] %m%n"/>
+    </File>
+
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{ABSOLUTE} %t %-5p [%c{1}] %m%n"/>
+    </Console>
+  </Appenders>
+  
+  <Loggers>
+    <Root level="all">
+      <AppenderRef ref="STDOUT" level="trace"/>
+      <AppenderRef ref="logfile" level="none"/>
+    </Root>
+  </Loggers>
+  
+</Configuration>
