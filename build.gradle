@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'eclipse' 
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    version = '5.0'
+    manifest {
+        attributes 'Main-Class': 'com.github.tomhallman.mist.MIST'
+    }
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.0'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.0'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
+
+    // https://mvnrepository.com/artifact/com.sun.mail/javax.mail
+    compile group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2'
+    // https://mvnrepository.com/artifact/com.github.knightliao.test/jutf
+    compile group: 'com.github.knightliao.test', name: 'jutf', version: '1.0.3'
+    
+    // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
+    compile group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.4'
+
+    // https://mvnrepository.com/artifact/net.sf.jopt-simple/jopt-simple
+    compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.5'
+
+    // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
+    compile group: 'org.javamoney.moneta', name: 'moneta-core', version: '1.3'
+
+    // https://mvnrepository.com/artifact/net.sf.ucanaccess/ucanaccess
+    compile group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '4.0.4'
+    
+    // https://mvnrepository.com/artifact/org.eclipse.platform/org.eclipse.jface
+    compile (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
+        exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
+    }
+    compile files('lib/swt/win64/swt-4.11.jar')
+    
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+// TODO
+//task wrapper(type: Wrapper) {
+//    gradleVersion = '1.9'
+//}

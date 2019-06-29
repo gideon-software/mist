@@ -8,16 +8,8 @@ Change Log for MIST 5.0
 * Match email addresses using wildcards.
 * Automatically mark emails as "Thanks" based on subject matching.
 * No longer unnecessarily prefixes Tnt history with "_____ wrote:"
-* Upgraded to Log4J 2 (2.11.2) which also allowed Jericho HTML Parser upgrade below.
-* Upgraded to Jericho HTML Parser 3.4.
-* Upgraded to JavaMail 1.6.2.
-* Upgraded to SWT 4.11. (4.9 for win32)
-* Upgraded to JFace 3.15.100.
-* Upgraded to Eclipse Core Commands 3.9.300.
-* Upgraded to Eclipse Equinox Common 3.10.300.
-* Upgraded to Eclipse OSGI 3.13.300.
-* Upgraded to UCanAccess 4.0.4 / Jackcess 2.1.11.
 * Switched from subversion to git for version control.
+* Switched to gradle as build tool.
 
 Change Log for MIST 4.2.1
 =========================
