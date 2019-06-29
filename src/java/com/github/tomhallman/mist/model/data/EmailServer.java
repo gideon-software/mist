@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.widgets.Shell;
 
+import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.MessageModel;
@@ -283,6 +284,18 @@ public class EmailServer implements Cloneable {
 
     public boolean isConnected() {
         return store != null;
+    }
+
+    /**
+     * TODO
+     * 
+     * @param email
+     * @return
+     */
+    public boolean isEmailInIgnoreList(String email) {
+        log.trace("isEmailInList({},{})", email);
+        String[] ignoreList = MIST.getPrefs().getStrings(EmailModel.getPrefName(id, EmailModel.ADDRESSES_IGNORE));
+        return EmailModel.isEmailInList(email, ignoreList);
     }
 
     public boolean isImportComplete() {

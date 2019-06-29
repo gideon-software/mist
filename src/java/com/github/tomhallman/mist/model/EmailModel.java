@@ -163,6 +163,41 @@ public class EmailModel {
         }
     }
 
+    /**
+     * TODO
+     * 
+     * @param email
+     * @return
+     */
+    public static boolean isEmailInIgnoreList(String email) {
+        log.trace("isEmailInList({},{})", email);
+        String[] ignoreList = MIST.getPrefs().getStrings(GLOBAL_ADDRESSES_IGNORE);
+        return isEmailInList(email, ignoreList);
+    }
+
+    /**
+     * TODO
+     * 
+     * @param email
+     * @param list
+     * @return
+     */
+    public static boolean isEmailInList(String email, String[] list) {
+        for (String entry : list) {
+            if (entry.contains("*") || entry.contains("?")) {
+                // Wildcard match
+                String regex = entry.trim().replace(".", "\\.").replace("*", ".*").replace('?', '.');
+                if (email.trim().matches(regex))
+                    return true;
+            } else {
+                // Standard string match
+                if (entry.trim().equals(email.trim()))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean isImporting() {
         return importing;
     }
@@ -211,4 +246,5 @@ public class EmailModel {
             emailServer.stopImportService();
         // setImporting(false) will eventually be called once all servers have completed
     }
+
 }

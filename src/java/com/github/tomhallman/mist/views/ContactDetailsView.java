@@ -25,6 +25,7 @@ import static com.github.tomhallman.mist.util.ui.GridLayoutUtil.applyGridLayout;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.sql.SQLException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +37,13 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.exceptions.TntDbException;
+import com.github.tomhallman.mist.model.HistoryModel;
+import com.github.tomhallman.mist.tntapi.ContactManager;
+import com.github.tomhallman.mist.tntapi.TntDb;
+import com.github.tomhallman.mist.tntapi.entities.Contact;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
+import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.util.ui.SimpleEmailLink;
 
 public class ContactDetailsView extends Composite implements PropertyChangeListener {
@@ -54,14 +61,15 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
 
     // Known Contact View controls
     private Composite knownContactView;
-    private Label nameLabel;
     private Label phaseLabel;
     private Label pledgeLabel;
+    private Label lastGiftLabel;
 
     public ContactDetailsView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("ContactDetailsView({})", parent);
         MIST.getView().getContactsView().addPropertyChangeListener(this);
+        HistoryModel.addPropertyChangeListener(this);
 
         applyGridLayout(this).numColumns(1);
 
@@ -103,10 +111,6 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
         applyGridData(knownContactView).withFill();
         applyGridLayout(knownContactView).numColumns(2);
 
-        // Name
-        new Label(knownContactView, SWT.NONE).setText("Name: ");
-        nameLabel = new Label(knownContactView, SWT.NONE);
-
         // Phase
         new Label(knownContactView, SWT.NONE).setText("Phase: ");
         phaseLabel = new Label(knownContactView, SWT.NONE);
@@ -114,6 +118,10 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
         // Pledge
         new Label(knownContactView, SWT.NONE).setText("Pledge: ");
         pledgeLabel = new Label(knownContactView, SWT.NONE);
+
+        // Last Gift
+        new Label(knownContactView, SWT.NONE).setText("Last gift: ");
+        lastGiftLabel = new Label(knownContactView, SWT.NONE);
 
         // Start with known contact view
         contactDetailsLayout.topControl = knownContactView;
@@ -149,7 +157,35 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
                 // Known contact; show info from Tnt database
                 contactDetailsLayout.topControl = knownContactView;
                 contactDetailsGroup.layout();
+                // Fill in data
+                try {
+                    Contact contact = ContactManager.get(contactInfo.getId());
+                    phaseLabel.setText(TntDb.getMpdPhaseDescription(contact.getMpdPhaseId()));
+                    pledgeLabel.setText(contact.getPledgeStr());
+                    lastGiftLabel.setText(contact.getLastGiftStr());
+                    phaseLabel.requestLayout();
+                    lastGiftLabel.requestLayout();
+                    pledgeLabel.requestLayout();
+                    contactDetailsGroup.layout();
+                } catch (TntDbException | SQLException e) {
+                    Util.reportError(getShell(), "Database connection error", "Could not load contact", e);
+                    return;
+                }
             }
+
+        } else if (HistoryModel.PROP_CONTACT_REMOVE.equals(event.getPropertyName())
+            || HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
+            // The selected contact has been removed; clear the view
+            contactDetailsLayout.topControl = knownContactView;
+            contactDetailsGroup.layout();
+            // Clear data
+            phaseLabel.setText("");
+            pledgeLabel.setText("");
+            lastGiftLabel.setText("");
+            phaseLabel.requestLayout();
+            lastGiftLabel.requestLayout();
+            pledgeLabel.requestLayout();
+            contactDetailsGroup.layout();
         }
 
     }

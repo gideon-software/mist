@@ -20,6 +20,8 @@
 
 package com.github.tomhallman.mist.controllers;
 
+import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
@@ -31,6 +33,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.tntapi.TntDb;
+import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.views.MainWindowView;
 
 public class MainWindowController {
@@ -73,6 +76,7 @@ public class MainWindowController {
 
     public boolean closeView() {
         log.trace("closeView()");
+
         if (EmailModel.isImporting()) {
 
             // We're importing - verify that the user wants to close
@@ -102,6 +106,13 @@ public class MainWindowController {
 
         // Shut down Tnt import service
         TntDb.stopImportService();
+
+        // Save preferences
+        try {
+            MIST.getPrefs().save();
+        } catch (IOException e) {
+            Util.reportError(view.getShell(), "Error", "Could not save preferences.", e);
+        }
 
         return view.close();
     }

@@ -5,8 +5,9 @@ Change Log for MIST 5.0
   * Make changes to the email history subject, body and more directly in MIST.
   * Match unknown contacts - even creating new ones - within MIST.
 * Import from multiple email servers at once.
-* No longer unnecessarily prefixes Tnt history with "_____ wrote:"
+* Match email addresses using wildcards.
 * Automatically mark emails as "Thanks" based on subject matching.
+* No longer unnecessarily prefixes Tnt history with "_____ wrote:"
 * Upgraded to Log4J 2 (2.11.2) which also allowed Jericho HTML Parser upgrade below.
 * Upgraded to Jericho HTML Parser 3.4.
 * Upgraded to JavaMail 1.6.2.

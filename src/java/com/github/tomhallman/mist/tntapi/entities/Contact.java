@@ -20,16 +20,21 @@
 
 package com.github.tomhallman.mist.tntapi.entities;
 
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javamoney.moneta.FastMoney;
 
 import com.github.tomhallman.mist.MIST;
-import com.github.tomhallman.mist.tntapi.TntDb;
+import com.github.tomhallman.mist.tntapi.CurrencyManager;
+import com.github.tomhallman.mist.tntapi.PledgeFrequencyManager;
 import com.github.tomhallman.mist.util.Util;
 
 /**
@@ -173,8 +178,8 @@ public class Contact {
     private String spouseSocialWeb4 = "";
     private String notesAsRtf = "";
     private String notes = "";
-    private int familySideID = 0;
-    private int familyLevelID = 0;
+    private int familySideId = 0;
+    private int familyLevelId = 0;
     private String children = "";
     private String interests = "";
     private String nickname = "";
@@ -243,7 +248,7 @@ public class Contact {
     private FastMoney aveMonthlyGift = FastMoney.of(0, "USD");
     private LocalDateTime lastDateInAve = null;
     private FastMoney twelveMonthTotal = FastMoney.of(0, "USD");
-    private int baseCurrencyId = TntDb.getBaseCurrencyId();
+    private int baseCurrencyId = CurrencyManager.getBaseCurrencyId();
     private FastMoney baseMonthlyPledge = FastMoney.of(0, "USD");
     private FastMoney baseLastGiftAmount = FastMoney.of(0, "USD");
     private FastMoney basePrevYearTotal = FastMoney.of(0, "USD");
@@ -471,11 +476,11 @@ public class Contact {
     }
 
     public int getFamilyLevelID() {
-        return familyLevelID;
+        return familyLevelId;
     }
 
     public int getFamilySideID() {
-        return familySideID;
+        return familySideId;
     }
 
     public String getFileAs() {
@@ -604,6 +609,17 @@ public class Contact {
 
     public String getLastGiftPaymentMethod() {
         return lastGiftPaymentMethod;
+    }
+
+    /**
+     * Return a friendly string representation of the last gift date.
+     * 
+     * @return a friendly string representation of the last gift date
+     */
+    public String getLastGiftStr() {
+        if (lastGiftDate == null)
+            return "---";
+        return lastGiftDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM));
     }
 
     public LocalDateTime getLastLetter() {
@@ -808,6 +824,24 @@ public class Contact {
 
     public LocalDateTime getPledgeStartDate() {
         return pledgeStartDate;
+    }
+
+    /**
+     * Returns a string representation of the contact's pledge
+     * 
+     * @return a string representation of the contact's pledge
+     */
+    public String getPledgeStr() {
+        if (pledgeFrequencyId == 0) // "<none>"
+            return PledgeFrequencyManager.get(pledgeFrequencyId).getDescription();
+
+        Currency currency = CurrencyManager.get(pledgeCurrencyId);
+        return String.format(
+            "%s%s %s",
+            currency.getSymbol(),
+            new DecimalFormat("#." + StringUtils.repeat("0", currency.getDecimalPlaces())).format(
+                pledgeAmount.getNumber()),
+            PledgeFrequencyManager.get(pledgeFrequencyId).getDescription());
     }
 
     public int getPreferredEmailTypes() {
@@ -1414,11 +1448,11 @@ public class Contact {
     }
 
     public void setFamilyLevelID(int familyLevelID) {
-        this.familyLevelID = familyLevelID;
+        this.familyLevelId = familyLevelID;
     }
 
     public void setFamilySideID(int familySideID) {
-        this.familySideID = familySideID;
+        this.familySideId = familySideID;
     }
 
     public void setFileAs(String fileAs) {

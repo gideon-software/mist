@@ -27,18 +27,43 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
+import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.HistoryModel;
 import com.github.tomhallman.mist.model.MessageModel;
 import com.github.tomhallman.mist.model.data.MessageSource;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 import com.github.tomhallman.mist.tntapi.entities.History;
 import com.github.tomhallman.mist.views.ContactDetailsView;
+import com.github.tomhallman.mist.wizards.ignorecontact.IgnoreContactWizard;
 import com.github.tomhallman.mist.wizards.matchcontact.MatchContactWizard;
 
 /**
  * 
  */
 public class ContactDetailsController {
+    private class IgnoreSelectionListener extends SelectionAdapter {
+        @Override
+        public void widgetSelected(SelectionEvent event) {
+            log.trace("IgnoreSelectionListener.widgetSelected({})", event);
+            ContactInfo contactInfo = new ContactInfo(view.getContactInfo());
+            WizardDialog dlg = new WizardDialog(view.getShell(), new IgnoreContactWizard(contactInfo));
+            if (dlg.open() == Window.OK) {
+                // Check all unknown history to see if anything there should be ignored now
+                // This must be done because of wildcards
+                for (History history : HistoryModel.getUnknownHistory()) {
+                    ContactInfo ci = history.getContactInfo();
+                    String email = ci.getInfo();
+                    int serverId = history.getMessageSource().getSourceId();
+                    if (EmailModel.isEmailInIgnoreList(email)) {
+                        HistoryModel.removeAllHistoryWithContactInfo(ci);
+                    } else if (EmailModel.getEmailServer(serverId).isEmailInIgnoreList(email)) {
+                        HistoryModel.removeAllHistoryWithContactInfo(ci, serverId);
+                    }
+                }
+            }
+        }
+    }
+
     private class MatchSelectionListener extends SelectionAdapter {
         @Override
         public void widgetSelected(SelectionEvent event) {
@@ -76,6 +101,7 @@ public class ContactDetailsController {
         this.view = view;
 
         view.getMatchContactButton().addSelectionListener(new MatchSelectionListener());
+        view.getIgnoreContactButton().addSelectionListener(new IgnoreSelectionListener());
     }
 
 }

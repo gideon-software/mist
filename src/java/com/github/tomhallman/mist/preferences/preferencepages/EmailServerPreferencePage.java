@@ -40,7 +40,7 @@ import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailFolder;
 import com.github.tomhallman.mist.model.data.EmailServer;
-import com.github.tomhallman.mist.preferences.fieldeditors.AddRemoveListFieldEditor;
+import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ForgettablePasswordFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SmartComboFieldEditor;
@@ -53,191 +53,8 @@ import com.github.tomhallman.mist.util.Util;
  *
  */
 public class EmailServerPreferencePage extends FieldEditorPreferencePage {
-    private static Logger log = LogManager.getLogger();
-
-    private int id;
-
-    private StringFieldEditor nicknameEditor;
-    private StringFieldEditor hostEditor;
-    private IntegerFieldEditor portEditor;
-    private StringFieldEditor usernameEditor;
-    private ForgettablePasswordFieldEditor passwordEditor;
-    private ButtonFieldEditor connectButton;
-    private SmartComboFieldEditor<String> folderEditor;
-    private SmartComboFieldEditor<Integer> tntUserEditor;
-    private StringFieldEditor myNameEditor;
-    private AddRemoveListFieldEditor myEmailAddressesEditor;
-    private AddRemoveListFieldEditor ignoreAddressesEditor;
-    private ButtonFieldEditor deleteButton;
-
-    private EmailServer server;
-
-    public EmailServerPreferencePage(int serverId) {
-        super(FieldEditorPreferencePage.GRID);
-        log.trace("EmailServerPreferencePage({})", serverId);
-        this.id = serverId;
-        String prefNickname = EmailModel.getPrefName(id, EmailModel.NICKNAME);
-        setTitle(MIST.getPrefs().getString(prefNickname));
-        // setDescription("description here");
-        server = new EmailServer();
-        noDefaultAndApplyButton();
-    }
-
-    @Override
-    protected void createFieldEditors() {
-        log.trace("createFieldEditors()");
-
-        // Nickname
-        String prefNickname = EmailModel.getPrefName(id, EmailModel.NICKNAME);
-        nicknameEditor = new StringFieldEditor(
-            prefNickname,
-            "&Nickname:",
-            StringFieldEditor.UNLIMITED,
-            StringFieldEditor.VALIDATE_ON_KEY_STROKE,
-            getFieldEditorParent());
-        nicknameEditor.setEmptyStringAllowed(false);
-        nicknameEditor.setErrorMessage("Nickname may not be empty.");
-        nicknameEditor.getTextControl(getFieldEditorParent()).addModifyListener(new ModifyListener() {
-            public void modifyText(ModifyEvent event) {
-                // Change the nickname dynamically
-                Text text = (Text) event.widget;
-                setTitle(text.getText());
-                ((PreferenceDialog) getContainer()).getTreeViewer().refresh();
-            }
-        });
-        addField(nicknameEditor);
-
-        // Host
-        String prefHost = EmailModel.getPrefName(id, EmailModel.HOST);
-        hostEditor = new StringFieldEditor(prefHost, "&Host:", getFieldEditorParent());
-        hostEditor.setEmptyStringAllowed(false);
-        hostEditor.setErrorMessage("Host may not be empty.");
-        addField(hostEditor);
-
-        // Port
-        String prefPort = EmailModel.getPrefName(id, EmailModel.PORT);
-        portEditor = new IntegerFieldEditor(prefPort, "P&ort:", getFieldEditorParent());
-        portEditor.setEmptyStringAllowed(false);
-        portEditor.setErrorMessage("Port must be a number.");
-        addField(portEditor);
-
-        // Username
-        String prefUsername = EmailModel.getPrefName(id, EmailModel.USERNAME);
-        usernameEditor = new StringFieldEditor(prefUsername, "&Username:", getFieldEditorParent());
-        usernameEditor.setEmptyStringAllowed(false);
-        usernameEditor.setErrorMessage("Username may not be empty.");
-        addField(usernameEditor);
-
-        // Password
-        String prefPassword = EmailModel.getPrefName(id, EmailModel.PASSWORD);
-        String prefPasswordPrompt = EmailModel.getPrefName(id, EmailModel.PASSWORD_PROMPT);
-        passwordEditor = new ForgettablePasswordFieldEditor(
-            prefPassword,
-            prefPasswordPrompt,
-            "&Password:",
-            getFieldEditorParent());
-        addField(passwordEditor);
-
-        // Connect button
-        connectButton = new ButtonFieldEditor("Test &Connection / Retrieve Folder List", getFieldEditorParent());
-        connectButton.getButton().addSelectionListener(new ConnectListener());
-        addField(connectButton);
-
-        // Spacer
-        addField(new SpacerFieldEditor(getFieldEditorParent()));
-
-        // Folder
-        String prefFolder = EmailModel.getPrefName(id, EmailModel.FOLDER);
-        folderEditor = new SmartComboFieldEditor<String>(prefFolder, "&Folder:", getFieldEditorParent());
-        folderEditor.setEmptySelectionAllowed(false);
-        String folderName = getPreferenceStore().getString(prefFolder);
-        if (!folderName.isEmpty()) {
-            // We're not connected to the email server, but we know the folder from previous preferences
-            folderEditor.add(folderName, folderName);
-            folderEditor.setSelection(folderName);
-        }
-        folderEditor.setEnabled(false, getFieldEditorParent());
-        folderEditor.setErrorMessage("An email folder must be selected.");
-        addField(folderEditor);
-
-        // Tnt User ID
-        String prefTntUserId = EmailModel.getPrefName(id, EmailModel.TNT_USERID);
-        tntUserEditor = new SmartComboFieldEditor<Integer>(prefTntUserId, "&TntConnect User:", getFieldEditorParent());
-        tntUserEditor.setEmptySelectionAllowed(false);
-        tntUserEditor.getComboControl(getFieldEditorParent()).addSelectionListener(new SelectionAdapter() {
-            public void widgetSelected(SelectionEvent event) {
-                if (myNameEditor.getStringValue().isEmpty())
-                    myNameEditor.setStringValue(
-                        tntUserEditor.getComboControl(getFieldEditorParent()).getSelectionValue());
-            }
-        });
-        tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
-        addField(tntUserEditor);
-        populateUserList();
-
-        // My name
-        String prefMyName = EmailModel.getPrefName(id, EmailModel.MYNAME);
-        myNameEditor = new StringFieldEditor(prefMyName, "&My name:", getFieldEditorParent());
-        myNameEditor.setEmptyStringAllowed(false);
-        myNameEditor.setErrorMessage("'My name' may not be empty.");
-        addField(myNameEditor);
-
-        // My email addresses
-        String prefMyAddresses = EmailModel.getPrefName(id, EmailModel.ADDRESSES_MY);
-        myEmailAddressesEditor = new AddRemoveListFieldEditor(
-            prefMyAddresses,
-            "My email &addresses:",
-            getFieldEditorParent());
-        myEmailAddressesEditor.setAddDialogMessage("Add email address");
-        myEmailAddressesEditor.setAddDialogDescription(
-            "These are used to determine whether you wrote to a contact or a contact wrote to you");
-        myEmailAddressesEditor.setMinListSize(1);
-        myEmailAddressesEditor.setErrorMessage("'My email addresses' must contain at least one email address.");
-        addField(myEmailAddressesEditor);
-
-        // Email addresses to ignore
-        String prefIgnoreAddresses = EmailModel.getPrefName(id, EmailModel.ADDRESSES_IGNORE);
-        ignoreAddressesEditor = new AddRemoveListFieldEditor(
-            prefIgnoreAddresses,
-            "Email addresses to &ignore:",
-            getFieldEditorParent());
-        ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
-        ignoreAddressesEditor.setAddDialogDescription("Emails to or from these addresses will not be imported");
-        addField(ignoreAddressesEditor);
-
-        // Spacer
-        addField(new SpacerFieldEditor(getFieldEditorParent()));
-
-        // Delete button
-        deleteButton = new ButtonFieldEditor("&Delete this Email Server...", getFieldEditorParent());
-        deleteButton.getButton().addSelectionListener(new DeleteListener());
-        addField(deleteButton);
-    }
-
-    public void populateUserList() {
-        log.trace("populateUserList()");
-        String prefTntUserId = EmailModel.getPrefName(id, EmailModel.TNT_USERID);
-        Integer tntUserId = getPreferenceStore().getInt(prefTntUserId);
-
-        // Try to populate the control from the Tnt DB
-        Util.connectToTntDatabase(getShell());
-
-        // If there was a previously selected key, use that
-        Integer oldKey = tntUserEditor.getSelectionKey();
-
-        // Populate user list
-        tntUserEditor.removeAll();
-        try {
-            for (User user : UserManager.getUserList())
-                tntUserEditor.add(user.getId(), user.getUsername());
-        } catch (SQLException e) {
-            log.warn("Could not add users to user list", e);
-        }
-        tntUserEditor.setSelection(oldKey != null ? oldKey : tntUserId);
-        addField(tntUserEditor);
-    }
-
     protected class ConnectListener extends SelectionAdapter {
+        @Override
         public void widgetSelected(SelectionEvent e) {
             log.trace("ConnectListener.widgetSelected({})", e);
             server.setNickname(nicknameEditor.getStringValue());
@@ -283,6 +100,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     }
 
     protected class DeleteListener extends SelectionAdapter {
+        @Override
         public void widgetSelected(SelectionEvent e) {
             log.trace("DeleteListener.widgetSelected({})", e);
 
@@ -300,6 +118,194 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                 MIST.getPreferenceManager().deleteEmailServerNode(id);
             }
         }
+    }
+
+    private static Logger log = LogManager.getLogger();
+    private int id;
+
+    private StringFieldEditor nicknameEditor;
+    private StringFieldEditor hostEditor;
+    private IntegerFieldEditor portEditor;
+    private StringFieldEditor usernameEditor;
+    private ForgettablePasswordFieldEditor passwordEditor;
+    private ButtonFieldEditor connectButton;
+    private SmartComboFieldEditor<String> folderEditor;
+    private SmartComboFieldEditor<Integer> tntUserEditor;
+    private StringFieldEditor myNameEditor;
+    private AddEditRemoveListFieldEditor myEmailAddressesEditor;
+    private AddEditRemoveListFieldEditor ignoreAddressesEditor;
+    private ButtonFieldEditor deleteButton;
+
+    private EmailServer server;
+
+    public EmailServerPreferencePage(int serverId) {
+        super(FieldEditorPreferencePage.GRID);
+        log.trace("EmailServerPreferencePage({})", serverId);
+        this.id = serverId;
+        String prefNickname = EmailModel.getPrefName(id, EmailModel.NICKNAME);
+        setTitle(MIST.getPrefs().getString(prefNickname));
+        // setDescription("description here");
+        server = new EmailServer();
+        noDefaultAndApplyButton();
+    }
+
+    @Override
+    protected void createFieldEditors() {
+        log.trace("createFieldEditors()");
+
+        // Nickname
+        String prefNickname = EmailModel.getPrefName(id, EmailModel.NICKNAME);
+        nicknameEditor = new StringFieldEditor(
+            prefNickname,
+            "&Nickname:",
+            StringFieldEditor.UNLIMITED,
+            StringFieldEditor.VALIDATE_ON_KEY_STROKE,
+            getFieldEditorParent());
+        nicknameEditor.setEmptyStringAllowed(false);
+        nicknameEditor.setErrorMessage("Nickname may not be empty.");
+        nicknameEditor.getTextControl(getFieldEditorParent()).addModifyListener(new ModifyListener() {
+            @Override
+            public void modifyText(ModifyEvent event) {
+                // Change the nickname dynamically
+                Text text = (Text) event.widget;
+                setTitle(text.getText());
+                ((PreferenceDialog) getContainer()).getTreeViewer().refresh();
+            }
+        });
+        addField(nicknameEditor);
+
+        // Host
+        String prefHost = EmailModel.getPrefName(id, EmailModel.HOST);
+        hostEditor = new StringFieldEditor(prefHost, "&Host:", getFieldEditorParent());
+        hostEditor.setEmptyStringAllowed(false);
+        hostEditor.setErrorMessage("Host may not be empty.");
+        addField(hostEditor);
+
+        // Port
+        String prefPort = EmailModel.getPrefName(id, EmailModel.PORT);
+        portEditor = new IntegerFieldEditor(prefPort, "P&ort:", getFieldEditorParent());
+        portEditor.setEmptyStringAllowed(false);
+        portEditor.setErrorMessage("Port must be a number.");
+        addField(portEditor);
+
+        // Username
+        String prefUsername = EmailModel.getPrefName(id, EmailModel.USERNAME);
+        usernameEditor = new StringFieldEditor(prefUsername, "&Username:", getFieldEditorParent());
+        usernameEditor.setEmptyStringAllowed(false);
+        usernameEditor.setErrorMessage("Username may not be empty.");
+        addField(usernameEditor);
+
+        // Password
+        String prefPassword = EmailModel.getPrefName(id, EmailModel.PASSWORD);
+        String prefPasswordPrompt = EmailModel.getPrefName(id, EmailModel.PASSWORD_PROMPT);
+        passwordEditor = new ForgettablePasswordFieldEditor(
+            prefPassword,
+            prefPasswordPrompt,
+            "&Password:",
+            getFieldEditorParent());
+        addField(passwordEditor);
+
+        // Connect button
+        connectButton = new ButtonFieldEditor("Test &Connection / Get Folder List", getFieldEditorParent());
+        connectButton.getButton().addSelectionListener(new ConnectListener());
+        addField(connectButton);
+
+        // Spacer
+        addField(new SpacerFieldEditor(getFieldEditorParent()));
+
+        // Folder
+        String prefFolder = EmailModel.getPrefName(id, EmailModel.FOLDER);
+        folderEditor = new SmartComboFieldEditor<String>(prefFolder, "&Folder:", getFieldEditorParent());
+        folderEditor.setEmptySelectionAllowed(false);
+        String folderName = getPreferenceStore().getString(prefFolder);
+        if (!folderName.isEmpty()) {
+            // We're not connected to the email server, but we know the folder from previous preferences
+            folderEditor.add(folderName, folderName);
+            folderEditor.setSelection(folderName);
+        }
+        folderEditor.setEnabled(false, getFieldEditorParent());
+        folderEditor.setErrorMessage("An email folder must be selected.");
+        addField(folderEditor);
+
+        // Tnt User ID
+        String prefTntUserId = EmailModel.getPrefName(id, EmailModel.TNT_USERID);
+        tntUserEditor = new SmartComboFieldEditor<Integer>(prefTntUserId, "&TntConnect User:", getFieldEditorParent());
+        tntUserEditor.setEmptySelectionAllowed(false);
+        tntUserEditor.getComboControl(getFieldEditorParent()).addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                if (myNameEditor.getStringValue().isEmpty())
+                    myNameEditor.setStringValue(
+                        tntUserEditor.getComboControl(getFieldEditorParent()).getSelectionValue());
+            }
+        });
+        tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
+        addField(tntUserEditor);
+        populateUserList();
+
+        // My name
+        String prefMyName = EmailModel.getPrefName(id, EmailModel.MYNAME);
+        myNameEditor = new StringFieldEditor(prefMyName, "&My name:", getFieldEditorParent());
+        myNameEditor.setEmptyStringAllowed(false);
+        myNameEditor.setErrorMessage("'My name' may not be empty.");
+        addField(myNameEditor);
+
+        // My email addresses
+        String prefMyAddresses = EmailModel.getPrefName(id, EmailModel.ADDRESSES_MY);
+        myEmailAddressesEditor = new AddEditRemoveListFieldEditor(
+            prefMyAddresses,
+            "My email &addresses:",
+            getFieldEditorParent());
+        myEmailAddressesEditor.setAddDialogMessage("Add email address");
+        myEmailAddressesEditor.setAddDialogDescription(
+            "These are used to determine whether you wrote to a contact or a contact wrote to you");
+        myEmailAddressesEditor.setMinListSize(1);
+        myEmailAddressesEditor.setErrorMessage("'My email addresses' must contain at least one email address.");
+        addField(myEmailAddressesEditor);
+
+        // Email addresses to ignore
+        String prefIgnoreAddresses = EmailModel.getPrefName(id, EmailModel.ADDRESSES_IGNORE);
+        ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
+            prefIgnoreAddresses,
+            "Email addresses to &ignore:",
+            getFieldEditorParent());
+        ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
+        ignoreAddressesEditor.setAddDialogDescription(
+            "Emails to or from these addresses will not be imported;"
+                + System.lineSeparator()
+                + "(Use * for any string and ? for any character)");
+        addField(ignoreAddressesEditor);
+
+        // Spacer
+        addField(new SpacerFieldEditor(getFieldEditorParent()));
+
+        // Delete button
+        deleteButton = new ButtonFieldEditor("&Delete this Email Server...", getFieldEditorParent());
+        deleteButton.getButton().addSelectionListener(new DeleteListener());
+        addField(deleteButton);
+    }
+
+    public void populateUserList() {
+        log.trace("populateUserList()");
+        String prefTntUserId = EmailModel.getPrefName(id, EmailModel.TNT_USERID);
+        Integer tntUserId = getPreferenceStore().getInt(prefTntUserId);
+
+        // Try to populate the control from the Tnt DB
+        Util.connectToTntDatabase(getShell());
+
+        // If there was a previously selected key, use that
+        Integer oldKey = tntUserEditor.getSelectionKey();
+
+        // Populate user list
+        tntUserEditor.removeAll();
+        try {
+            for (User user : UserManager.getUserList())
+                tntUserEditor.add(user.getId(), user.getUsername());
+        } catch (SQLException e) {
+            log.warn("Could not add users to user list", e);
+        }
+        tntUserEditor.setSelection(oldKey != null ? oldKey : tntUserId);
+        addField(tntUserEditor);
     }
 
 }

@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
 import org.javamoney.moneta.FastMoney;
 
 import com.github.tomhallman.mist.model.data.MessageSource;
-import com.github.tomhallman.mist.tntapi.TntDb;
+import com.github.tomhallman.mist.tntapi.CurrencyManager;
 
 /**
  * Object representing a row in the Tnt History table.
@@ -68,7 +68,7 @@ public class History {
     private FastMoney pledgeChangeAmount = FastMoney.of(0, "USD");
     private int pledgeChangeCurrencyId = 0; // default from TntDb
     private FastMoney basePledgeChangeAmount = FastMoney.of(0, "USD");
-    private int baseCurrencyId = TntDb.getBaseCurrencyId();
+    private int baseCurrencyId = CurrencyManager.getBaseCurrencyId();
 
     // Additional fields
     private MessageSource messageSource = new MessageSource();

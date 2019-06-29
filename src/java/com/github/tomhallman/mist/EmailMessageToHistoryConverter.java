@@ -72,8 +72,7 @@ public class EmailMessageToHistoryConverter {
                 if (history.getStatus() == History.STATUS_NONE)
                     history.setStatus(History.STATUS_MULTIPLE_CONTACTS_FOUND);
             } else {
-                history.getContactInfo().setId(
-                    ContactManager.getContactIdByEmail(history.getContactInfo().getInfo()));
+                history.getContactInfo().setId(ContactManager.getContactIdByEmail(history.getContactInfo().getInfo()));
                 history.getContactInfo().setName(ContactManager.getFileAs(history.getContactInfo().getId()));
             }
         } catch (TntDbException | SQLException e) {
@@ -90,13 +89,10 @@ public class EmailMessageToHistoryConverter {
         log.trace("getHistory({})", msg);
 
         // Is the email from someone on the ignore lists?
-        String[] ignoreListGlobal = MIST.getPrefs().getStrings(EmailModel.ADDRESSES_IGNORE);
-        String[] ignoreListServer = MIST.getPrefs().getStrings(
-            EmailModel.getPrefName(msg.getSourceId(), EmailModel.ADDRESSES_IGNORE));
-        if (ArrayUtils.contains(ignoreListGlobal, msg.getFromId())) {
+        if (EmailModel.isEmailInIgnoreList(msg.getFromId())) {
             log.info("Sender is in the global ignore list ({}); skipping.", msg.getFromId());
             return null;
-        } else if (ArrayUtils.contains(ignoreListServer, msg.getFromId())) {
+        } else if (EmailModel.getEmailServer(msg.getSourceId()).isEmailInIgnoreList(msg.getFromId())) {
             log.info(
                 "Sender is in the server ignore list ({} on '{}'); skipping.",
                 msg.getFromId(),
@@ -191,22 +187,19 @@ public class EmailMessageToHistoryConverter {
                 log.warn("Unable to parse email address: {}", msg.getRecipients()[r]);
             }
 
-            log.trace("Recipient {}/{}: {}", r, msg.getRecipients().length, recipientEmail);
+            log.trace("Recipient {}/{}: {}", r + 1, msg.getRecipients().length, recipientEmail);
 
             String[] myAddrList = MIST.getPrefs().getStrings(
                 EmailModel.getPrefName(msg.getSourceId(), EmailModel.ADDRESSES_MY));
-            String[] ignoreListGlobal = MIST.getPrefs().getStrings(EmailModel.ADDRESSES_IGNORE);
-            String[] ignoreListServer = MIST.getPrefs().getStrings(
-                EmailModel.getPrefName(msg.getSourceId(), EmailModel.ADDRESSES_IGNORE));
-            if (ArrayUtils.contains(myAddrList, recipientEmail)) {
+            if (EmailModel.isEmailInList(recipientEmail, myAddrList)) {
                 // This address is also me; skip it
                 log.debug("Message is from me to me ({}); skipping", recipientEmail);
                 continue;
-            } else if (ArrayUtils.contains(ignoreListGlobal, recipientEmail)) {
+            } else if (EmailModel.isEmailInIgnoreList(recipientEmail)) {
                 // This address is globally-ignored; skip it
                 log.debug("Message is from me to a globally-ignored address ({}); skipping", recipientEmail);
                 continue;
-            } else if (ArrayUtils.contains(ignoreListServer, recipientEmail)) {
+            } else if (EmailModel.getEmailServer(msg.getSourceId()).isEmailInIgnoreList(recipientEmail)) {
                 // This address is server-ignored; skip it
                 log.debug(
                     "Message is from me to a server-ignored address ({} on '{}'); skipping",

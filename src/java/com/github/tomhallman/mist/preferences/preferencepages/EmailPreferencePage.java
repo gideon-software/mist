@@ -28,7 +28,7 @@ import org.eclipse.swt.events.SelectionEvent;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
-import com.github.tomhallman.mist.preferences.fieldeditors.AddRemoveListFieldEditor;
+import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
 
@@ -36,9 +36,25 @@ import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
  *
  */
 public class EmailPreferencePage extends FieldEditorPreferencePage {
+    protected class AddServerListener extends SelectionAdapter {
+        @Override
+        public void widgetSelected(SelectionEvent e) {
+            log.trace("AddServerListener.widgetSelected({})", e);
+            // We "add a server" here by creating it in preferences, then refreshing the dialog
+            // This breaks assumptions about how preferences are usually handled, so this is a
+            // bit of hack.
+            // TODO: Use a wizard here instead
+            int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
+            String prefName = EmailModel.getPrefName(serverId, EmailModel.NICKNAME);
+            MIST.getPrefs().setValue(prefName, "New Email Server");
+            // This refreshes the PreferenceDialog so the new server shows up
+            MIST.getPreferenceManager().addEmailServerNode(serverId, true);
+        }
+    }
+
     private static Logger log = LogManager.getLogger();
 
-    private AddRemoveListFieldEditor ignoreAddressesEditor;
+    private AddEditRemoveListFieldEditor ignoreAddressesEditor;
     private ButtonFieldEditor addServerButton;
 
     public EmailPreferencePage() {
@@ -61,28 +77,17 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
         addField(spacer);
 
         // Email addresses to ignore
-        ignoreAddressesEditor = new AddRemoveListFieldEditor(
+        ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
             EmailModel.GLOBAL_ADDRESSES_IGNORE,
             "Email addresses to &ignore:",
             getFieldEditorParent());
         ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
-        ignoreAddressesEditor.setAddDialogDescription("Emails to or from these addresses will not be imported");
-        addField(ignoreAddressesEditor);
-    }
+        ignoreAddressesEditor.setAddDialogDescription(
+            "Emails to or from these addresses will not be imported;"
+                + System.lineSeparator()
+                + "(Use * for any string and ? for any character)");
 
-    protected class AddServerListener extends SelectionAdapter {
-        public void widgetSelected(SelectionEvent e) {
-            log.trace("AddServerListener.widgetSelected({})", e);
-            // We "add a server" here by creating it in preferences, then refreshing the dialog
-            // This breaks assumptions about how preferences are usually handled, so this is a
-            // bit of hack.
-            // TODO: Use a wizard here instead
-            int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
-            String prefName = EmailModel.getPrefName(serverId, EmailModel.NICKNAME);
-            MIST.getPrefs().setValue(prefName, "New Email Server");
-            // This refreshes the PreferenceDialog so the new server shows up
-            MIST.getPreferenceManager().addEmailServerNode(serverId, true);
-        }
+        addField(ignoreAddressesEditor);
     }
 
 }

@@ -84,17 +84,48 @@ public class HistoryModel {
         return historyArr.size();
     }
 
+    public static History[] getUnknownHistory() {
+        log.trace("getUnknownHistory()");
+        ArrayList<History> retArr = new ArrayList<History>();
+        for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
+            History history = it.next();
+            if (history.getContactInfo().getId() == null)
+                retArr.add(history);
+        }
+        return retArr.toArray(new History[0]);
+    }
+
     public static void init() {
         log.trace("init()");
         historyArr = new ArrayList<History>();
         pcs.firePropertyChange(PROP_HISTORY_INIT, false, true); // Newly-initialized history array!
     }
 
+    /**
+     * 
+     * @param info
+     */
     public static void removeAllHistoryWithContactInfo(ContactInfo info) {
         log.trace("removeAllHistoryWithContactInfo()", info);
         for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
             History history = it.next();
             if (history.getContactInfo().equals(info))
+                it.remove();
+        }
+        pcs.firePropertyChange(PROP_CONTACT_REMOVE, null, info);
+    }
+
+    /**
+     * TODO
+     * 
+     * @param ci
+     * @param serverId
+     */
+    public static void removeAllHistoryWithContactInfo(ContactInfo info, int serverId) {
+        log.trace("removeAllHistoryWithContactInfo()", info, serverId);
+        for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
+            History history = it.next();
+            if (history.getContactInfo().equals(info) && history.getMessageSource().getSourceId().equals(serverId))
                 it.remove();
         }
         pcs.firePropertyChange(PROP_CONTACT_REMOVE, null, info);

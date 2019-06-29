@@ -22,32 +22,40 @@ import com.github.tomhallman.mist.preferences.Preferences;
 
 /**
  * A field editor for displaying and storing a list of strings.
- * Buttons are provided for adding items to the list and removing
+ * Buttons are provided for adding items to the list, editing items in the list, and removing
  * items from the list.
  * 
  * Inspired by https://www.eclipse.org/articles/Article-Field-Editors/field_editors.html
  */
-public class AddRemoveListFieldEditor extends FieldEditor {
+public class AddEditRemoveListFieldEditor extends FieldEditor {
     private static Logger log = LogManager.getLogger();
 
     private static final String DEFAULT_ADD_LABEL = "&Add...";
+    private static final String DEFAULT_EDIT_LABEL = "&Edit...";
     private static final String DEFAULT_REMOVE_LABEL = "&Remove";
     private static final String DEFAULT_ADD_DLG_TITLE = "Add";
     private static final String DEFAULT_ADD_DLG_MESSAGE = "Add item";
     private static final String DEFAULT_ADD_DLG_DESCRIPTION = "";
+    private static final String DEFAULT_EDIT_DLG_TITLE = "Edit";
+    private static final String DEFAULT_EDIT_DLG_MESSAGE = "Update item";
+    private static final String DEFAULT_EDIT_DLG_DESCRIPTION = "";
     private static final int DEFAULT_MIN_LIST_SIZE = 0;
 
     private static final int VERTICAL_DIALOG_UNITS_PER_CHAR = 8;
-    private static final int LIST_HEIGHT_IN_CHARS = 4;
+    private static final int LIST_HEIGHT_IN_CHARS = 6;
     private static final int LIST_HEIGHT_IN_DLUS = LIST_HEIGHT_IN_CHARS * VERTICAL_DIALOG_UNITS_PER_CHAR;
 
     private List stringList;
     private int minItemCount;
     private Button addButton;
+    private Button editButton;
     private Button removeButton;
     private String addDlgTitleStr;
     private String addDlgMessageStr;
     private String addDlgDescriptionStr;
+    private String editDlgTitleStr;
+    private String editDlgMessageStr;
+    private String editDlgDescriptionStr;
 
     /**
      * Current list in string format
@@ -64,20 +72,25 @@ public class AddRemoveListFieldEditor extends FieldEditor {
      */
     private String errorMessage = "List contains too few items";
 
-    public AddRemoveListFieldEditor(String name, String labelText, Composite parent) {
+    public AddEditRemoveListFieldEditor(String name, String labelText, Composite parent) {
         super(name, labelText, parent);
-        log.trace("AddRemoveListFieldEditor({},{},{})", name, labelText, parent);
+        log.trace("AddEditRemoveListFieldEditor({},{},{})", name, labelText, parent);
         addDlgTitleStr = DEFAULT_ADD_DLG_TITLE;
         addDlgMessageStr = DEFAULT_ADD_DLG_MESSAGE;
         addDlgDescriptionStr = DEFAULT_ADD_DLG_DESCRIPTION;
+        editDlgTitleStr = DEFAULT_EDIT_DLG_TITLE;
+        editDlgMessageStr = DEFAULT_EDIT_DLG_MESSAGE;
+        editDlgDescriptionStr = DEFAULT_EDIT_DLG_DESCRIPTION;
         minItemCount = DEFAULT_MIN_LIST_SIZE;
     }
 
-    // Adds the string in the text field to the list.
-    protected void addButtonSelected(String title, String msg, String description) {
-        log.trace("{{}} addButtonSelected({},{},{})", stringList, title, msg, description);
-        InputDialog dlg = new InputDialog(getPage().getShell(), title, msg, "", null);
-        // dlg.setDescription(description);
+    /**
+     * Adds the string in the text field to the list.
+     */
+    protected void addButtonSelected() {
+        log.trace("{{}} addButtonSelected()", stringList);
+        InputDialog dlg = new InputDialog(getPage().getShell(), addDlgTitleStr, addDlgMessageStr, "", null);
+        // TODO: dlg.setDescription(addDlgDescriptionStr);
         int result = dlg.open();
         if (result == Window.OK && !dlg.getValue().isEmpty()) {
             curListString = getListString();
@@ -89,6 +102,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     /**
      * @see org.eclipse.jface.preference.FieldEditor#adjustForNumColumns(int)
      */
+    @Override
     protected void adjustForNumColumns(int numColumns) {
         log.trace("{{}} adjustForNumColumns({})", stringList, numColumns);
         // We only grab excess space if we have to.
@@ -97,11 +111,12 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     }
 
     /**
-     * Set the enablement of the remove button depending on the selection in the list.
+     * Set the enablement of the edit and remove buttons depending on the selection in the list.
      */
-    private void checkRemoveButtonEnabled() {
-        log.trace("{{}} checkRemoveButtonEnabled()", stringList);
+    private void checkEditRemoveButtonsEnabled() {
+        log.trace("{{}} checkEditRemoveButtonsEnabled()", stringList);
         int index = stringList.getSelectionIndex();
+        editButton.setEnabled(index >= 0);
         removeButton.setEnabled(index >= 0);
     }
 
@@ -130,6 +145,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     /**
      * @see org.eclipse.jface.preference.FieldEditor#doFillIntoGrid(Composite, int)
      */
+    @Override
     protected void doFillIntoGrid(Composite parent, int numColumns) {
         log.trace("{{}} doFillIntoGrid({},{})", stringList, parent, numColumns);
         Label label = getLabelControl(parent);
@@ -137,14 +153,12 @@ public class AddRemoveListFieldEditor extends FieldEditor {
 
         stringList = new List(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL);
         int heightHint = convertVerticalDLUsToPixels(stringList, LIST_HEIGHT_IN_DLUS);
-        applyGridData(stringList)
-            .withHorizontalFill()
-            .verticalAlignment(SWT.TOP)
-            .heightHint(heightHint)
-            .horizontalSpan(numColumns - 2);
+        applyGridData(stringList).withHorizontalFill().verticalAlignment(SWT.TOP).heightHint(heightHint).horizontalSpan(
+            numColumns - 2);
         stringList.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
-                checkRemoveButtonEnabled();
+                checkEditRemoveButtonsEnabled();
                 refreshValidState();
             }
         });
@@ -159,8 +173,20 @@ public class AddRemoveListFieldEditor extends FieldEditor {
         applyGridData(addButton).withHorizontalFill();
         addButton.setText(DEFAULT_ADD_LABEL);
         addButton.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
-                addButtonSelected(addDlgTitleStr, addDlgMessageStr, addDlgDescriptionStr);
+                addButtonSelected();
+            }
+        });
+
+        // Create the edit button
+        editButton = new Button(buttonComp, SWT.NONE);
+        applyGridData(editButton).withHorizontalFill();
+        editButton.setText(DEFAULT_EDIT_LABEL);
+        editButton.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                editButtonSelected();
             }
         });
 
@@ -170,6 +196,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
         removeButton.setEnabled(false);
         removeButton.setText(DEFAULT_REMOVE_LABEL);
         removeButton.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 removeButtonSelected();
             }
@@ -179,6 +206,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     /**
      * @see org.eclipse.jface.preference.FieldEditor#doLoad()
      */
+    @Override
     protected void doLoad() {
         log.trace("{{}} doLoad()", stringList);
         if (stringList != null) {
@@ -191,6 +219,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     /**
      * @see org.eclipse.jface.preference.FieldEditor#doLoadDefault()
      */
+    @Override
     protected void doLoadDefault() {
         log.trace("{{}} doLoadDefault()", stringList);
         if (stringList != null) {
@@ -203,6 +232,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     /**
      * @see org.eclipse.jface.preference.FieldEditor#doStore()
      */
+    @Override
     protected void doStore() {
         log.trace("{{}} doStore()", stringList);
         if (curListString != null)
@@ -210,24 +240,25 @@ public class AddRemoveListFieldEditor extends FieldEditor {
     }
 
     /**
-     * @return the minItemCount
+     * @param title
+     * @param msg
+     * @param description
      */
-    public int getMinItemCount() {
-        return minItemCount;
-    }
-
-    /**
-     * @see org.eclipse.jface.preference.FieldEditor#getNumberOfControls()
-     */
-    public int getNumberOfControls() {
-        return 3; // Label, list, buttons
-    }
-
-    /**
-     * Sets the label for the button that adds the contents of the text field to the list.
-     */
-    public void setAddButtonText(String text) {
-        addButton.setText(text);
+    protected void editButtonSelected() {
+        log.trace("{{}} editButtonSelected({},{},{})", stringList);
+        InputDialog dlg = new InputDialog(
+            getPage().getShell(),
+            editDlgTitleStr,
+            editDlgMessageStr,
+            stringList.getItem(stringList.getSelectionIndex()),
+            null);
+        // TODO: dlg.setDescription(editDlgDescriptionStr);
+        int result = dlg.open();
+        if (result == Window.OK && !dlg.getValue().isEmpty()) {
+            curListString = getListString();
+            stringList.setItem(stringList.getSelectionIndex(), dlg.getValue());
+            valueChanged();
+        }
     }
 
     public String getAddDialogDescription() {
@@ -240,6 +271,18 @@ public class AddRemoveListFieldEditor extends FieldEditor {
 
     public String getAddDialogTitle() {
         return addDlgTitleStr;
+    }
+
+    public String getEditDialogDescription() {
+        return editDlgDescriptionStr;
+    }
+
+    public String getEditDialogMessage() {
+        return editDlgMessageStr;
+    }
+
+    public String getEditDialogTitle() {
+        return editDlgTitleStr;
     }
 
     /**
@@ -256,11 +299,27 @@ public class AddRemoveListFieldEditor extends FieldEditor {
             return StringUtils.join(stringList.getItems(), Preferences.getSeparator());
     }
 
+    /**
+     * @return the minItemCount
+     */
+    public int getMinItemCount() {
+        return minItemCount;
+    }
+
+    /**
+     * @see org.eclipse.jface.preference.FieldEditor#getNumberOfControls()
+     */
+    @Override
+    public int getNumberOfControls() {
+        return 3; // Label, list, buttons
+    }
+
     /*
      * (non-Javadoc)
      * Method declared on FieldEditor.
      * Returns whether this field editor contains a valid value.
      */
+    @Override
     public boolean isValid() {
         return isValid;
     }
@@ -272,6 +331,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
      * and fires an <code>IS_VALID</code> property change event if
      * warranted.
      */
+    @Override
     protected void refreshValidState() {
         log.trace("{{}} refreshValidState()", stringList);
         boolean oldState = isValid;
@@ -282,6 +342,9 @@ public class AddRemoveListFieldEditor extends FieldEditor {
         }
     }
 
+    /**
+     * 
+     */
     protected void removeButtonSelected() {
         log.trace("{{}} removeButtonSelected()", stringList);
         int index = stringList.getSelectionIndex();
@@ -294,8 +357,15 @@ public class AddRemoveListFieldEditor extends FieldEditor {
             stringList.setFocus();
             curListString = getListString();
         }
-        checkRemoveButtonEnabled();
+        checkEditRemoveButtonsEnabled();
         valueChanged();
+    }
+
+    /**
+     * Sets the label for the button that adds the contents of the text field to the list.
+     */
+    public void setAddButtonText(String text) {
+        addButton.setText(text);
     }
 
     public void setAddDialogDescription(String description) {
@@ -310,6 +380,25 @@ public class AddRemoveListFieldEditor extends FieldEditor {
         this.addDlgTitleStr = title;
     }
 
+    /**
+     * Sets the label for the button that edits the selected item in the list.
+     */
+    public void setEditButtonText(String text) {
+        editButton.setText(text);
+    }
+
+    public void setEditDialogDescription(String description) {
+        this.editDlgDescriptionStr = description;
+    }
+
+    public void setEditDialogMessage(String msg) {
+        this.editDlgMessageStr = msg;
+    }
+
+    public void setEditDialogTitle(String title) {
+        this.editDlgTitleStr = title;
+    }
+
     @Override
     public void setEnabled(boolean enabled, Composite parent) {
         log.trace("{{}} setEnabled({},{})", stringList, enabled, parent);
@@ -317,7 +406,7 @@ public class AddRemoveListFieldEditor extends FieldEditor {
         if (stringList != null) {
             stringList.setEnabled(enabled);
             addButton.setEnabled(enabled);
-            checkRemoveButtonEnabled();
+            checkEditRemoveButtonsEnabled();
         }
     }
 

@@ -66,8 +66,12 @@ public class TntDb {
 
     // Table names
     public final static String TABLE_CONTACT = "Contact";
+    public final static String TABLE_CURRENCY = "Currency";
     public final static String TABLE_HISTORY = "History";
     public final static String TABLE_HISTORYCONTACT = "HistoryContact";
+    public final static String TABLE_MPDPHASE = "MPDPhase";
+    public final static String TABLE_PLEDGEFREQUENCY = "PledgeFrequency";
+    public final static String TABLE_TASKTYPE = "TaskType";
 
     // Preferences
     public final static String PREF_TNT_DBPATH = "tnt.db.path";
@@ -85,7 +89,6 @@ public class TntDb {
     private static String dbPath = MIST.getPrefs().getString(PREF_TNT_DBPATH);
     private static Connection conn = null;
     private static boolean useCommit = true;
-    private static Integer baseCurrencyId = null;
 
     /**
      * No instantiation allowed!
@@ -139,7 +142,7 @@ public class TntDb {
      */
     public static void connect(boolean force) throws TntDbException {
         log.trace("connect({})", force);
-        connect(false, dbPath);
+        connect(force, dbPath);
     }
 
     /**
@@ -195,8 +198,13 @@ public class TntDb {
             throw new TntDbException(String.format("Could not connect to Tnt database at '%s'", databasePath), e);
         }
 
-        // Get default base currency value
-
+        try {
+            // Note: we load thse into memory rather than making DB calls simply for efficiency
+            CurrencyManager.load();
+            PledgeFrequencyManager.load();
+        } catch (SQLException e) {
+            throw new TntDbException("Could not load initialization data from Tnt database", e);
+        }
     }
 
     /**
@@ -389,28 +397,46 @@ public class TntDb {
     }
 
     /**
-     * Gets the base currency ID for the primary contact.
-     * 
-     * @return the base currency ID for the primary contact
-     */
-    public static Integer getBaseCurrencyId() {
-        log.trace("getBaseCurrencyId()");
-        if (baseCurrencyId == null)
-            try {
-                baseCurrencyId = getOneInt("SELECT [BaseCurrencyID] FROM [Contact] WHERE [ContactID] = 1");
-            } catch (TntDbException | SQLException e) {
-                log.error("Unable to get base currency ID");
-            }
-        return baseCurrencyId;
-    }
-
-    /**
      * Returns the current connection (or null if none exists)
      *
      * @return the current connection (or null if none exists)
      */
     protected static Connection getConnection() {
         return conn;
+    }
+
+    /**
+     * Returns the Description field of the specified table with the specified ID.
+     *
+     * @param table
+     *            the table from which to get the description
+     * @param id
+     *            the id from which to get the description
+     * @return the Description field of the specified table with the specified ID
+     * @throws TntDbException
+     *             if there is more than one value returned
+     * @throws SQLException
+     *             if there is a database access problem
+     */
+    protected static String getDescription(String table, int id) throws TntDbException, SQLException {
+        log.trace("getDescription({},{})", table, id);
+        String query = String.format("SELECT [Description] FROM [%1$s] WHERE [%1$sId] = %2$s", table, id);
+        return getOneString(query);
+    }
+
+    /**
+     * Returns the description for the specified ID in the MPDPhase table.
+     *
+     * @param id
+     *            the id from which to get the description
+     * @return the description for the specified ID in the MPDPhase table
+     * @throws TntDbException
+     *             if there is more than one value returned
+     * @throws SQLException
+     *             if there is a database access problem
+     */
+    public static String getMpdPhaseDescription(int id) throws TntDbException, SQLException {
+        return getDescription(TABLE_MPDPHASE, id);
     }
 
     /**
@@ -561,6 +587,21 @@ public class TntDb {
     }
 
     /**
+     * Returns the description for the specified ID in the TaskType table.
+     *
+     * @param id
+     *            the id from which to get the description
+     * @return the description for the specified ID in the TaskType table
+     * @throws TntDbException
+     *             if there is more than one value returned
+     * @throws SQLException
+     *             if there is a database access problem
+     */
+    public static String getTaskTypeDescription(int id) throws TntDbException, SQLException {
+        return getDescription(TABLE_TASKTYPE, id);
+    }
+
+    /**
      * Returns the current TntConnect database path.
      *
      * @return the current TntConnect database path
@@ -572,6 +613,7 @@ public class TntDb {
     public static void init() {
         log.trace("init()");
         disconnect();
+        dbPath = MIST.getPrefs().getString(PREF_TNT_DBPATH);
     }
 
     /**

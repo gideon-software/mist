@@ -27,6 +27,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.tntapi.TntDb;
 
 public class SettingsController {
     private static Logger log = LogManager.getLogger();
@@ -44,11 +45,10 @@ public class SettingsController {
         int ret = prefDlg.open();
         if (ret == Window.OK)
             MIST.getPrefs().savePreferences();
-        else
+        else {
             MIST.getPrefs().resetPreferences();
-
-        // Reinitialize everything
-        MIST.initModel();
+            TntDb.init(); // Forces a reload of the DB settings
+        }
 
         return ret;
     }

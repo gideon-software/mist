@@ -31,6 +31,8 @@ import org.eclipse.swt.widgets.MessageBox;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.HistoryModel;
+import com.github.tomhallman.mist.model.MessageModel;
 import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.views.ImportButtonView;
 
@@ -56,6 +58,10 @@ public class ImportButtonController {
             //
             // Begin importing!
             //
+
+            // Clear last import info
+            HistoryModel.init();
+            MessageModel.init();
 
             // Start Tnt import service
             TntDb.startImportService(view.getShell());

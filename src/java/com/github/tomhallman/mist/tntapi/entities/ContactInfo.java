@@ -32,6 +32,12 @@ public class ContactInfo {
     public ContactInfo() {
     }
 
+    public ContactInfo(ContactInfo info) {
+        this.id = info.getId();
+        this.name = info.getName();
+        this.info = info.getInfo();
+    }
+
     public ContactInfo(Integer id, String name) {
         this.id = id;
         this.name = name;
@@ -41,12 +47,6 @@ public class ContactInfo {
         this.id = id;
         this.name = name;
         this.info = info;
-    }
-
-    public ContactInfo(ContactInfo info) {
-        this.id = info.getId();
-        this.name = info.getName();
-        this.info = info.getInfo();
     }
 
     /**
@@ -101,7 +101,14 @@ public class ContactInfo {
     }
 
     public String getName() {
-        return name;
+        if (name == null) {
+            if (info == null)
+                return "Unknown";
+            else
+                return info;
+        } else
+            return name;
+
     }
 
     public String guessFirstName() {
