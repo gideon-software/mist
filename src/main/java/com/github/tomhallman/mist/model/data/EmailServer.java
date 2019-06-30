@@ -403,7 +403,7 @@ public class EmailServer implements Cloneable {
         Thread importThread = new Thread() {
             @Override
             public void run() {
-
+                log.trace("=== Email Server '{}' Import Service Started ===", nickname);
                 // See if there are any messages to import
                 boolean hasMoreMessages = false;
                 int currentMessageNumber = 0;
@@ -429,6 +429,7 @@ public class EmailServer implements Cloneable {
                     });
 
                     EmailModel.serverComplete();
+                    log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
                     return;
                 }
 
@@ -483,6 +484,7 @@ public class EmailServer implements Cloneable {
                 }
 
                 EmailModel.serverComplete();
+                log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
             } // run()
         };
         importThread.start();

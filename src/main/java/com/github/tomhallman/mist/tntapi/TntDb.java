@@ -725,8 +725,8 @@ public class TntDb {
 
         Thread importThread = new Thread() {
 
-            public void doImport(MessageSource messageSource) {
-                log.trace("doImport({})", messageSource);
+            public void importMessage(MessageSource messageSource) {
+                log.trace("importMessage({})", messageSource);
 
                 // Converts message into one or more history objects
                 History[] historyArr = EmailMessageToHistoryConverter.getHistory((EmailMessage) messageSource);
@@ -758,11 +758,14 @@ public class TntDb {
 
             @Override
             public void run() {
+                log.trace("=== TntDb Import Service Started ===");
                 pcs.firePropertyChange(PROP_IMPORTSTATUS_IMPORTING, null, stopImporting);
                 while (!stopImporting) {
                     while (MessageModel.hasMessages() && !stopImporting) {
                         try {
-                            doImport(MessageModel.getNextMessage());
+                            MessageSource message = MessageModel.getNextMessage();
+                            if (message != null) // Thread paranoia that's actually happened!
+                                importMessage(message);
                         } catch (Exception e) {
                             Display.getDefault().syncExec(new Runnable() {
                                 @Override
@@ -775,6 +778,7 @@ public class TntDb {
                     }
                 }
                 pcs.firePropertyChange(PROP_IMPORTSTATUS_STOPPED, null, stopImporting);
+                log.trace("=== TntDb Import Service Stopped ===");
             }
         };
         importThread.start();
