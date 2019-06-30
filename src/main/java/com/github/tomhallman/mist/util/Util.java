@@ -42,7 +42,6 @@ import org.eclipse.swt.widgets.Shell;
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.exceptions.TntDbException;
-import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.model.data.PasswordData;
 import com.github.tomhallman.mist.tntapi.TntDb;
@@ -73,8 +72,8 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
             // If save password had been requested, store in preferences now that we know it worked
             if (passwordData != null && server.isConnected() && passwordData.isSavePassword()) {
                 server.setPasswordPrompt(false);
-                String promptPrefName = EmailModel.getPrefName(server.getId(), EmailModel.PASSWORD_PROMPT);
-                String passwordPrefName = EmailModel.getPrefName(server.getId(), EmailModel.PASSWORD);
+                String promptPrefName = EmailServer.getPrefName(server.getId(), EmailServer.PREF_PASSWORD_PROMPT);
+                String passwordPrefName = EmailServer.getPrefName(server.getId(), EmailServer.PREF_PASSWORD);
                 MIST.getPrefs().setValue(promptPrefName, false);
                 MIST.getPrefs().setValue(passwordPrefName, passwordData.getPassword());
             }

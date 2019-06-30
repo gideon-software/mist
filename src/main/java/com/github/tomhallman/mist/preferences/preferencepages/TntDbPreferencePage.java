@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.util.ui.ViewUtil;
@@ -116,7 +117,7 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
                 if (!event.getNewValue().equals(event.getOldValue())) {
                     // Clear the Tnt User ID for all associated email servers
                     for (int i = 0; i < EmailModel.getEmailServerCount(); i++)
-                        MIST.getPrefs().setToDefault(EmailModel.getPrefName(i, EmailModel.TNT_USERID));
+                        MIST.getPrefs().setToDefault(EmailServer.getPrefName(i, EmailServer.PREF_TNT_USERID));
                     // TODO: Somehow clear the value in the EmailServerPreferencePages?
                 }
             } else {

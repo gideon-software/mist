@@ -30,6 +30,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.preferencepages.EmailPreferencePage;
 import com.github.tomhallman.mist.preferences.preferencepages.EmailServerPreferencePage;
 import com.github.tomhallman.mist.preferences.preferencepages.TntDbPreferencePage;
@@ -128,7 +129,7 @@ public class MistPreferenceManager extends PreferenceManager {
         Preferences prefs = MIST.getPrefs();
         int i = 0;
         // Nickname can not be empty, so we can know if a server exists
-        while (!prefs.getString(EmailModel.getPrefName(i, EmailModel.NICKNAME)).isEmpty())
+        while (!prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_NICKNAME)).isEmpty())
             i++;
         return i;
     }

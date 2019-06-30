@@ -36,19 +36,7 @@ public class EmailModel {
     private static Logger log = LogManager.getLogger();
 
     // Preferences
-    public final static String PREF_PREFIX = "emailserver";
-    public final static String ADDRESSES_IGNORE = "addresses.ignore";
-    public final static String ADDRESSES_MY = "addresses.my";
-    public final static String FOLDER = "folder";
-    public final static String HOST = "host";
-    public final static String PASSWORD = "password";
-    public final static String PASSWORD_PROMPT = "password.prompt";
-    public final static String PORT = "port";
-    public final static String NICKNAME = "nickname";
-    public final static String USERNAME = "username";
-    public final static String MYNAME = "myname";
-    public final static String GLOBAL_ADDRESSES_IGNORE = PREF_PREFIX + "." + ADDRESSES_IGNORE;
-    public final static String TNT_USERID = "tnt.user.id";
+    public final static String PREF_ADDRESSES_IGNORE = "email.addresses.ignore";
 
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(EmailModel.class);
@@ -125,10 +113,6 @@ public class EmailModel {
         return totalMessages;
     }
 
-    public static String getPrefName(int serverId, String name) {
-        return String.format("%s.%s.%s", PREF_PREFIX, serverId, name);
-    }
-
     public static void init() {
         log.trace("init()");
 
@@ -144,21 +128,23 @@ public class EmailModel {
         for (int i = 0; i < MIST.getPreferenceManager().getEmailServerPrefCount(); i++) {
             // Configure email servers from preferences
             EmailServer server = new EmailServer();
-            server.setFolderName(prefs.getString(getPrefName(i, FOLDER)));
-            server.setHost(prefs.getString(getPrefName(i, HOST)));
-            server.setMyName(prefs.getString(getPrefName(i, MYNAME)));
+            server.setFolderName(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_FOLDER)));
+            server.setHost(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_HOST)));
+            server.setMyName(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_MYNAME)));
             // Set default password prompt to true
-            prefs.setDefault(getPrefName(i, PASSWORD_PROMPT), true);
-            server.setPasswordPrompt(prefs.getBoolean(getPrefName(i, PASSWORD_PROMPT)));
-            server.setPassword(server.isPasswordPrompt() ? "" : prefs.getString(getPrefName(i, PASSWORD)));
+            prefs.setDefault(EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD_PROMPT), true);
+            server.setPasswordPrompt(prefs.getBoolean(EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD_PROMPT)));
+            server.setPassword(
+                server.isPasswordPrompt() ? "" : prefs.getString(
+                    EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD)));
             // Set default port to 993
-            prefs.setDefault(getPrefName(i, PORT), 993);
-            server.setPort(prefs.getString(getPrefName(i, PORT)));
-            server.setUsername(prefs.getString(getPrefName(i, USERNAME)));
-            server.setNickname(prefs.getString(getPrefName(i, NICKNAME)));
-            server.setTntUserId(prefs.getInt(getPrefName(i, TNT_USERID)));
-            server.setIgnoreAddresses(prefs.getStrings(getPrefName(i, ADDRESSES_IGNORE)));
-            server.setMyAddresses(prefs.getStrings(getPrefName(i, ADDRESSES_MY)));
+            prefs.setDefault(EmailServer.getPrefName(i, EmailServer.PREF_PORT), 993);
+            server.setPort(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_PORT)));
+            server.setUsername(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_USERNAME)));
+            server.setNickname(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_NICKNAME)));
+            server.setTntUserId(prefs.getInt(EmailServer.getPrefName(i, EmailServer.PREF_TNT_USERID)));
+            server.setIgnoreAddresses(prefs.getStrings(EmailServer.getPrefName(i, EmailServer.PREF_ADDRESSES_IGNORE)));
+            server.setMyAddresses(prefs.getStrings(EmailServer.getPrefName(i, EmailServer.PREF_ADDRESSES_MY)));
             addEmailServer(server);
         }
     }
@@ -171,7 +157,7 @@ public class EmailModel {
      */
     public static boolean isEmailInIgnoreList(String email) {
         log.trace("isEmailInList({},{})", email);
-        String[] ignoreList = MIST.getPrefs().getStrings(GLOBAL_ADDRESSES_IGNORE);
+        String[] ignoreList = MIST.getPrefs().getStrings(PREF_ADDRESSES_IGNORE);
         return isEmailInList(email, ignoreList);
     }
 

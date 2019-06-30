@@ -28,6 +28,7 @@ import org.eclipse.swt.events.SelectionEvent;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
@@ -45,7 +46,7 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             // bit of hack.
             // TODO: Use a wizard here instead
             int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
-            String prefName = EmailModel.getPrefName(serverId, EmailModel.NICKNAME);
+            String prefName = EmailServer.getPrefName(serverId, EmailServer.PREF_NICKNAME);
             MIST.getPrefs().setValue(prefName, "New Email Server");
             // This refreshes the PreferenceDialog so the new server shows up
             MIST.getPreferenceManager().addEmailServerNode(serverId, true);
@@ -78,7 +79,7 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
 
         // Email addresses to ignore
         ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
-            EmailModel.GLOBAL_ADDRESSES_IGNORE,
+            EmailModel.PREF_ADDRESSES_IGNORE,
             "Email addresses to &ignore:",
             getFieldEditorParent());
         ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");

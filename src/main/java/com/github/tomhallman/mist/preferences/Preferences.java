@@ -34,7 +34,7 @@ import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.jface.util.Util;
 
 import com.github.tomhallman.mist.MIST;
-import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.tntapi.TntDb;
 
 public class Preferences extends PreferenceStore {
@@ -57,11 +57,24 @@ public class Preferences extends PreferenceStore {
     }
 
     /**
-     * Initialize default values
+     * Thread-safe, lazily-initialized singleton creator.
+     * 
+     * @see https://en.wikipedia.org/wiki/Singleton_pattern
+     * @return a handle to the Preferences object for this user
      */
-    private void initDefaults() {
-        log.trace("initDefaults()");
-        // EmailServerModel initializes defaults for email servers, which have unique preference names
+    public static synchronized Preferences getInstance() {
+        if (prefs == null) {
+            prefs = new Preferences();
+        }
+        return prefs;
+    }
+
+    public static String getSeparator() {
+        return separator;
+    }
+
+    public static void setSeparator(String sep) {
+        separator = sep;
     }
 
     /**
@@ -84,6 +97,33 @@ public class Preferences extends PreferenceStore {
         else // Mac or Linux
             path = String.format("%s/.%s/%s.properties", System.getProperty("user.home"), appName, node);
         return path;
+    }
+
+    public String[] getStrings(String name) {
+        return StringUtils.split(getString(name), Preferences.getSeparator());
+    }
+
+    /**
+     * Initialize default values
+     */
+    private void initDefaults() {
+        log.trace("initDefaults()");
+        // EmailServerModel initializes defaults for email servers, which have unique preference names
+    }
+
+    public boolean isConfigured() {
+        log.trace("isConfigured()");
+
+        // We need a Tnt DB
+        String dbPath = getString(TntDb.PREF_TNT_DBPATH);
+        if (dbPath.isEmpty())
+            return false;
+
+        // We need at least one email server set up
+        if (MIST.getPreferenceManager().getEmailServerPrefCount() == 0)
+            return false;
+
+        return true;
     }
 
     /**
@@ -111,6 +151,93 @@ public class Preferences extends PreferenceStore {
             loadPreferencesFromMIST4();
             savePreferences();
         }
+    }
+
+    private boolean loadPreferencesFromMIST4() {
+        log.trace("loadPreferencesFromMIST4()");
+        // Try to update from 4.x settings to 5.0 settings
+        try {
+            java.util.prefs.Preferences oldPrefs = java.util.prefs.Preferences.userRoot().node(
+                "MIST" + (MIST.isDevel() ? "-devel" : ""));
+            if (oldPrefs.nodeExists("TntMPD")) {
+                log.info("Loading preferences from 4.x...");
+
+                setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
+
+                // Pre-5.0 stored its one email server under "Mail" node
+
+                // Folder
+                String oldVal = oldPrefs.node("Mail").get("Folder", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_FOLDER), oldVal);
+
+                // Host
+                oldVal = oldPrefs.node("Mail").get("Host", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_HOST), oldVal);
+
+                // My name
+                oldVal = oldPrefs.node("Mail").get("MyName", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_MYNAME), oldVal);
+
+                // Password
+                oldVal = oldPrefs.node("Mail").get("Password", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD), oldVal);
+
+                // Password prompt
+                Boolean oldValBool = oldPrefs.node("Mail").getBoolean("PasswordPrompt", true);
+                // Set the default here because we'll soon save our preferences
+                setDefault(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD_PROMPT), true);
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD_PROMPT), oldValBool);
+
+                // Port
+                oldVal = oldPrefs.node("Mail").get("Port", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PORT), Integer.parseInt(oldVal));
+
+                // Username
+                oldVal = oldPrefs.node("Mail").get("User", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_USERNAME), oldVal);
+
+                // There was no nickname; use host name
+                oldVal = oldPrefs.node("Mail").get("Host", "");
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_NICKNAME), oldVal);
+
+                // Addresses to ignore for this email server
+                List<String> ignoreAddresses = new ArrayList<String>();
+                int i = 0;
+                String val = null;
+                do {
+                    val = oldPrefs.node("Mail").node("IgnoreAddresses").get("Value" + i++, null);
+                    if (val != null)
+                        ignoreAddresses.add(val);
+                } while (val != null);
+                setValues(
+                    EmailServer.getPrefName(0, EmailServer.PREF_ADDRESSES_IGNORE),
+                    ignoreAddresses.toArray(new String[0]));
+
+                // "My" Addresses for this email server
+                List<String> myAddresses = new ArrayList<String>();
+                i = 0;
+                val = null;
+                do {
+                    val = oldPrefs.node("Mail").node("MyAddresses").get("Value" + i++, null);
+                    if (val != null)
+                        myAddresses.add(val);
+                } while (val != null);
+                setValues(
+                    EmailServer.getPrefName(0, EmailServer.PREF_ADDRESSES_MY),
+                    myAddresses.toArray(new String[0]));
+
+                // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
+                Integer oldValInt = oldPrefs.node("TntMPD").getInt("UserId", 0);
+                setValue(EmailServer.getPrefName(0, EmailServer.PREF_TNT_USERID), oldValInt);
+                // Ignore former TntMPD/Username pref; no longer needed
+
+                log.info("4.x preferences successfully loaded.");
+                return true;
+            }
+        } catch (BackingStoreException e) {
+            log.warn("Could not load preferences backing store.", e);
+        }
+        return false;
     }
 
     /**
@@ -143,42 +270,6 @@ public class Preferences extends PreferenceStore {
         }
     }
 
-    public String[] getStrings(String name) {
-        return StringUtils.split(getString(name), Preferences.getSeparator());
-    }
-
-    /**
-     * Thread-safe, lazily-initialized singleton creator.
-     * 
-     * @see https://en.wikipedia.org/wiki/Singleton_pattern
-     * @return a handle to the Preferences object for this user
-     */
-    public static synchronized Preferences getInstance() {
-        if (prefs == null) {
-            prefs = new Preferences();
-        }
-        return prefs;
-    }
-
-    public static String getSeparator() {
-        return separator;
-    }
-
-    public boolean isConfigured() {
-        log.trace("isConfigured()");
-
-        // We need a Tnt DB
-        String dbPath = getString(TntDb.PREF_TNT_DBPATH);
-        if (dbPath.isEmpty())
-            return false;
-
-        // We need at least one email server set up
-        if (MIST.getPreferenceManager().getEmailServerPrefCount() == 0)
-            return false;
-
-        return true;
-    }
-
     /**
      * Sets all preferences to their default values if the preference name contains the specified string
      * 
@@ -193,99 +284,10 @@ public class Preferences extends PreferenceStore {
                 setToDefault(prefNames[i]);
     }
 
-    public static void setSeparator(String sep) {
-        separator = sep;
-    }
+////////////////////////////////////////////////////////////////////
 
     public void setValues(String name, String[] values) {
         setValue(name, StringUtils.join(values, Preferences.getSeparator()));
-    }
-
-////////////////////////////////////////////////////////////////////
-
-    private boolean loadPreferencesFromMIST4() {
-        log.trace("loadPreferencesFromMIST4()");
-        // Try to update from 4.x settings to 5.0 settings
-        try {
-            java.util.prefs.Preferences oldPrefs = java.util.prefs.Preferences.userRoot().node(
-                "MIST" + (MIST.isDevel() ? "-devel" : ""));
-            if (oldPrefs.nodeExists("TntMPD")) {
-                log.info("Loading preferences from 4.x...");
-
-                setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
-
-                // Pre-5.0 stored its one email server under "Mail" node
-
-                // Folder
-                String oldVal = oldPrefs.node("Mail").get("Folder", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.FOLDER), oldVal);
-
-                // Host
-                oldVal = oldPrefs.node("Mail").get("Host", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.HOST), oldVal);
-
-                // My name
-                oldVal = oldPrefs.node("Mail").get("MyName", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.MYNAME), oldVal);
-
-                // Password
-                oldVal = oldPrefs.node("Mail").get("Password", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.PASSWORD), oldVal);
-
-                // Password prompt
-                Boolean oldValBool = oldPrefs.node("Mail").getBoolean("PasswordPrompt", true);
-                // Set the default here because we'll soon save our preferences
-                setDefault(EmailModel.getPrefName(0, EmailModel.PASSWORD_PROMPT), true);
-                setValue(EmailModel.getPrefName(0, EmailModel.PASSWORD_PROMPT), oldValBool);
-
-                // Port
-                oldVal = oldPrefs.node("Mail").get("Port", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.PORT), Integer.parseInt(oldVal));
-
-                // Username
-                oldVal = oldPrefs.node("Mail").get("User", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.USERNAME), oldVal);
-
-                // There was no nickname; use host name
-                oldVal = oldPrefs.node("Mail").get("Host", "");
-                setValue(EmailModel.getPrefName(0, EmailModel.NICKNAME), oldVal);
-
-                // Addresses to ignore for this email server
-                List<String> ignoreAddresses = new ArrayList<String>();
-                int i = 0;
-                String val = null;
-                do {
-                    val = oldPrefs.node("Mail").node("IgnoreAddresses").get("Value" + i++, null);
-                    if (val != null)
-                        ignoreAddresses.add(val);
-                } while (val != null);
-                setValues(
-                    EmailModel.getPrefName(0, EmailModel.ADDRESSES_IGNORE),
-                    ignoreAddresses.toArray(new String[0]));
-
-                // "My" Addresses for this email server
-                List<String> myAddresses = new ArrayList<String>();
-                i = 0;
-                val = null;
-                do {
-                    val = oldPrefs.node("Mail").node("MyAddresses").get("Value" + i++, null);
-                    if (val != null)
-                        myAddresses.add(val);
-                } while (val != null);
-                setValues(EmailModel.getPrefName(0, EmailModel.ADDRESSES_MY), myAddresses.toArray(new String[0]));
-
-                // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
-                Integer oldValInt = oldPrefs.node("TntMPD").getInt("UserId", 0);
-                setValue(EmailModel.getPrefName(0, EmailModel.TNT_USERID), oldValInt);
-                // Ignore former TntMPD/Username pref; no longer needed
-
-                log.info("4.x preferences successfully loaded.");
-                return true;
-            }
-        } catch (BackingStoreException e) {
-            log.warn("Could not load preferences backing store.", e);
-        }
-        return false;
     }
 
 }

@@ -26,6 +26,7 @@ import org.eclipse.jface.wizard.Wizard;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.Preferences;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 
@@ -75,10 +76,10 @@ public class IgnoreContactWizard extends Wizard {
 
         String email = ignoreSettingsPage.getEmail();
         if (ignoreSettingsPage.isGlobalCheckSelected())
-            addIgnoreEmailToPref(EmailModel.GLOBAL_ADDRESSES_IGNORE, email);
+            addIgnoreEmailToPref(EmailModel.PREF_ADDRESSES_IGNORE, email);
         else {
             for (int id : ignoreSettingsPage.getSelectedServerIds())
-                addIgnoreEmailToPref(EmailModel.getPrefName(id, EmailModel.ADDRESSES_IGNORE), email);
+                addIgnoreEmailToPref(EmailServer.getPrefName(id, EmailServer.PREF_ADDRESSES_IGNORE), email);
         }
 
         return true;

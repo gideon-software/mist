@@ -44,6 +44,19 @@ import com.github.tomhallman.mist.util.Util;
 public class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
 
+    public final static String PREF_PREFIX = "emailserver";
+    public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
+    public final static String PREF_ADDRESSES_MY = "addresses.my";
+    public final static String PREF_FOLDER = "folder";
+    public final static String PREF_HOST = "host";
+    public final static String PREF_PASSWORD = "password";
+    public final static String PREF_PASSWORD_PROMPT = "password.prompt";
+    public final static String PREF_PORT = "port";
+    public final static String PREF_NICKNAME = "nickname";
+    public final static String PREF_USERNAME = "username";
+    public final static String PREF_MYNAME = "myname";
+    public final static String PREF_TNT_USERID = "tnt.user.id";
+
     // Import controls
     private boolean stopImporting = false;
     private boolean importComplete = false;
@@ -71,6 +84,10 @@ public class EmailServer implements Cloneable {
     public EmailServer() {
         log.trace("EmailServer()");
         init();
+    }
+
+    public static String getPrefName(int serverId, String name) {
+        return String.format("%s.%s.%s", PREF_PREFIX, serverId, name);
     }
 
     @Override
@@ -297,7 +314,7 @@ public class EmailServer implements Cloneable {
      */
     public boolean isEmailInIgnoreList(String email) {
         log.trace("isEmailInList({},{})", email);
-        String[] ignoreList = MIST.getPrefs().getStrings(EmailModel.getPrefName(id, EmailModel.ADDRESSES_IGNORE));
+        String[] ignoreList = MIST.getPrefs().getStrings(getPrefName(id, PREF_ADDRESSES_IGNORE));
         return EmailModel.isEmailInList(email, ignoreList);
     }
 

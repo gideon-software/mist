@@ -35,6 +35,7 @@ import com.github.tomhallman.mist.exceptions.HistoryException;
 import com.github.tomhallman.mist.exceptions.TntDbException;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailMessage;
+import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.tntapi.ContactManager;
 import com.github.tomhallman.mist.tntapi.entities.History;
 import com.github.tomhallman.mist.tntapi.entities.TaskType;
@@ -111,11 +112,11 @@ public class EmailMessageToHistoryConverter {
 
         // Tnt User ID is based on email server settings
         history.setLoggedByUserId(
-            MIST.getPrefs().getInt(EmailModel.getPrefName(msg.getSourceId(), EmailModel.TNT_USERID)));
+            MIST.getPrefs().getInt(EmailServer.getPrefName(msg.getSourceId(), EmailServer.PREF_TNT_USERID)));
 
         History[] historyArr = null;
         String[] myAddrList = MIST.getPrefs().getStrings(
-            EmailModel.getPrefName(msg.getSourceId(), EmailModel.ADDRESSES_MY));
+            EmailServer.getPrefName(msg.getSourceId(), EmailServer.PREF_ADDRESSES_MY));
         if (ArrayUtils.contains(myAddrList, msg.getFromId())) {
             // If the message is TO one or more contacts, we may need multiple history entries
             historyArr = getHistoryToContact(msg, history);
@@ -190,7 +191,7 @@ public class EmailMessageToHistoryConverter {
             log.trace("Recipient {}/{}: {}", r + 1, msg.getRecipients().length, recipientEmail);
 
             String[] myAddrList = MIST.getPrefs().getStrings(
-                EmailModel.getPrefName(msg.getSourceId(), EmailModel.ADDRESSES_MY));
+                EmailServer.getPrefName(msg.getSourceId(), EmailServer.PREF_ADDRESSES_MY));
             if (EmailModel.isEmailInList(recipientEmail, myAddrList)) {
                 // This address is also me; skip it
                 log.debug("Message is from me to me ({}); skipping", recipientEmail);
