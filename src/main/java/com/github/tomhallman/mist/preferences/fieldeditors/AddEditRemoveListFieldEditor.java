@@ -151,7 +151,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
     protected void doFillIntoGrid(Composite parent, int numColumns) {
         log.trace("{{}} doFillIntoGrid({},{})", stringList, parent, numColumns);
         Label label = getLabelControl(parent);
-        applyGridData(label).withVerticalFill();
+        applyGridData(label).verticalAlignment(SWT.TOP);
 
         stringList = new List(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL);
         int heightHint = convertVerticalDLUsToPixels(stringList, LIST_HEIGHT_IN_DLUS);
@@ -184,6 +184,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         // Create the edit button
         editButton = new Button(buttonComp, SWT.NONE);
         applyGridData(editButton).withHorizontalFill();
+        editButton.setEnabled(false);
         editButton.setText(DEFAULT_EDIT_LABEL);
         editButton.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -387,6 +388,30 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
     }
 
     /**
+     * Sets both the add and edit dialog descriptions
+     */
+    public void setDialogDescription(String msg) {
+        this.addDlgDescriptionStr = msg;
+        this.editDlgDescriptionStr = msg;
+    }
+
+    /**
+     * Sets both the add and edit dialog messages
+     */
+    public void setDialogMessage(String msg) {
+        this.addDlgMessageStr = msg;
+        this.editDlgMessageStr = msg;
+    }
+
+    /**
+     * Sets both the add and edit dialog titles
+     */
+    public void setDialogTitle(String msg) {
+        this.addDlgTitleStr = msg;
+        this.editDlgTitleStr = msg;
+    }
+
+    /**
      * Sets the label for the button that edits the selected item in the list.
      */
     public void setEditButtonText(String text) {
@@ -412,6 +437,8 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         if (stringList != null) {
             stringList.setEnabled(enabled);
             addButton.setEnabled(enabled);
+            if (!enabled)
+                stringList.deselectAll();
             checkEditRemoveButtonsEnabled();
         }
     }

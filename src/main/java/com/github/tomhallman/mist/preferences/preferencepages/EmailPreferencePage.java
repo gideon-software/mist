@@ -22,7 +22,10 @@ package com.github.tomhallman.mist.preferences.preferencepages;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jface.preference.BooleanFieldEditor;
+import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
@@ -55,13 +58,17 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
 
     private static Logger log = LogManager.getLogger();
 
-    private AddEditRemoveListFieldEditor ignoreAddressesEditor;
+    private BooleanFieldEditor useAutoThankEditor;
+    private AddEditRemoveListFieldEditor thankSubjectEditor;
+
     private ButtonFieldEditor addServerButton;
+    private AddEditRemoveListFieldEditor ignoreAddressesEditor;
 
     public EmailPreferencePage() {
         super(FieldEditorPreferencePage.GRID);
         log.trace("EmailPreferencePage()");
         setTitle("Email");
+        // TODO: Use descriptions in preference pages
         // setDescription("Preferences that apply to all email servers");
         noDefaultAndApplyButton();
     }
@@ -74,8 +81,30 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
         addField(addServerButton);
 
         // Spacer
-        SpacerFieldEditor spacer = new SpacerFieldEditor(getFieldEditorParent());
-        addField(spacer);
+        addField(new SpacerFieldEditor(getFieldEditorParent()));
+
+        // Auto-thank checkbox & list
+        useAutoThankEditor = new BooleanFieldEditor(
+            EmailModel.PREF_AUTOTHANK_ENABLED,
+            " Automatically mark emails I send as \"Thank\" when:",
+            getFieldEditorParent());
+        addField(useAutoThankEditor);
+
+        thankSubjectEditor = new AddEditRemoveListFieldEditor(
+            EmailModel.PREF_AUTOTHANK_SUBJECTS,
+            "...the subject line begins with:",
+            getFieldEditorParent());
+        thankSubjectEditor.setDialogMessage("Subject lines that begin with this phrase will be marked as \"Thank\"");
+        thankSubjectEditor.setDialogDescription(
+            "This phrase is not case-sensitive (e.g. Thank and thank are equivalent)");
+        addField(thankSubjectEditor);
+        // Set initial state
+        thankSubjectEditor.setEnabled(
+            MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED),
+            getFieldEditorParent());
+
+        // Spacer
+        addField(new SpacerFieldEditor(getFieldEditorParent()));
 
         // Email addresses to ignore
         ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
@@ -83,12 +112,24 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             "Email addresses to &ignore:",
             getFieldEditorParent());
         ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
-        ignoreAddressesEditor.setAddDialogDescription(
+        ignoreAddressesEditor.setEditDialogMessage("Edit email address to ignore");
+        ignoreAddressesEditor.setDialogDescription(
             "Emails to or from these addresses will not be imported;"
                 + System.lineSeparator()
                 + "(Use * for any string and ? for any character)");
 
         addField(ignoreAddressesEditor);
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        log.trace("propertyChange({})", event);
+        super.propertyChange(event);
+        if (event.getProperty().equals(FieldEditor.VALUE)) {
+            if (event.getSource().equals(useAutoThankEditor))
+                thankSubjectEditor.setEnabled((Boolean) event.getNewValue(), getFieldEditorParent());
+        }
+
     }
 
 }

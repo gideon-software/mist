@@ -255,7 +255,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             "My email &addresses:",
             getFieldEditorParent());
         myEmailAddressesEditor.setAddDialogMessage("Add email address");
-        myEmailAddressesEditor.setAddDialogDescription(
+        myEmailAddressesEditor.setAddDialogMessage("Edit email address");
+        myEmailAddressesEditor.setDialogDescription(
             "These are used to determine whether you wrote to a contact or a contact wrote to you");
         myEmailAddressesEditor.setMinListSize(1);
         myEmailAddressesEditor.setErrorMessage("'My email addresses' must contain at least one email address.");
@@ -268,7 +269,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             "Email addresses to &ignore:",
             getFieldEditorParent());
         ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
-        ignoreAddressesEditor.setAddDialogDescription(
+        ignoreAddressesEditor.setEditDialogMessage("Edit email address to ignore");
+        ignoreAddressesEditor.setDialogDescription(
             "Emails to or from these addresses will not be imported;"
                 + System.lineSeparator()
                 + "(Use * for any string and ? for any character)");

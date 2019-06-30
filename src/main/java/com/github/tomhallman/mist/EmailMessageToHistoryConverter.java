@@ -27,7 +27,6 @@ import java.util.List;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,7 +116,7 @@ public class EmailMessageToHistoryConverter {
         History[] historyArr = null;
         String[] myAddrList = MIST.getPrefs().getStrings(
             EmailServer.getPrefName(msg.getSourceId(), EmailServer.PREF_ADDRESSES_MY));
-        if (ArrayUtils.contains(myAddrList, msg.getFromId())) {
+        if (EmailModel.isEmailInList(msg.getFromId(), myAddrList)) {
             // If the message is TO one or more contacts, we may need multiple history entries
             historyArr = getHistoryToContact(msg, history);
         } else {
@@ -220,7 +219,14 @@ public class EmailMessageToHistoryConverter {
                 log.error(e);
             }
 
-            // TODO: is this a thank-you?
+            // If autoThank is enabled, check for thank here
+            // TODO: Initialize these values earlier
+            boolean useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
+            if (useAutoThank) {
+                String[] thankYouList = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
+                if (EmailModel.doesSubjectStartWithPhraseInList(msg.getSubject(), thankYouList))
+                    history.setThank(true);
+            }
 
             historyList.add(history);
 

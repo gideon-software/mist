@@ -36,6 +36,8 @@ public class EmailModel {
 
     // Preferences
     public final static String PREF_ADDRESSES_IGNORE = "email.addresses.ignore";
+    public final static String PREF_AUTOTHANK_ENABLED = "email.autothank.enabled";
+    public final static String PREF_AUTOTHANK_SUBJECTS = "email.autothank.subjects";
 
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(EmailModel.class);
@@ -72,6 +74,13 @@ public class EmailModel {
 
     public static void addPropertyChangeListener(PropertyChangeListener listener) {
         pcs.addPropertyChangeListener(listener);
+    }
+
+    public static boolean doesSubjectStartWithPhraseInList(String subject, String[] list) {
+        for (String entry : list)
+            if (subject.toLowerCase().startsWith(entry.toLowerCase()))
+                return true;
+        return false;
     }
 
     public static int getCurrentMessageNumberTotal() {
@@ -157,12 +166,12 @@ public class EmailModel {
         for (String entry : list) {
             if (entry.contains("*") || entry.contains("?")) {
                 // Wildcard match
-                String regex = entry.replace(".", "\\.").replace("*", ".*").replace('?', '.');
-                if (email.matches(regex))
+                String regex = entry.toLowerCase().replace(".", "\\.").replace("*", ".*").replace('?', '.');
+                if (email.toLowerCase().matches(regex))
                     return true;
             } else {
                 // Standard string match
-                if (entry.equals(email))
+                if (entry.equalsIgnoreCase(email))
                     return true;
             }
         }
