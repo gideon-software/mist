@@ -41,7 +41,7 @@ import com.github.tomhallman.mist.tntapi.ContactManager;
 import com.github.tomhallman.mist.tntapi.entities.Contact;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 import com.github.tomhallman.mist.util.Util;
-import com.github.tomhallman.mist.util.ui.SmarterCombo;
+import com.github.tomhallman.mist.util.ui.SmartCombo;
 
 /**
  * 
@@ -51,7 +51,7 @@ public class SelectContactPage extends WizardPage {
 
     private Contact contact = null;
 
-    private SmarterCombo<Integer> contactCombo;
+    private SmartCombo<Integer> contactCombo;
     private Button newContactCheck;
     ContactInfo[] contactList = new ContactInfo[0];
 
@@ -81,7 +81,7 @@ public class SelectContactPage extends WizardPage {
         for (int i = 0; i < contactList.length; i++)
             contactNames[i] = contactList[i].getName();
 
-        contactCombo = new SmarterCombo<Integer>(comp, SWT.DROP_DOWN);
+        contactCombo = new SmartCombo<Integer>(comp, SWT.DROP_DOWN);
         for (ContactInfo ci : contactList)
             contactCombo.add(ci.getId(), ci.getName());
         contactCombo.addModifyListener(new ModifyListener() {

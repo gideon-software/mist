@@ -39,13 +39,13 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 
 /**
- * A smarter combo box with these features:
+ * A smart combo box with these features:
  * <ul>
  * <li>auto-selecting of items as the user types in the text box</li>
  * <li>can return a templated item ({@link getSelectedItem()} ) instead of only indexes</i>
  * </ul>
  */
-public class SmarterCombo<T> extends Composite {
+public class SmartCombo<T> extends Composite {
     private static Logger log = LogManager.getLogger();
 
     private List<T> items = new ArrayList<T>();
@@ -56,16 +56,16 @@ public class SmarterCombo<T> extends Composite {
     protected Combo combo;
 
     /**
-     * Create a new SmarterCombo.
+     * Create a new SmartCombo.
      * 
      * @param parent
      *            Parent composite for this control to go into.
      * @param style
      *            Style for this control.
      */
-    public SmarterCombo(Composite parent, int style) {
+    public SmartCombo(Composite parent, int style) {
         super(parent, SWT.NULL);
-        log.trace("SmarterCombo({},{})", parent, style);
+        log.trace("SmartCombo({},{})", parent, style);
 
         setLayout(new FillLayout());
 
@@ -76,7 +76,7 @@ public class SmarterCombo<T> extends Composite {
         combo.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent event) {
-                smarterComboKeyReleased(event);
+                smartComboKeyReleased(event);
             }
         });
     }
@@ -225,8 +225,8 @@ public class SmarterCombo<T> extends Composite {
      * Handles the event that a key is pressed in the combo.
      * Performs a search as the user is typing, highlighting as it matches.
      */
-    protected void smarterComboKeyReleased(KeyEvent e) {
-        // log.trace("smarterComboKeyReleased({})", e);
+    protected void smartComboKeyReleased(KeyEvent e) {
+        // log.trace("smartComboKeyReleased({})", e);
 
         if ((e.character >= 'a' && e.character <= 'z')
             || (e.character >= 'A' && e.character <= 'Z')

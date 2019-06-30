@@ -36,7 +36,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Composite;
 
-import com.github.tomhallman.mist.util.ui.SmarterCombo;
+import com.github.tomhallman.mist.util.ui.SmartCombo;
 
 /**
  *
@@ -45,9 +45,9 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     private static Logger log = LogManager.getLogger();
 
     /**
-     * The smarter combo field, or <code>null</code> if none.
+     * The smart combo field, or <code>null</code> if none.
      */
-    private SmarterCombo<T> combo;
+    private SmartCombo<T> combo;
 
     /**
      * Cached valid state
@@ -171,7 +171,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * 
      * @return the combo control or <code>null</code> if no combo field is created yet
      */
-    protected SmarterCombo<T> getComboControl() {
+    protected SmartCombo<T> getComboControl() {
         log.trace("{{}} getComboControl()", combo);
         return combo;
     }
@@ -186,10 +186,10 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            the parent
      * @return the combo control
      */
-    protected SmarterCombo<T> getComboControl(Composite parent) {
+    protected SmartCombo<T> getComboControl(Composite parent) {
         log.trace("{{}} getComboControl({})", combo, parent);
         if (combo == null) {
-            combo = new SmarterCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
+            combo = new SmartCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
             combo.addSelectionListener(new SelectionListener() {
                 private void selected(SelectionEvent event) {
                     valueChanged();
