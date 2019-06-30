@@ -781,6 +781,7 @@ public class TntDb {
                 log.trace("=== TntDb Import Service Stopped ===");
             }
         };
+        importThread.setName("TntImport");
         importThread.start();
     }
 

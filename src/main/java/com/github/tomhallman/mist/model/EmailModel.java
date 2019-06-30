@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
-import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.Preferences;
 
@@ -76,18 +75,11 @@ public class EmailModel {
     }
 
     public static int getCurrentMessageNumberTotal() {
-        int totalMessages = 0;
-        for (EmailServer emailServer : emailServers) {
-            if (emailServer.isConnected()) {
-                try {
-                    totalMessages += emailServer.getCurrentMessageNumber();
-                } catch (EmailServerException e) {
-                    log.error(e);
-                    // But keep going!
-                }
-            }
-        }
-        return totalMessages;
+        int currentMessages = 0;
+        for (EmailServer emailServer : emailServers)
+            if (emailServer.isConnected())
+                currentMessages += emailServer.getCurrentMessageNumber();
+        return currentMessages;
     }
 
     public static EmailServer getEmailServer(int server) {
@@ -100,16 +92,9 @@ public class EmailModel {
 
     public static int getMessageCountTotal() {
         int totalMessages = 0;
-        for (EmailServer emailServer : emailServers) {
-            if (emailServer.isConnected()) {
-                try {
-                    totalMessages += emailServer.getMessageCount();
-                } catch (EmailServerException e) {
-                    log.error(e);
-                    // But keep going!
-                }
-            }
-        }
+        for (EmailServer emailServer : emailServers)
+            if (emailServer.isConnected())
+                totalMessages += emailServer.getTotalMessages();
         return totalMessages;
     }
 

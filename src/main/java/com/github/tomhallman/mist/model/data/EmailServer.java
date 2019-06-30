@@ -64,9 +64,6 @@ public class EmailServer implements Cloneable {
     // Server properties
     private int id;
 
-    private int curMsgNum;
-    private String folderName;
-
     private String host;
     private String myName;
     private String nickname;
@@ -77,9 +74,12 @@ public class EmailServer implements Cloneable {
     private Integer tntUserId;
     private String[] ignoreAddresses;
     private String[] myAddresses;
-    private Folder folder;
+    private String folderName;
 
     private Store store;
+    private Folder folder;
+    private int currentMessageNumber;
+    private int totalMessages;
 
     public EmailServer() {
         log.trace("EmailServer()");
@@ -106,6 +106,8 @@ public class EmailServer implements Cloneable {
         Session sess = Session.getDefaultInstance(getConnectionProperties(), null);
         store = null;
         folder = null;
+        currentMessageNumber = 0;
+        totalMessages = 0;
 
         try {
             store = sess.getStore("imaps"); // IMAPS = port 993; TODO: Allow IMAP too
@@ -125,10 +127,10 @@ public class EmailServer implements Cloneable {
         }
 
         if (selectFolder) {
-            curMsgNum = 0;
             try {
                 folder = store.getFolder(getFolder());
                 folder.open(Folder.READ_ONLY);
+                totalMessages = folder.getMessageCount();
             } catch (MessagingException e) {
                 folder = null;
                 throw new EmailServerException(e);
@@ -185,11 +187,8 @@ public class EmailServer implements Cloneable {
         return props;
     }
 
-    public int getCurrentMessageNumber() throws EmailServerException {
-        log.trace("{{}} getCurrentMessageNumber() : {}", getNickname(), curMsgNum);
-        if (curMsgNum == -1)
-            throw new EmailServerException("[" + getNickname() + "] Current message is invalid");
-        return curMsgNum;
+    public int getCurrentMessageNumber() {
+        return currentMessageNumber;
     }
 
     public String getFolder() {
@@ -208,17 +207,6 @@ public class EmailServer implements Cloneable {
         return ignoreAddresses;
     }
 
-    public int getMessageCount() throws EmailServerException {
-        log.trace("{{}} getMessageCount()", getNickname());
-        if (folder == null)
-            throw new EmailServerException("[" + getNickname() + "] Email folder is not open");
-        try {
-            return folder.getMessageCount();
-        } catch (MessagingException e) {
-            throw new EmailServerException(e);
-        }
-    }
-
     public String[] getMyAddresses() {
         return myAddresses;
     }
@@ -230,7 +218,7 @@ public class EmailServer implements Cloneable {
     public javax.mail.Message getNextMessage() throws EmailServerException {
         log.trace("{{}} getNextMessage()", getNickname());
         try {
-            return folder.getMessage(++curMsgNum);
+            return folder.getMessage(++currentMessageNumber);
         } catch (MessagingException e) {
             throw new EmailServerException(e);
         }
@@ -264,15 +252,16 @@ public class EmailServer implements Cloneable {
         return tntUserId;
     }
 
+    public int getTotalMessages() {
+        return totalMessages;
+    }
+
     public String getUsername() {
         return username;
     }
 
-    public boolean hasNextMessage() throws EmailServerException {
-        log.trace("{{}} hasNextMessage()", getNickname());
-        if (folder == null)
-            throw new EmailServerException("[" + getNickname() + "] Email folder is not open");
-        return curMsgNum < getMessageCount();
+    public boolean hasNextMessage() {
+        return currentMessageNumber < totalMessages;
     }
 
     public void init() {
@@ -282,8 +271,7 @@ public class EmailServer implements Cloneable {
         disconnect();
 
         id = -1;
-        curMsgNum = -1;
-        folderName = "";
+
         host = "";
         myName = "";
         nickname = "";
@@ -294,9 +282,12 @@ public class EmailServer implements Cloneable {
         tntUserId = 0;
         ignoreAddresses = new String[0];
         myAddresses = new String[0];
+        folderName = "";
 
         folder = null;
         store = null;
+        currentMessageNumber = 0;
+        totalMessages = 0;
 
         stopImporting = false;
         importComplete = false;
@@ -313,7 +304,7 @@ public class EmailServer implements Cloneable {
      * @return
      */
     public boolean isEmailInIgnoreList(String email) {
-        log.trace("isEmailInList({},{})", email);
+        log.trace("isEmailInIgnoreList({})", email);
         String[] ignoreList = MIST.getPrefs().getStrings(getPrefName(id, PREF_ADDRESSES_IGNORE));
         return EmailModel.isEmailInList(email, ignoreList);
     }
@@ -323,6 +314,7 @@ public class EmailServer implements Cloneable {
     }
 
     public boolean isPasswordNeeded() {
+        log.trace("isPasswordNeeded()");
         // If there is no email password prompt, no password is needed
         if (!isPasswordPrompt() && !getPassword().isEmpty())
             return false;
@@ -404,61 +396,25 @@ public class EmailServer implements Cloneable {
             @Override
             public void run() {
                 log.trace("=== Email Server '{}' Import Service Started ===", nickname);
-                // See if there are any messages to import
-                boolean hasMoreMessages = false;
-                int currentMessageNumber = 0;
-                int messageCount = 0;
+                log.info("{{}} Folder '{}' contains {} messages", nickname, folderName, totalMessages);
 
-                try {
-                    hasMoreMessages = hasNextMessage();
-                    messageCount = getMessageCount();
-                } catch (EmailServerException e) {
-                    importComplete = true;
-                    disconnect();
-
-                    Display.getDefault().syncExec(new Runnable() {
-                        @Override
-                        public void run() {
-                            String msg = String.format(
-                                "Can't connect to folder '%s' on server '%s'.",
-                                folderName,
-                                nickname);
-                            log.error(e);
-                            Util.reportError(MIST.getView().getShell(), "Email server error", msg, e);
-                        }
-                    });
-
-                    EmailModel.serverComplete();
-                    log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
-                    return;
-                }
-
-                log.info("{{}} Folder '{}' contains {} messages", nickname, folderName, messageCount);
-
-                while (hasMoreMessages && !stopImporting) {
+                while (hasNextMessage() && !stopImporting) {
                     log.debug(
-                        "{{}} Processing message {} of {}",
+                        "{{}} Processing message {}/{}",
                         nickname,
-                        currentMessageNumber + 1, // 0-based index
-                        messageCount);
+                        currentMessageNumber + 1, // +1 because we're ABOUT to get it in getNextMessage()
+                        totalMessages);
 
                     Message message = null;
                     try {
                         // Add Message to message queue
                         message = getNextMessage();
                         MessageModel.addMessage(new EmailMessage(EmailServer.this, message));
-                        hasMoreMessages = hasNextMessage();
-                        currentMessageNumber = getCurrentMessageNumber();
                     } catch (EmailServerException e) {
-                        String messageInfo = "<unknown message information>";
-                        if (message != null) {
-                            try {
-                                messageInfo = String.format("%s:'%s'", message.getReceivedDate(), message.getSubject());
-                            } catch (MessagingException e2) {
-                                // Nothing can be done
-                            }
-                        }
-                        String msg = String.format("Can't retrieve message on server '%s':%n%s", nickname, messageInfo);
+                        String msg = String.format(
+                            "Can't retrieve message %s on server '%s'",
+                            currentMessageNumber,
+                            nickname);
                         log.error(e);
                         Display.getDefault().syncExec(new Runnable() {
                             @Override
@@ -472,7 +428,7 @@ public class EmailServer implements Cloneable {
                 importComplete = true;
                 disconnect();
 
-                if (messageCount == 0) {
+                if (totalMessages == 0) {
                     String msg = String.format("'%s' had no messages to import.", nickname);
                     log.info(msg);
                     Display.getDefault().syncExec(new Runnable() {
@@ -487,6 +443,7 @@ public class EmailServer implements Cloneable {
                 log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
             } // run()
         };
+        importThread.setName(String.format("ESImport%s", id));
         importThread.start();
     }
 
