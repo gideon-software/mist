@@ -23,6 +23,7 @@ package com.github.tomhallman.mist.model.data;
 import java.util.Properties;
 
 import javax.mail.Folder;
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -30,6 +31,8 @@ import javax.mail.Store;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
@@ -393,11 +396,21 @@ public class EmailServer implements Cloneable {
                     hasMoreMessages = hasNextMessage();
                     messageCount = getMessageCount();
                 } catch (EmailServerException e) {
-                    // TODO: Report this to the user
-                    String msg = "Can't connect to folder";
-                    log.error(e);
                     importComplete = true;
                     disconnect();
+
+                    Display.getDefault().syncExec(new Runnable() {
+                        @Override
+                        public void run() {
+                            String msg = String.format(
+                                "Can't connect to folder '%s' on server '%s'.",
+                                folderName,
+                                nickname);
+                            log.error(e);
+                            Util.reportError(MIST.getView().getShell(), "Email server error", msg, e);
+                        }
+                    });
+
                     EmailModel.serverComplete();
                     return;
                 }
@@ -411,21 +424,47 @@ public class EmailServer implements Cloneable {
                         currentMessageNumber + 1, // 0-based index
                         messageCount);
 
+                    Message message = null;
                     try {
                         // Add Message to message queue
-                        MessageModel.addMessage(new EmailMessage(EmailServer.this, getNextMessage()));
+                        message = getNextMessage();
+                        MessageModel.addMessage(new EmailMessage(EmailServer.this, message));
                         hasMoreMessages = hasNextMessage();
                         currentMessageNumber = getCurrentMessageNumber();
                     } catch (EmailServerException e) {
-                        String msg = "Error retrieving messages";
-                        // TODO: Report via reportError, but add "don't open more errors for this email server"
-                        // check
+                        String messageInfo = "<unknown message information>";
+                        if (message != null) {
+                            try {
+                                messageInfo = String.format("%s:'%s'", message.getReceivedDate(), message.getSubject());
+                            } catch (MessagingException e2) {
+                                // Nothing can be done
+                            }
+                        }
+                        String msg = String.format("Can't retrieve message on server '%s':%n%s", nickname, messageInfo);
                         log.error(e);
+                        Display.getDefault().syncExec(new Runnable() {
+                            @Override
+                            public void run() {
+                                Util.reportError(MIST.getView().getShell(), "Email server error", msg, e);
+                            }
+                        });
                     }
                 }
 
                 importComplete = true;
                 disconnect();
+
+                if (messageCount == 0) {
+                    String msg = String.format("'%s' had no messages to import.", nickname);
+                    log.info(msg);
+                    Display.getDefault().syncExec(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessageDialog.openInformation(MIST.getView().getShell(), "Import complete", msg);
+                        }
+                    });
+                }
+
                 EmailModel.serverComplete();
             } // run()
         };
