@@ -74,7 +74,7 @@ public class IgnoreContactWizard extends Wizard {
     public boolean performFinish() {
         log.trace("performFinish()");
 
-        String email = ignoreSettingsPage.getEmail();
+        String email = ignoreSettingsPage.getEmail().trim();
         if (ignoreSettingsPage.isGlobalCheckSelected())
             addIgnoreEmailToPref(EmailModel.PREF_ADDRESSES_IGNORE, email);
         else {

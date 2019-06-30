@@ -172,12 +172,12 @@ public class EmailModel {
         for (String entry : list) {
             if (entry.contains("*") || entry.contains("?")) {
                 // Wildcard match
-                String regex = entry.trim().replace(".", "\\.").replace("*", ".*").replace('?', '.');
-                if (email.trim().matches(regex))
+                String regex = entry.replace(".", "\\.").replace("*", ".*").replace('?', '.');
+                if (email.matches(regex))
                     return true;
             } else {
                 // Standard string match
-                if (entry.trim().equals(email.trim()))
+                if (entry.equals(email))
                     return true;
             }
         }

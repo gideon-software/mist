@@ -56,6 +56,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
     private String editDlgTitleStr;
     private String editDlgMessageStr;
     private String editDlgDescriptionStr;
+    private boolean trimWhitespace;
 
     /**
      * Current list in string format
@@ -82,6 +83,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         editDlgMessageStr = DEFAULT_EDIT_DLG_MESSAGE;
         editDlgDescriptionStr = DEFAULT_EDIT_DLG_DESCRIPTION;
         minItemCount = DEFAULT_MIN_LIST_SIZE;
+        trimWhitespace = true;
     }
 
     /**
@@ -94,7 +96,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         int result = dlg.open();
         if (result == Window.OK && !dlg.getValue().isEmpty()) {
             curListString = getListString();
-            stringList.add(dlg.getValue());
+            stringList.add(trimWhitespace ? dlg.getValue().trim() : dlg.getValue());
             valueChanged();
         }
     }
@@ -256,7 +258,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         int result = dlg.open();
         if (result == Window.OK && !dlg.getValue().isEmpty()) {
             curListString = getListString();
-            stringList.setItem(stringList.getSelectionIndex(), dlg.getValue());
+            stringList.setItem(stringList.getSelectionIndex(), trimWhitespace ? dlg.getValue().trim() : dlg.getValue());
             valueChanged();
         }
     }
@@ -312,6 +314,10 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
     @Override
     public int getNumberOfControls() {
         return 3; // Label, list, buttons
+    }
+
+    public boolean isTrimWhitespace() {
+        return trimWhitespace;
     }
 
     /*
@@ -447,6 +453,10 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     public void setRemoveButtonText(String text) {
         removeButton.setText(text);
+    }
+
+    public void setTrimWhitespace(boolean trimWhitespace) {
+        this.trimWhitespace = trimWhitespace;
     }
 
     /**
