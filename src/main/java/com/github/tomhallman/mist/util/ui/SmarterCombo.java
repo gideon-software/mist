@@ -170,8 +170,17 @@ public class SmarterCombo<T> extends Composite {
         return null;
     }
 
+    public String getSelectionValue() {
+        return combo.getItem(combo.getSelectionIndex());
+    }
+
     public String getText() {
         return combo.getText();
+    }
+
+    public void removeAll() {
+        combo.removeAll();
+        items = new ArrayList<T>();
     }
 
     /**

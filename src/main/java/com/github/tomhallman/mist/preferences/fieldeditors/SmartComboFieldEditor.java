@@ -31,11 +31,12 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Composite;
 
-import com.github.tomhallman.mist.util.ui.SmartCombo;
+import com.github.tomhallman.mist.util.ui.SmarterCombo;
 
 /**
  *
@@ -44,9 +45,9 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     private static Logger log = LogManager.getLogger();
 
     /**
-     * The smart combo field, or <code>null</code> if none.
+     * The smarter combo field, or <code>null</code> if none.
      */
-    private SmartCombo<T> combo;
+    private SmarterCombo<T> combo;
 
     /**
      * Cached valid state
@@ -54,9 +55,9 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     private boolean isValid = false;
 
     /**
-     * The currently-selected key in the smart combo widget
+     * The currently-selected item in the smart combo widget
      */
-    private T curKey;
+    private T curItem;
 
     /**
      * The error message, or <code>null</code> if none.
@@ -74,11 +75,15 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     }
 
     /**
-     * Adds a single key-value pair to the combo.
+     * Adds a single item-value pair to the combo.
      */
-    public void add(T key, String value) {
+    public void add(T item, String value) {
         if (combo != null)
-            combo.add(key, value);
+            combo.add(item, value);
+    }
+
+    public void addSelectionListener(SelectionAdapter selectionAdapter) {
+        combo.addSelectionListener(selectionAdapter);
     }
 
     @Override
@@ -104,8 +109,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
             result = false;
         else {
             // Note: This code may need to be rewritten if combo isn't set to READ_ONLY
-            String str = combo.getSelectionValue();
-            result = str != null;
+            result = combo.getSelectionItem() != null;
         }
 
         log.trace("  result is {}", result);
@@ -131,10 +135,10 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     protected void doLoad() {
         log.trace("{{}} doLoad()", combo);
         if (combo != null) {
-            curKey = (T) getPreferenceStore().getString(getPreferenceName());
+            curItem = (T) getPreferenceStore().getString(getPreferenceName());
             // This might cause problems if malformed; we're probably safe for our purposes
             try {
-                combo.select(curKey);
+                combo.select(curItem);
             } catch (ClassCastException e) {
                 log.error("Couldn't load property into SmartCombo", e);
             }
@@ -147,19 +151,19 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
         log.trace("{{}} doLoadDefault()", combo);
         if (combo != null) {
             // This might cause problems if malformed; we're probably safe for our purposes
-            curKey = (T) getPreferenceStore().getDefaultString(getPreferenceName());
-            combo.select(curKey);
+            curItem = (T) getPreferenceStore().getDefaultString(getPreferenceName());
+            combo.select(curItem);
         }
     }
 
     @Override
     protected void doStore() {
         log.trace("{{}} doStore()", combo);
-        if (curKey == null) {
+        if (curItem == null) {
             getPreferenceStore().setToDefault(getPreferenceName());
             return;
         }
-        getPreferenceStore().setValue(getPreferenceName(), curKey.toString());
+        getPreferenceStore().setValue(getPreferenceName(), curItem.toString());
     }
 
     /**
@@ -167,7 +171,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * 
      * @return the combo control or <code>null</code> if no combo field is created yet
      */
-    protected SmartCombo<T> getComboControl() {
+    protected SmarterCombo<T> getComboControl() {
         log.trace("{{}} getComboControl()", combo);
         return combo;
     }
@@ -182,32 +186,35 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            the parent
      * @return the combo control
      */
-    public SmartCombo<T> getComboControl(Composite parent) {
-        // TODO: This method probably shouldn't be exposed publicly
+    protected SmarterCombo<T> getComboControl(Composite parent) {
         log.trace("{{}} getComboControl({})", combo, parent);
         if (combo == null) {
-            combo = new SmartCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
+            combo = new SmarterCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
             combo.addSelectionListener(new SelectionListener() {
-                public void widgetSelected(SelectionEvent event) {
-                    log.trace("{{}} widgetSelected({})", combo, event);
-                    selected(event);
+                private void selected(SelectionEvent event) {
+                    valueChanged();
                 }
 
+                @Override
                 public void widgetDefaultSelected(SelectionEvent event) {
                     log.trace("{{}} widgetDefaultSelected({})", combo, event);
                     selected(event);
                 }
 
-                private void selected(SelectionEvent event) {
-                    valueChanged();
+                @Override
+                public void widgetSelected(SelectionEvent event) {
+                    log.trace("{{}} widgetSelected({})", combo, event);
+                    selected(event);
                 }
             });
             combo.addFocusListener(new FocusAdapter() {
+                @Override
                 public void focusLost(FocusEvent e) {
                     refreshValidState();
                 }
             });
             combo.addDisposeListener(new DisposeListener() {
+                @Override
                 public void widgetDisposed(DisposeEvent event) {
                     log.trace("{{}} widgetDisposed({})", combo, event);
                     combo = null;
@@ -225,12 +232,16 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     }
 
     /**
-     * Gets the selected item's key, or null if nothing is selected.
+     * Gets the selected item's item, or null if nothing is selected.
      * 
-     * @return The selected key
+     * @return The selected item
      */
-    public T getSelectionKey() {
-        return combo == null ? null : combo.getSelectionKey();
+    public T getSelectionItem() {
+        return combo == null ? null : combo.getSelectionItem();
+    }
+
+    public String getSelectionValue() {
+        return combo.getSelectionValue();
     }
 
     /**
@@ -248,6 +259,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * Method declared on FieldEditor.
      * Returns whether this field editor contains a valid value.
      */
+    @Override
     public boolean isValid() {
         return isValid;
     }
@@ -259,6 +271,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * and fires an <code>IS_VALID</code> property change event if
      * warranted.
      */
+    @Override
     protected void refreshValidState() {
         log.trace("{{}} refreshValidState()", combo);
         boolean oldState = isValid;
@@ -314,16 +327,16 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     }
 
     /**
-     * Set this field editor's key
+     * Set this field editor's item
      * 
      * @param key
-     *            the key to select; if key is not found, no selection change is made
+     *            the item to select; if item is not found, no selection change is made
      */
-    public void setSelection(T key) {
-        log.trace("{{}} setSelection({})", combo, key);
+    public void setSelection(T item) {
+        log.trace("{{}} setSelection({})", combo, item);
         if (combo != null) {
-            curKey = combo.getSelectionKey();
-            combo.select(key);
+            curItem = combo.getSelectionItem();
+            combo.select(item);
             valueChanged();
         }
     }
@@ -350,11 +363,11 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
         setPresentsDefaultValue(false);
         refreshValidState();
 
-        T newKey = combo.getSelectionKey();
-        if (newKey != null && !newKey.equals(curKey)) {
-            log.trace("  calling fireValueChanged({},{},{})", VALUE, curKey, newKey);
-            fireValueChanged(VALUE, curKey, newKey);
-            curKey = newKey;
+        T newItem = combo.getSelectionItem();
+        if (newItem != null && !newItem.equals(curItem)) {
+            log.trace("  calling fireValueChanged({},{},{})", VALUE, curItem, newItem);
+            fireValueChanged(VALUE, curItem, newItem);
+            curItem = newItem;
         }
     }
 }

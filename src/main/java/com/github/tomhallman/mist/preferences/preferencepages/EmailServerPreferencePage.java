@@ -76,10 +76,10 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                 passwordEditor.setPrompt(server.isPasswordPrompt());
 
                 // If there was a previously selected key, use that
-                String oldKey = folderEditor.getComboControl(getFieldEditorParent()).getSelectionKey();
+                String oldKey = folderEditor.getSelectionItem();
 
                 // Populate folder list
-                folderEditor.getComboControl(getFieldEditorParent()).removeAll();
+                folderEditor.removeAll();
                 for (EmailFolder emailFolder : server.getCompleteFolderList())
                     if (emailFolder.canHoldMessages())
                         folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
@@ -230,12 +230,11 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         String prefTntUserId = EmailServer.getPrefName(id, EmailServer.PREF_TNT_USERID);
         tntUserEditor = new SmartComboFieldEditor<Integer>(prefTntUserId, "&TntConnect User:", getFieldEditorParent());
         tntUserEditor.setEmptySelectionAllowed(false);
-        tntUserEditor.getComboControl(getFieldEditorParent()).addSelectionListener(new SelectionAdapter() {
+        tntUserEditor.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
                 if (myNameEditor.getStringValue().isEmpty())
-                    myNameEditor.setStringValue(
-                        tntUserEditor.getComboControl(getFieldEditorParent()).getSelectionValue());
+                    myNameEditor.setStringValue(tntUserEditor.getSelectionValue());
             }
         });
         tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
@@ -293,7 +292,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         Util.connectToTntDatabase(getShell());
 
         // If there was a previously selected key, use that
-        Integer oldKey = tntUserEditor.getSelectionKey();
+        Integer oldKey = tntUserEditor.getSelectionItem();
 
         // Populate user list
         tntUserEditor.removeAll();
