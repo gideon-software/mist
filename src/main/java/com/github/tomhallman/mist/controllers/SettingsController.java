@@ -41,6 +41,8 @@ public class SettingsController {
 
     public int openView() {
         log.trace("openView()");
+        // Save prefs so we can reset prefs in event of cancel
+        MIST.getPrefs().savePreferences();
         PreferenceDialog prefDlg = MIST.getPreferenceManager().createPreferenceDialog(shell);
         int ret = prefDlg.open();
         if (ret == Window.OK)
