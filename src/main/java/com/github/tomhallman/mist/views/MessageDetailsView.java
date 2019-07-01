@@ -40,6 +40,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.model.HistoryModel;
 import com.github.tomhallman.mist.tntapi.entities.History;
 import com.github.tomhallman.mist.util.ui.Images;
 
@@ -67,6 +68,7 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
         log.trace("MessageDetailsView({})", parent);
         MIST.getView().getContactsView().addPropertyChangeListener(this);
         MIST.getView().getMessagesView().addPropertyChangeListener(this);
+        HistoryModel.addPropertyChangeListener(this);
 
         applyGridLayout(this).numColumns(1);
 
@@ -163,8 +165,9 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
-        if (ContactsView.PROP_CONTACT_SELECTED.equals(event.getPropertyName())) {
-            // A new contact has been selected; clear this view
+        if (ContactsView.PROP_CONTACT_SELECTED.equals(event.getPropertyName())
+            || HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
+            // A new contact has been selected (or history is reinitialized); clear this view
             setEnabled(false);
             clearControls();
             history = null;

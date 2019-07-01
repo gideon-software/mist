@@ -273,8 +273,9 @@ public class MessagesView extends Composite implements PropertyChangeListener {
                 });
             }
 
-        } else if (HistoryModel.PROP_CONTACT_REMOVE.equals(event.getPropertyName())) {
-            // The selected contact has been removed; clear the table
+        } else if (HistoryModel.PROP_CONTACT_REMOVE.equals(event.getPropertyName())
+            || HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
+            // The selected contact has been removed (or history is reinitialized); clear the table
             messagesTable.removeAll();
             oldSelectionIndex = -1;
             contactInfo = null;
