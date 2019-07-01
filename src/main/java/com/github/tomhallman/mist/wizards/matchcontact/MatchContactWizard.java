@@ -49,6 +49,7 @@ public class MatchContactWizard extends Wizard {
     public MatchContactWizard(ContactInfo contactInfo) {
         log.trace("MatchContactWizard({})", contactInfo);
         this.contactInfo = contactInfo;
+        setWindowTitle("Match Contact Wizard");
     }
 
     @Override

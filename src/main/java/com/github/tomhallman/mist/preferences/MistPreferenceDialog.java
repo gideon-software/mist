@@ -24,7 +24,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.preference.PreferenceManager;
+import org.eclipse.jface.util.Util;
 import org.eclipse.swt.widgets.Shell;
+
+import com.github.tomhallman.mist.util.ui.Images;
 
 /**
  *
@@ -46,6 +49,14 @@ public class MistPreferenceDialog extends PreferenceDialog {
      */
     public void clearCurrentPage() {
         super.setCurrentPage(null);
+    }
+
+    @Override
+    public void create() {
+        super.create();
+        getShell().setImage(Images.getImage(Images.ICON_SETTINGS));
+        if (!Util.isMac())
+            getShell().setText("Settings"); // As opposed to "Preferences"
     }
 
 }

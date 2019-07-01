@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -35,6 +36,7 @@ import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
+import com.github.tomhallman.mist.util.ui.Images;
 
 /**
  *
@@ -68,8 +70,8 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
         super(FieldEditorPreferencePage.GRID);
         log.trace("EmailPreferencePage()");
         setTitle("Email");
-        // TODO: Use descriptions in preference pages
-        // setDescription("Preferences that apply to all email servers");
+        setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL)));
+        // TODO: setDescription("Preferences that apply to all email servers");
         noDefaultAndApplyButton();
     }
 

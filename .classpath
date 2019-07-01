@@ -14,6 +14,5 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8/"/>
 	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
-	<classpathentry kind="var" path="SWT_PATH/swt-4.11.jar" sourcepath="/SWT_PATH/src/swt-4.11.zip"/>
 	<classpathentry kind="output" path="bin/default"/>
 </classpath>

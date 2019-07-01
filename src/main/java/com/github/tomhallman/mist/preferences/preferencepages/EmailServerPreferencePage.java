@@ -28,6 +28,7 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -47,6 +48,7 @@ import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
 import com.github.tomhallman.mist.tntapi.UserManager;
 import com.github.tomhallman.mist.tntapi.entities.User;
 import com.github.tomhallman.mist.util.Util;
+import com.github.tomhallman.mist.util.ui.Images;
 
 /**
  *
@@ -143,6 +145,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         this.id = serverId;
         String prefNickname = EmailServer.getPrefName(id, EmailServer.PREF_NICKNAME);
         setTitle(MIST.getPrefs().getString(prefNickname));
+        setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL_SERVER)));
         // setDescription("description here");
         server = new EmailServer();
         noDefaultAndApplyButton();

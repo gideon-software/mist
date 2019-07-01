@@ -41,7 +41,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.tntapi.entities.History;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class MessageDetailsView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -202,7 +202,7 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
             infoTextLabel.setText(" " + infoTextStr);
             Image infoImage = null;
             if (history.getStatus() != History.STATUS_ADDED && history.getStatus() != History.STATUS_EXISTS)
-                infoImage = ImageManager.getStatusImage(history.getStatus(), "16x16");
+                infoImage = Images.getStatusImage(history.getStatus());
             infoImageLabel.setImage(infoImage);
             infoComp.pack(true);
 

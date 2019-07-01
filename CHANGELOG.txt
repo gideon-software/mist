@@ -10,6 +10,7 @@ Change Log for MIST 5.0
 * No longer unnecessarily prefixes Tnt history with "_____ wrote:"
 * Switched from subversion to git for version control.
 * Switched to gradle as build tool.
+* Ending support for 32-bit Windows.
 
 Change Log for MIST 4.2.1
 =========================

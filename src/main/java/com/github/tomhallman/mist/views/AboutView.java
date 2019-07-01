@@ -37,7 +37,7 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class AboutView extends Dialog {
     private static Logger log = LogManager.getLogger();
@@ -76,14 +76,14 @@ public class AboutView extends Dialog {
         applyGridData(leftComp).withFill();
 
         Label imageLabel = new Label(leftComp, SWT.NONE);
-        imageLabel.setImage(ImageManager.getImage("mist-logo"));
+        imageLabel.setImage(Images.getImage(Images.LOGO_MIST));
         applyGridData(imageLabel).withFill().horizontalSpan(2);
 
         facebookButton = new Button(leftComp, SWT.PUSH);
-        facebookButton.setImage(ImageManager.getImage("facebook"));
+        facebookButton.setImage(Images.getImage(Images.LOGO_FACEBOOK));
         if (Util.isMac()) {
             applyGridData(facebookButton).horizontalAlignment(SWT.CENTER).verticalAlignment(SWT.CENTER)
-                .grabExcessHorizontalSpace(true).grabExcessVerticalSpace(true).heightHint(75);
+                .grabExcessHorizontalSpace(true).grabExcessVerticalSpace(true).heightHint(50);
         }
 
         // Right side includes the text

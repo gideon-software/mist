@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.util.Util;
 import org.eclipse.jface.window.ApplicationWindow;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.Image;
@@ -35,7 +36,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class MainWindowView extends ApplicationWindow {
     private static Logger log = LogManager.getLogger();
@@ -139,16 +140,20 @@ public class MainWindowView extends ApplicationWindow {
         return mainComposite;
     }
 
-    public ContactsView getContactsView() {
-        return contactsView;
-    }
-
     public ContactDetailsView getContactDetailsView() {
         return contactDetailsView;
     }
 
+    public ContactsView getContactsView() {
+        return contactsView;
+    }
+
     public ImportButtonView getImportButtonView() {
         return importButtonView;
+    }
+
+    public MainMenuView getMainMenuView() {
+        return mainMenuView;
     }
 
     public MessageDetailsView getMessageDetailsView() {
@@ -159,26 +164,23 @@ public class MainWindowView extends ApplicationWindow {
         return messagesView;
     }
 
-    public MainMenuView getMainMenuView() {
-        return mainMenuView;
-    }
-
     public ProgressBarView getProgressBarView() {
         return progressBarView;
+    }
+
+    public TaskItemView getTaskItemView() {
+        return taskItemView;
     }
 
     protected void setShellImage(Shell shell) {
         log.trace("setShellImage({})", shell);
         Image[] images = new Image[5];
-        images[0] = ImageManager.getImage("appicon-16x16");
-        images[1] = ImageManager.getImage("appicon-32x32");
-        images[2] = ImageManager.getImage("appicon-48x48");
-        images[3] = ImageManager.getImage("appicon-64x64");
-        images[4] = ImageManager.getImage("appicon-128x128");
+        images[0] = Images.getImage(Images.ICON_MIST_16);
+        images[1] = Images.getImage(Images.ICON_MIST_32);
+        images[2] = Images.getImage(Images.ICON_MIST_48);
+        images[3] = Images.getImage(Images.ICON_MIST_64);
+        images[4] = Images.getImage(Images.ICON_MIST_128);
         shell.setImages(images);
-    }
-
-    public TaskItemView getTaskItemView() {
-        return taskItemView;
+        Window.setDefaultImage(images[0]);
     }
 }

@@ -24,47 +24,16 @@ mist-users@googlegroups.com
 License Information
 ===================
 MIST is licensed under the GNU General Public License 3.0 (GPL) which is
-found under docs/licenses/gpl-3.0.txt.
+found in LICENSE.
 
-The Apache License v2.0 is found under docs/licenses/apache-2.0.txt
-and applies to:
-    - lib/apache-commons/*
-    - lib/logging/*
-    - lib/ucanaccess/jackcess*.jar
-    - lib/ucanaccess/ucanaccess*.jar
-    
-The Eclipse Public License is found under docs/licenses/epl.txt
-and applies to:
-    - lib/swt/*
-    - CocoaSWTUIEnhancer.java
- 
-The JavaMail License v1.4.5 is found under docs/licenses/javamail-1.4.5.txt
-and applies to:
-    - lib/javamail/mail-*.jar
-
-The Lesser General Public License v2.1 is found under docs/licenses/lgpl-2.1.txt
-and applies to:
-    - lib/jericho/*
-
-The MIT License is found at http://opensource.org/licenses/mit-license.php
-and applies to:
-    - lib/jopt-simple/*
-    - lib/javamail/jutf7-*.jar
-
-Other licenses utilized by UCanAccess dependencies can be found under 
-docs/licenses/ucanaccess/. 
-
-The Creative Commons Attribution No Derivative Works 3.0 Unported license can
-be found at http://creativecommons.org/licenses/by-nd/3.0 and applies to:
-    - Most menu and button icons, courtesy of http://www.visualpharm.com
-    - The 128x128 MIST icon & logo, courtesy of http://sixrevisions.com
-    - The MIST splash screen / DMG background image, courtesy of benjamint444
-      and Wikimedia Commons.
+The Creative Commons Attribution 4.0 International license can be found at
+https://creativecommons.org/licenses/by/4.0/ and applies to:
+- MIST menu, button & status icons, courtesy of https://fontawesome.com
 
 Thanks also to these sites offering free icons which derived the MIST icons:
-    - Templay (http://templay.de), for the 32x32, 48x48 and 64x64 "mail" icons
-    - Led24 (http://led24.de/iconset), for the 16x16 "mail" icon
-    - FreeIconsWeb (http://www.freeiconsweb.com) for locating them! 
+- Templay (http://templay.de), for the 32x32, 48x48 and 64x64 "mail" icons
+- Led24 (http://led24.de/iconset), for the 16x16 "mail" icon
+- FreeIconsWeb (http://www.freeiconsweb.com) for locating them! 
 
 
 "He who did not spare His own Son but gave Him up for us all, how will He not

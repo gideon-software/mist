@@ -42,6 +42,7 @@ public class IgnoreContactWizard extends Wizard {
     public IgnoreContactWizard(ContactInfo contactInfo) {
         log.trace("IgnoreContactWizard({})", contactInfo);
         this.contactInfo = contactInfo;
+        setWindowTitle("Ignore Contact Wizard");
     }
 
     private void addIgnoreEmailToPref(String prefName, String emailToIgnore) {

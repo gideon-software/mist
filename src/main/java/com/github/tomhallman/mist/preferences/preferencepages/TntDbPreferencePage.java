@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FileFieldEditor;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
@@ -39,6 +40,7 @@ import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.util.Util;
+import com.github.tomhallman.mist.util.ui.Images;
 import com.github.tomhallman.mist.util.ui.ViewUtil;
 
 /**
@@ -58,6 +60,7 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
         super(FieldEditorPreferencePage.GRID);
         log.trace("TntDbPreferencePage()");
         setTitle("TntConnect");
+        setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_TNT)));
         // setDescription("description here");
         noDefaultAndApplyButton();
         originalDbPath = MIST.getPrefs().getString(TntDb.PREF_TNT_DBPATH);

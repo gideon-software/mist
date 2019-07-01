@@ -44,6 +44,7 @@ import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.tntapi.entities.Contact;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 import com.github.tomhallman.mist.util.Util;
+import com.github.tomhallman.mist.util.ui.Images;
 import com.github.tomhallman.mist.util.ui.SimpleEmailLink;
 
 public class ContactDetailsView extends Composite implements PropertyChangeListener {
@@ -96,11 +97,13 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
         // Match Contact button
         matchContactButton = new Button(unknownContactView, SWT.PUSH);
         matchContactButton.setText("Match Contact");
+        matchContactButton.setImage(Images.getImage(Images.ICON_MATCH_CONTACT));
         applyGridData(matchContactButton).horizontalSpan(2);
 
         // Ignore Contact button
         ignoreContactButton = new Button(unknownContactView, SWT.PUSH);
         ignoreContactButton.setText("Ignore Contact");
+        ignoreContactButton.setImage(Images.getImage(Images.ICON_IGNORE_CONTACT));
         applyGridData(ignoreContactButton).horizontalSpan(2);
 
         //

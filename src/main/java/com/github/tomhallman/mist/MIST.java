@@ -35,7 +35,7 @@ import com.github.tomhallman.mist.model.MessageModel;
 import com.github.tomhallman.mist.preferences.MistPreferenceManager;
 import com.github.tomhallman.mist.preferences.Preferences;
 import com.github.tomhallman.mist.tntapi.TntDb;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 import com.github.tomhallman.mist.views.MainWindowView;
 
 import joptsimple.OptionParser;
@@ -145,7 +145,7 @@ public class MIST {
 
         Display.setAppName(APP_NAME);
         new Display(); // Needed for ImageManager::init()
-        ImageManager.init();
+        Images.init();
 
         // TODO: do option parsing BEFORE configuring logging...
         parseOptions(args);

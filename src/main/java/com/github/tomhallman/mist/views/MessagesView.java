@@ -44,7 +44,9 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
@@ -54,7 +56,7 @@ import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.HistoryModel;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 import com.github.tomhallman.mist.tntapi.entities.History;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class MessagesView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -64,10 +66,11 @@ public class MessagesView extends Composite implements PropertyChangeListener {
 
     // Table columns
     public final static int COL_STATUS = 0;
-    public final static int COL_RESULT = 1;
-    public final static int COL_SOURCE = 2;
-    public final static int COL_DATE = 3;
+    public final static int COL_SOURCE = 1;
+    public final static int COL_DATE = 2;
+    public final static int COL_RESULT = 3;
     public final static int COL_SUBJECT = 4;
+
     public final static String DATA_DATE = "date";
     public final static String DATA_HISTORY = "history";
     public final static String DATA_COMPARATOR = "comparator";
@@ -116,15 +119,11 @@ public class MessagesView extends Composite implements PropertyChangeListener {
             }
         });
 
-        final TableColumn actionColumn = new TableColumn(messagesTable, SWT.NONE);
+        TableColumn actionColumn = new TableColumn(messagesTable, SWT.NONE);
         actionColumn.setText("MIST Action");
         actionColumn.setWidth(28);
         // TODO: Sortable columns?
         // actionColumn.setData("comparator", new Comparator<TableItem>() {});
-
-        final TableColumn resultColumn = new TableColumn(messagesTable, SWT.NONE);
-        resultColumn.setText("Email Result");
-        resultColumn.setWidth(28);
 
         final TableColumn sourceColumn = new TableColumn(messagesTable, SWT.NONE);
         sourceColumn.setText("Account");
@@ -133,6 +132,10 @@ public class MessagesView extends Composite implements PropertyChangeListener {
         final TableColumn dateColumn = new TableColumn(messagesTable, SWT.NONE);
         dateColumn.setText("Date");
         dateColumn.setWidth(130);
+
+        final TableColumn resultColumn = new TableColumn(messagesTable, SWT.NONE);
+        resultColumn.setText("Email Result");
+        resultColumn.setWidth(28);
 
         final TableColumn subjectColumn = new TableColumn(messagesTable, SWT.NONE);
         subjectColumn.setText("Subject");
@@ -174,6 +177,28 @@ public class MessagesView extends Composite implements PropertyChangeListener {
                 }
             }
         });
+
+        messagesTable.addListener(SWT.PaintItem, new Listener() {
+
+            @Override
+            public void handleEvent(Event event) {
+                if (event.index == COL_STATUS || event.index == COL_RESULT) {
+                    TableItem tableItem = (TableItem) event.item;
+                    Image image = (Image) tableItem.getData(String.valueOf(event.index));
+                    int colWidth = messagesTable.getColumn(event.index).getWidth();
+                    int imgWidth = image.getBounds().width;
+                    int xPadding = colWidth / 2 - imgWidth / 2;
+                    int newX = 0;
+                    if (xPadding <= 0)
+                        newX = event.x;
+                    else
+                        newX = event.x + xPadding;
+                    if (event.index == 0) // First column is unique...
+                        newX -= event.x;
+                    event.gc.drawImage(image, newX, event.y + 1);
+                }
+            }
+        });
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
@@ -183,7 +208,10 @@ public class MessagesView extends Composite implements PropertyChangeListener {
     public void addTableItem(History history) {
         log.trace("addTableItem({})", history);
 
-        Image statusImage = ImageManager.getStatusImage(history.getStatus(), "16x16");
+        Image statusImage = Images.getStatusImage(history.getStatus());
+        Image toFromImage = Images.getImage(
+            history.getHistoryResultId() == History.RESULT_RECEIVED ? Images.ICON_MESSAGE_TO_ME
+                : Images.ICON_MESSAGE_FROM_ME);
 
         String dateStr;
         LocalDateTime date = history.getHistoryDate();
@@ -203,8 +231,10 @@ public class MessagesView extends Composite implements PropertyChangeListener {
 
         // Create table item
         TableItem item = new TableItem(messagesTable, SWT.NONE, index);
-        item.setImage(COL_STATUS, statusImage);
-        item.setText(COL_RESULT, history.getHistoryResultId() == History.RESULT_RECEIVED ? "<" : ">");
+        item.setText(COL_STATUS, "");
+        item.setData(String.valueOf(COL_STATUS), statusImage);
+        item.setText(COL_RESULT, "");
+        item.setData(String.valueOf(COL_RESULT), toFromImage);
         item.setText(COL_SOURCE, history.getMessageSource().getSourceName());
         item.setText(COL_DATE, dateStr);
         item.setText(COL_SUBJECT, history.getDescription());

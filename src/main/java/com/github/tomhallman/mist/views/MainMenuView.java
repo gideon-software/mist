@@ -28,7 +28,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class MainMenuView {
     private static Logger log = LogManager.getLogger();
@@ -59,7 +59,7 @@ public class MainMenuView {
             fileItem.setMenu(fileMenu);
             exitItem = new MenuItem(fileMenu, SWT.NONE);
             exitItem.setText("E&xit");
-            exitItem.setImage(ImageManager.getImage("exit"));
+            exitItem.setImage(Images.getImage(Images.ICON_EXIT));
         }
 
         if (!Util.isMac()) {
@@ -69,7 +69,7 @@ public class MainMenuView {
             settingsItem.setMenu(settingsMenu);
             editSettingsItem = new MenuItem(settingsMenu, SWT.NONE);
             editSettingsItem.setText("&Edit Settings...");
-            editSettingsItem.setImage(ImageManager.getImage("settings"));
+            editSettingsItem.setImage(Images.getImage(Images.ICON_SETTINGS));
         }
 
         MenuItem helpItem = new MenuItem(menu, SWT.CASCADE);
@@ -79,12 +79,12 @@ public class MainMenuView {
         manualItem = new MenuItem(helpMenu, SWT.NONE);
         manualItem.setText("&View Online User Manual");
         manualItem.setAccelerator(SWT.F1);
-        manualItem.setImage(ImageManager.getImage("manual"));
+        manualItem.setImage(Images.getImage(Images.ICON_MANUAL));
 
         if (!Util.isMac()) {
             aboutItem = new MenuItem(helpMenu, SWT.NONE);
             aboutItem.setText("&About MIST...");
-            aboutItem.setImage(ImageManager.getImage("about"));
+            aboutItem.setImage(Images.getImage(Images.ICON_ABOUT));
         }
 
         shell.setMenuBar(menu);

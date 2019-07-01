@@ -34,7 +34,7 @@ import org.eclipse.swt.widgets.Display;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
-import com.github.tomhallman.mist.util.ui.ImageManager;
+import com.github.tomhallman.mist.util.ui.Images;
 
 public class ImportButtonView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -51,7 +51,7 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
         // Create import button
         importButton = new Button(this, SWT.PUSH | SWT.CENTER);
         importButton.setText("&Import Email");
-        importButton.setImage(ImageManager.getImage("import"));
+        importButton.setImage(Images.getImage(Images.ICON_IMPORT_START));
 
         // Initial state depends on whether MIST is configured
         importButton.setEnabled(MIST.getPrefs().isConfigured());

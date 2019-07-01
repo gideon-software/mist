@@ -42,9 +42,20 @@ dependencies {
     compile (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
         exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
     }
-    compile files('lib/swt/win64/swt-4.11.jar')
+    compile files('lib/swt/win64/swt-4.12.jar')
     
     testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+eclipse {
+    classpath {
+        file {
+            whenMerged { 
+                def swtlib = entries.find { it.path.contains 'swt-4.12.jar' }
+                swtlib.sourcePath = fileReference(file('lib/swt/win64/swt-4.12-sources.zip'))
+            }
+        }
+    }
 }
 
 // TODO
