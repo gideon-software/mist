@@ -50,7 +50,7 @@ public class MainWindowController {
         view.getShell().addListener(SWT.Close, new Listener() {
             @Override
             public void handleEvent(Event event) {
-                log.trace("handleEvent({})", event);
+                log.trace("CloseListener.handleEvent({})", event);
                 event.doit = closeView();
             }
         });

@@ -30,9 +30,16 @@ import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.ShellAdapter;
+import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
@@ -41,15 +48,22 @@ import com.github.tomhallman.mist.util.ui.Images;
 public class MainWindowView extends ApplicationWindow {
     private static Logger log = LogManager.getLogger();
 
+    public static final String PREF_WINDOW_BOUNDS = "mainwindow.window.bounds";
+    public static final String PREF_WINDOW_MAXIMIZED = "mainwindow.window.maximized";
+    public static final String PREF_SASH_LEFTRIGHT_WEIGHTS = "mainwindow.sash.leftright.weights";
+    public static final String PREF_SASH_RIGHTVERT_WEIGHTS = "mainwindow.sash.rightvert.weights";
+
     private ContactsView contactsView = null;
     private ContactDetailsView contactDetailsView = null;
-
     private MessagesView messagesView = null;
     private ImportButtonView importButtonView = null;
     private MainMenuView mainMenuView = null;
     private MessageDetailsView messageDetailsView = null;
     private ProgressBarView progressBarView = null;
     private TaskItemView taskItemView = null;
+
+    private SashForm leftRightSash = null;
+    private SashForm rightVerticalSash = null;
 
     public MainWindowView() {
         super(null);
@@ -62,6 +76,30 @@ public class MainWindowView extends ApplicationWindow {
         super.configureShell(shell);
         shell.setText(MIST.APP_NAME);
         setShellImage(shell);
+
+        // Remember window size and location
+        shell.addShellListener(new ShellAdapter() {
+            @Override
+            public void shellActivated(ShellEvent e) {
+                log.trace("shellActivated({})", e);
+                Rectangle rect = MIST.getPrefs().getRectangle(PREF_WINDOW_BOUNDS);
+                if (rect.width != 0)
+                    shell.setBounds(rect);
+                shell.setMaximized(MIST.getPrefs().getBoolean(PREF_WINDOW_MAXIMIZED));
+            }
+        });
+        Listener saveShellStateListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                if (getShell().isVisible()) {
+                    MIST.getPrefs().setValue(MainWindowView.PREF_WINDOW_MAXIMIZED, getShell().getMaximized());
+                    if (!getShell().getMaximized())
+                        MIST.getPrefs().setValue(MainWindowView.PREF_WINDOW_BOUNDS, getShell().getBounds());
+                }
+            }
+        };
+        shell.addListener(SWT.Resize, saveShellStateListener);
+        shell.addListener(SWT.Move, saveShellStateListener);
 
         // Disable full-screen mode on Mac to get around nasty "freeze" bug
         // See https://gist.github.com/azhawkes/5009567
@@ -111,9 +149,7 @@ public class MainWindowView extends ApplicationWindow {
         progressBarView = new ProgressBarView(importControlsComp);
 
         // Create left/right sash
-        // TODO: Set minimum size for contact list
-        // See https://forums.pentaho.com/showthread.php?61793-Creating-a-Minimum-Width-Constraint-on-an-SWT-SashForm
-        SashForm leftRightSash = new SashForm(mainComposite, SWT.HORIZONTAL | SWT.SMOOTH);
+        leftRightSash = new SashForm(mainComposite, SWT.HORIZONTAL | SWT.SMOOTH);
         applyGridData(leftRightSash).withFill();
 
         // Create composite on left
@@ -126,17 +162,17 @@ public class MainWindowView extends ApplicationWindow {
         applyGridData(contactDetailsView).withHorizontalFill();
 
         // Create vertical sash on right
-        SashForm rightVerticalSash = new SashForm(leftRightSash, SWT.VERTICAL | SWT.SMOOTH);
+        rightVerticalSash = new SashForm(leftRightSash, SWT.VERTICAL | SWT.SMOOTH);
         messagesView = new MessagesView(rightVerticalSash);
         applyGridData(messagesView).withFill();
         messageDetailsView = new MessageDetailsView(rightVerticalSash);
         applyGridData(messageDetailsView).withFill();
         messageDetailsView.addPropertyChangeListener(messagesView); // Needs to be added after instantiation
 
-        leftRightSash.setWeights(new int[] { 1, 3 });
-        rightVerticalSash.setWeights(new int[] { 2, 3 });
-        getShell().pack();
+        setSashFormWeightPrefData(leftRightSash, PREF_SASH_LEFTRIGHT_WEIGHTS, new int[] { 1, 3 });
+        setSashFormWeightPrefData(rightVerticalSash, PREF_SASH_RIGHTVERT_WEIGHTS, new int[] { 2, 3 });
 
+        getShell().pack();
         return mainComposite;
     }
 
@@ -150,6 +186,10 @@ public class MainWindowView extends ApplicationWindow {
 
     public ImportButtonView getImportButtonView() {
         return importButtonView;
+    }
+
+    public SashForm getLeftRightSash() {
+        return leftRightSash;
     }
 
     public MainMenuView getMainMenuView() {
@@ -168,8 +208,33 @@ public class MainWindowView extends ApplicationWindow {
         return progressBarView;
     }
 
+    public SashForm getRightVerticalSash() {
+        return rightVerticalSash;
+    }
+
     public TaskItemView getTaskItemView() {
         return taskItemView;
+    }
+
+    /**
+     * @param sashForm
+     * @param prefName
+     * @param defaultWeights
+     */
+    public void setSashFormWeightPrefData(SashForm sashForm, String prefName, int[] defaultWeights) {
+        log.trace("setSashFormWeightPrefData({},{},{})", sashForm, prefName, defaultWeights);
+        MIST.getPrefs().setDefaults(prefName, defaultWeights);
+        int[] weights = MIST.getPrefs().getInts(prefName);
+        sashForm.setWeights(weights);
+        // Note: this listener is never called; gave up tying! 2019-07-02 TJH
+        sashForm.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseUp(MouseEvent e) {
+                log.trace("SashForm.mouseUp({})", e);
+                MIST.getPrefs().setValues(prefName, sashForm.getWeights());
+            }
+        });
+
     }
 
     protected void setShellImage(Shell shell) {

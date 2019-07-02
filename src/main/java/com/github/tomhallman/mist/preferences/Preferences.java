@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.jface.util.Util;
+import org.eclipse.swt.graphics.Rectangle;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.data.EmailServer;
@@ -52,7 +53,6 @@ public class Preferences extends PreferenceStore {
      */
     private Preferences() {
         log.trace("Preferences()");
-        initDefaults();
         loadPreferences();
     }
 
@@ -77,6 +77,14 @@ public class Preferences extends PreferenceStore {
         separator = sep;
     }
 
+    public int[] getInts(String name) {
+        String[] strings = getStrings(name);
+        int[] ints = new int[strings.length];
+        for (int i = 0; i < strings.length; i++)
+            ints[i] = Integer.parseInt(strings[i]);
+        return ints;
+    }
+
     /**
      * Get the path for the preferences file
      * 
@@ -99,16 +107,16 @@ public class Preferences extends PreferenceStore {
         return path;
     }
 
-    public String[] getStrings(String name) {
-        return StringUtils.split(getString(name), Preferences.getSeparator());
+    public Rectangle getRectangle(String name) {
+        int[] rectVals = getInts(name);
+        if (rectVals.length == 4)
+            return new Rectangle(rectVals[0], rectVals[1], rectVals[2], rectVals[3]);
+        else
+            return new Rectangle(0, 0, 0, 0);
     }
 
-    /**
-     * Initialize default values
-     */
-    private void initDefaults() {
-        log.trace("initDefaults()");
-        // EmailServerModel initializes defaults for email servers, which have unique preference names
+    public String[] getStrings(String name) {
+        return StringUtils.split(getString(name), Preferences.getSeparator());
     }
 
     public boolean isConfigured() {
@@ -270,6 +278,17 @@ public class Preferences extends PreferenceStore {
         }
     }
 
+    public void setDefaults(String name, int[] values) {
+        String[] strValues = new String[values.length];
+        for (int i = 0; i < values.length; i++)
+            strValues[i] = String.valueOf(values[i]);
+        setDefaults(name, strValues);
+    }
+
+    public void setDefaults(String name, String[] values) {
+        setDefault(name, StringUtils.join(values, Preferences.getSeparator()));
+    }
+
     /**
      * Sets all preferences to their default values if the preference name contains the specified string
      * 
@@ -284,7 +303,17 @@ public class Preferences extends PreferenceStore {
                 setToDefault(prefNames[i]);
     }
 
-////////////////////////////////////////////////////////////////////
+    public void setValue(String name, Rectangle rect) {
+        int[] rectVals = { rect.x, rect.y, rect.width, rect.height };
+        setValues(name, rectVals);
+    }
+
+    public void setValues(String name, int[] values) {
+        String[] strValues = new String[values.length];
+        for (int i = 0; i < values.length; i++)
+            strValues[i] = String.valueOf(values[i]);
+        setValues(name, strValues);
+    }
 
     public void setValues(String name, String[] values) {
         setValue(name, StringUtils.join(values, Preferences.getSeparator()));
