@@ -42,6 +42,7 @@ public class Images {
     public static final String ICON_IGNORE_CONTACT = "icon-ignore-contact";
     public static final String ICON_IMPORT_START = "icon-import-start";
     public static final String ICON_IMPORT_STOP = "icon-import-stop";
+    public static final String ICON_LOG = "icon-log";
     public static final String ICON_MANUAL = "icon-manual";
     public static final String ICON_MATCH_CONTACT = "icon-match-contact";
     public static final String ICON_MESSAGE_TO_ME = "icon-msg-to-me";
@@ -107,6 +108,7 @@ public class Images {
         put(ICON_IGNORE_CONTACT, imgLoc + "icons/user-slash-solid.png");
         put(ICON_IMPORT_START, imgLoc + "icons/play-solid.png");
         put(ICON_IMPORT_STOP, imgLoc + "icons/stop-solid.png");
+        put(ICON_LOG, imgLoc + "icons/pencil-alt-solid.png");
         put(ICON_MANUAL, imgLoc + "icons/book-solid.png");
         put(ICON_MATCH_CONTACT, imgLoc + "icons/user-plus-solid.png");
         put(ICON_MESSAGE_TO_ME, imgLoc + "icons/angle-left-solid.png");

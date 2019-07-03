@@ -37,50 +37,45 @@ import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.views.ImportButtonView;
 
 public class ImportButtonController {
-    private class ImportListener extends SelectionAdapter {
-
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("ImportListener.widgetSelected({})", event);
-
-            // Check for lock file
-            if (isLockFileFound()) {
-                MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
-                msgBox.setMessage(
-                    "It appears that TntConnect is currently using your TntConnect database. "
-                        + "It is recommended that you close TntConnect before using MIST to "
-                        + "import email. Otherwise it is possible for data corruption to occur.\n\n"
-                        + "Press OK to continue or Cancel to stop the import.");
-                if (msgBox.open() != SWT.OK)
-                    return;
-            }
-
-            //
-            // Begin importing!
-            //
-
-            // Clear last import info
-            HistoryModel.init();
-            MessageModel.init();
-
-            // Start Tnt import service
-            TntDb.startImportService(view.getShell());
-            if (!TntDb.isConnected())
-                return;
-
-            // Start email import service
-            EmailModel.startImportService(view.getShell());
-        }
-    }
-
     private static Logger log = LogManager.getLogger();
-
-    private ImportButtonView view;
 
     public ImportButtonController(ImportButtonView view) {
         log.trace("ImportButtonController({})", view);
-        this.view = view;
-        view.getImportButton().addSelectionListener(new ImportListener());
+
+        view.getImportButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("importButton.widgetSelected({})", event);
+
+                // Check for lock file
+                if (isLockFileFound()) {
+                    MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
+                    msgBox.setMessage(
+                        "It appears that TntConnect is currently using your TntConnect database. "
+                            + "It is recommended that you close TntConnect before using MIST to "
+                            + "import email. Otherwise it is possible for data corruption to occur.\n\n"
+                            + "Press OK to continue or Cancel to stop the import.");
+                    if (msgBox.open() != SWT.OK)
+                        return;
+                }
+
+                //
+                // Begin importing!
+                //
+
+                // Clear last import info
+                HistoryModel.init();
+                MessageModel.init();
+
+                // Start Tnt import service
+                TntDb.startImportService(view.getShell());
+                if (!TntDb.isConnected())
+                    return;
+
+                // Start email import service
+                EmailModel.startImportService(view.getShell());
+            }
+        });
     }
 
     public boolean isLockFileFound() {

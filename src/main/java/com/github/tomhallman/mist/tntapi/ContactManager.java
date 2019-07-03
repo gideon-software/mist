@@ -773,7 +773,7 @@ public class ContactManager {
     public static ContactInfo[] getContactList() throws SQLException {
         log.trace("getContactList()");
         List<ContactInfo> contacts = new ArrayList<ContactInfo>();
-        ResultSet rs = TntDb.runQuery("SELECT [ContactID], [FileAs] FROM [Contact] ORDER BY [FileAs]");
+        ResultSet rs = TntDb.runQuery("SELECT [ContactID], [FileAs] FROM [Contact] ORDER BY [FileAs]", false);
         while (rs.next())
             contacts.add(new ContactInfo(rs.getInt("ContactID"), rs.getString("FileAs")));
         return contacts.toArray(new ContactInfo[0]);

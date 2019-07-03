@@ -67,7 +67,7 @@ public class PledgeFrequencyManager {
     public static void load() throws SQLException {
         log.trace("load()");
 
-        ResultSet rs = TntDb.runQuery("SELECT * FROM [PledgeFrequency]");
+        ResultSet rs = TntDb.runQuery("SELECT * FROM [PledgeFrequency]", false);
 
         while (rs.next()) {
             PledgeFrequency pf = new PledgeFrequency();

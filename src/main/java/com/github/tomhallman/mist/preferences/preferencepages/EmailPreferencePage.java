@@ -42,22 +42,6 @@ import com.github.tomhallman.mist.util.ui.Images;
  *
  */
 public class EmailPreferencePage extends FieldEditorPreferencePage {
-    protected class AddServerListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent e) {
-            log.trace("AddServerListener.widgetSelected({})", e);
-            // We "add a server" here by creating it in preferences, then refreshing the dialog
-            // This breaks assumptions about how preferences are usually handled, so this is a
-            // bit of hack.
-            // TODO: Use a wizard here instead
-            int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
-            String prefName = EmailServer.getPrefName(serverId, EmailServer.PREF_NICKNAME);
-            MIST.getPrefs().setValue(prefName, "New Email Server");
-            // This refreshes the PreferenceDialog so the new server shows up
-            MIST.getPreferenceManager().addEmailServerNode(serverId, true);
-        }
-    }
-
     private static Logger log = LogManager.getLogger();
 
     private BooleanFieldEditor useAutoThankEditor;
@@ -79,7 +63,21 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
     protected void createFieldEditors() {
         // Add Email Server button
         addServerButton = new ButtonFieldEditor("&Add Email Server", getFieldEditorParent());
-        addServerButton.getButton().addSelectionListener(new AddServerListener());
+        addServerButton.getButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                log.trace("AddServerListener.widgetSelected({})", e);
+                // We "add a server" here by creating it in preferences, then refreshing the dialog
+                // This breaks assumptions about how preferences are usually handled, so this is a
+                // bit of hack.
+                // TODO: Use a wizard here instead
+                int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
+                String prefName = EmailServer.getPrefName(serverId, EmailServer.PREF_NICKNAME);
+                MIST.getPrefs().setValue(prefName, "New Email Server");
+                // This refreshes the PreferenceDialog so the new server shows up
+                MIST.getPreferenceManager().addEmailServerNode(serverId, true);
+            }
+        });
         addField(addServerButton);
 
         // Spacer

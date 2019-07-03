@@ -36,66 +36,60 @@ import com.github.tomhallman.mist.views.MainMenuView;
 public class MainMenuController {
     private static Logger log = LogManager.getLogger();
 
-    private MainMenuView view;
-    private MainWindowController mainController;
-
     public MainMenuController(MainMenuView view, MainWindowController mainController) {
         log.trace("MainMenuController({},{})", view, mainController);
-        this.view = view;
-        this.mainController = mainController;
+
+        Listener exitListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                log.trace("exitListener.handleEvent({})", event);
+                event.doit = mainController.closeView();
+            }
+        };
+
+        Listener aboutListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                log.trace("aboutListener.handleEvent({})", event);
+                AboutView aboutView = new AboutView(view.getShell());
+                AboutController aboutController = new AboutController(aboutView);
+                aboutController.openView();
+            }
+        };
+
+        Listener editSettingsListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                log.trace("editSettingsListener.handleEvent({})", event);
+                // TODO: Allow loading but not editing?
+                // if (MIST.getMasterModel().isImporting()) {
+                // log.info("Settings may not be modified during import.");
+                // MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                // msgBox.setMessage("Settings may not be modified during import.");
+                // msgBox.open();
+                // return;
+                // }
+                new SettingsController(view.getShell()).openView();
+            }
+        };
+
         if (Util.isMac()) {
             // Mac - use Mac Application menu
             final CocoaSWTUIEnhancer enhancer = new CocoaSWTUIEnhancer(MIST.APP_NAME);
-            enhancer
-                .hookApplicationMenu(
-                    view.getShell().getDisplay(),
-                    new ExitListener(),
-                    new AboutListener(),
-                    new EditSettingsListener());
+            enhancer.hookApplicationMenu(
+                view.getShell().getDisplay(),
+                exitListener,
+                aboutListener,
+                editSettingsListener);
 
         } else {
             // Windows or Linux
-            view.getExitItem().addListener(SWT.Selection, new ExitListener());
-            view.getEditSettingsItem().addListener(SWT.Selection, new EditSettingsListener());
-            view.getAboutItem().addListener(SWT.Selection, new AboutListener());
+            view.getExitItem().addListener(SWT.Selection, exitListener);
+            view.getEditSettingsItem().addListener(SWT.Selection, editSettingsListener);
+            view.getAboutItem().addListener(SWT.Selection, aboutListener);
         }
         // All platforms
-        view
-            .getManualItem()
-            .addSelectionListener(new WebpageLinkListener(view.getShell(), "the MIST User Manual", MIST.MANUAL));
-    }
-
-    private class AboutListener implements Listener {
-        @Override
-        public void handleEvent(Event event) {
-            log.trace("handleEvent({})", event);
-            AboutView aboutView = new AboutView(view.getShell());
-            AboutController aboutController = new AboutController(aboutView);
-            aboutController.openView();
-        }
-    }
-
-    private class ExitListener implements Listener {
-        @Override
-        public void handleEvent(Event event) {
-            log.trace("handleEvent({})", event);
-            event.doit = mainController.closeView();
-        }
-    }
-
-    private class EditSettingsListener implements Listener {
-        @Override
-        public void handleEvent(Event event) {
-            log.trace("handleEvent({})", event);
-            // TODO: Allow loading but not editing?
-//          if (MIST.getMasterModel().isImporting()) {
-//              log.info("Settings may not be modified during import.");
-//              MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.OK);
-//              msgBox.setMessage("Settings may not be modified during import.");
-//              msgBox.open();
-//              return;
-//          }
-            new SettingsController(view.getShell()).openView();
-        }
+        view.getManualItem().addSelectionListener(
+            new WebpageLinkListener(view.getShell(), "the MIST User Manual", MIST.MANUAL));
     }
 }

@@ -41,67 +41,61 @@ import com.github.tomhallman.mist.wizards.matchcontact.MatchContactWizard;
  * 
  */
 public class ContactDetailsController {
-    private class IgnoreSelectionListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("IgnoreSelectionListener.widgetSelected({})", event);
-            ContactInfo contactInfo = new ContactInfo(view.getContactInfo());
-            WizardDialog dlg = new WizardDialog(view.getShell(), new IgnoreContactWizard(contactInfo));
-            if (dlg.open() == Window.OK) {
-                // Check all unknown history to see if anything there should be ignored now
-                // This must be done because of wildcards
-                for (History history : HistoryModel.getUnknownHistory()) {
-                    ContactInfo ci = history.getContactInfo();
-                    String email = ci.getInfo();
-                    int serverId = history.getMessageSource().getSourceId();
-                    if (EmailModel.isEmailInIgnoreList(email)) {
-                        HistoryModel.removeAllHistoryWithContactInfo(ci);
-                    } else if (EmailModel.getEmailServer(serverId).isEmailInIgnoreList(email)) {
-                        HistoryModel.removeAllHistoryWithContactInfo(ci, serverId);
-                    }
-                }
-            }
-        }
-    }
-
-    private class MatchSelectionListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("MatchSelectionListener.widgetSelected({})", event);
-            ContactInfo matchedContactInfo = new ContactInfo(view.getContactInfo());
-            WizardDialog dlg = new WizardDialog(view.getShell(), new MatchContactWizard(matchedContactInfo));
-            if (dlg.open() == Window.OK) {
-                // The view still contains old info; get associated history now
-                History[] historyArr = HistoryModel.getAllHistoryWithContactInfo(view.getContactInfo());
-
-                // Remove the history
-                HistoryModel.removeAllHistoryWithContactInfo(view.getContactInfo());
-
-                for (History history : historyArr) {
-                    MessageSource msgSource = history.getMessageSource();
-                    // Don't put existing history into our model a second time. Otherwise, a message to multiple
-                    // contacts could show duplicates in the model (though not in the DB)
-                    msgSource.setAddExistingHistory(false);
-
-                    // Add the message back into the queue for reprocessing
-                    MessageModel.addMessage(msgSource);
-                }
-            }
-        }
-    }
-
     private static Logger log = LogManager.getLogger();
-    private ContactDetailsView view;
 
     /**
      * 
      */
     public ContactDetailsController(ContactDetailsView view) {
         log.trace("ContactDetailsController({})", view);
-        this.view = view;
 
-        view.getMatchContactButton().addSelectionListener(new MatchSelectionListener());
-        view.getIgnoreContactButton().addSelectionListener(new IgnoreSelectionListener());
+        view.getMatchContactButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("matchContactButton.widgetSelected({})", event);
+                ContactInfo matchedContactInfo = new ContactInfo(view.getContactInfo());
+                WizardDialog dlg = new WizardDialog(view.getShell(), new MatchContactWizard(matchedContactInfo));
+                if (dlg.open() == Window.OK) {
+                    // The view still contains old info; get associated history now
+                    History[] historyArr = HistoryModel.getAllHistoryWithContactInfo(view.getContactInfo());
+
+                    // Remove the history
+                    HistoryModel.removeAllHistoryWithContactInfo(view.getContactInfo());
+
+                    for (History history : historyArr) {
+                        MessageSource msgSource = history.getMessageSource();
+                        // Don't put existing history into our model a second time. Otherwise, a message to multiple
+                        // contacts could show duplicates in the model (though not in the DB)
+                        msgSource.setAddExistingHistory(false);
+
+                        // Add the message back into the queue for reprocessing
+                        MessageModel.addMessage(msgSource);
+                    }
+                }
+            }
+        });
+
+        view.getIgnoreContactButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("ignoreContactButton.widgetSelected({})", event);
+                ContactInfo contactInfo = new ContactInfo(view.getContactInfo());
+                WizardDialog dlg = new WizardDialog(view.getShell(), new IgnoreContactWizard(contactInfo));
+                if (dlg.open() == Window.OK) {
+                    // Check all unknown history to see if anything there should be ignored now
+                    // This must be done because of wildcards
+                    for (History history : HistoryModel.getUnknownHistory()) {
+                        ContactInfo ci = history.getContactInfo();
+                        String email = ci.getInfo();
+                        int serverId = history.getMessageSource().getSourceId();
+                        if (EmailModel.isEmailInIgnoreList(email)) {
+                            HistoryModel.removeAllHistoryWithContactInfo(ci);
+                        } else if (EmailModel.getEmailServer(serverId).isEmailInIgnoreList(email)) {
+                            HistoryModel.removeAllHistoryWithContactInfo(ci, serverId);
+                        }
+                    }
+                }
+            }
+        });
     }
-
 }

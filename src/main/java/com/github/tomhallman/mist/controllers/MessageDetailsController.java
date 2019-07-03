@@ -37,91 +37,6 @@ import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.views.MessageDetailsView;
 
 public class MessageDetailsController {
-    private class ChallengeSelectionListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("ChallengeSelectionListener.widgetSelected({})", event);
-            // Don't need our cached copy since a checkbox selection requires an enabled view
-            History history = view.getHistory();
-            boolean selection = view.getChallengeCheckBox().getSelection();
-            history.setChallenge(selection);
-            try {
-                HistoryManager.updateIsChallenge(history.getHistoryId(), selection);
-            } catch (SQLException e) {
-                String msg = "Could not update Partnership Challenge status";
-                Util.reportError(view.getShell(), "Update error", msg, e);
-            }
-        }
-    }
-
-    private class MassMailingSelectionListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("MassMailingSelectionListener.widgetSelected({})", event);
-            // Don't need our cached copy since a checkbox selection requires an enabled view
-            History history = view.getHistory();
-            boolean selection = view.getMassMailingCheckBox().getSelection();
-            history.setMassMailing(selection);
-            try {
-                HistoryManager.updateIsMassMailing(history.getHistoryId(), selection);
-            } catch (SQLException e) {
-                String msg = "Could not update Mass Mailing status";
-                Util.reportError(view.getShell(), "Update error", msg, e);
-            }
-        }
-    }
-
-    private class MessageFocusListener extends FocusAdapter {
-        @Override
-        public void focusLost(FocusEvent event) {
-            log.trace("MessageFocusListener.focusLost({})", event);
-            commitMessageToTntDb();
-        }
-    }
-
-    private class MessageModifyListener implements ModifyListener {
-        @Override
-        public void modifyText(ModifyEvent event) {
-            msgStr = view.getMessageText().getText();
-            if (view != null && !view.isDisposed() && view.getHistory() != null)
-                historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
-        }
-    }
-
-    private class SubjectFocusListener extends FocusAdapter {
-        @Override
-        public void focusLost(FocusEvent event) {
-            log.trace("SubjectFocusListener.focusLost({})", event);
-            commitSubjectToTntDb();
-        }
-    }
-
-    private class SubjectModifyListener implements ModifyListener {
-        @Override
-        public void modifyText(ModifyEvent event) {
-            subjectStr = view.getSubjectText().getText();
-            if (view != null && !view.isDisposed() && view.getHistory() != null)
-                historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
-        }
-    }
-
-    private class ThankSelectionListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent event) {
-            log.trace("ThankSelectionListener.widgetSelected({})", event);
-            // Don't need our cached copy since a checkbox selection requires an enabled view
-            History history = view.getHistory();
-            boolean selection = view.getThankCheckBox().getSelection();
-            history.setThank(selection);
-            try {
-                HistoryManager.updateIsThank(history.getHistoryId(), selection);
-            } catch (SQLException e) {
-                String msg = "Could not update Thank status";
-                Util.reportError(view.getShell(), "Update error", msg, e);
-            }
-        }
-    }
-
     private static Logger log = LogManager.getLogger();
 
     private MessageDetailsView view;
@@ -141,13 +56,91 @@ public class MessageDetailsController {
         subjectStr = null;
         msgStr = null;
 
-        view.getSubjectText().addModifyListener(new SubjectModifyListener());
-        view.getMessageText().addModifyListener(new MessageModifyListener());
-        view.getSubjectText().addFocusListener(new SubjectFocusListener());
-        view.getMessageText().addFocusListener(new MessageFocusListener());
-        view.getChallengeCheckBox().addSelectionListener(new ChallengeSelectionListener());
-        view.getThankCheckBox().addSelectionListener(new ThankSelectionListener());
-        view.getMassMailingCheckBox().addSelectionListener(new MassMailingSelectionListener());
+        view.getSubjectText().addModifyListener(new ModifyListener() {
+            @Override
+            public void modifyText(ModifyEvent event) {
+                subjectStr = view.getSubjectText().getText();
+                if (view != null && !view.isDisposed() && view.getHistory() != null)
+                    historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+            }
+        });
+
+        view.getMessageText().addModifyListener(new ModifyListener() {
+            @Override
+            public void modifyText(ModifyEvent event) {
+                msgStr = view.getMessageText().getText();
+                if (view != null && !view.isDisposed() && view.getHistory() != null)
+                    historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+            }
+        });
+
+        view.getSubjectText().addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent event) {
+                log.trace("subjectText.focusLost({})", event);
+                commitSubjectToTntDb();
+            }
+        });
+
+        view.getMessageText().addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent event) {
+                log.trace("messageText.focusLost({})", event);
+                commitMessageToTntDb();
+            }
+        });
+
+        view.getChallengeCheckBox().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("challengeCheckBox.widgetSelected({})", event);
+                // Don't need our cached copy since a checkbox selection requires an enabled view
+                History history = view.getHistory();
+                boolean selection = view.getChallengeCheckBox().getSelection();
+                history.setChallenge(selection);
+                try {
+                    HistoryManager.updateIsChallenge(history.getHistoryId(), selection);
+                } catch (SQLException e) {
+                    String msg = "Could not update Partnership Challenge status";
+                    Util.reportError(view.getShell(), "Update error", msg, e);
+                }
+            }
+        });
+
+        view.getThankCheckBox().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("thankCheckBox.widgetSelected({})", event);
+                // Don't need our cached copy since a checkbox selection requires an enabled view
+                History history = view.getHistory();
+                boolean selection = view.getThankCheckBox().getSelection();
+                history.setThank(selection);
+                try {
+                    HistoryManager.updateIsThank(history.getHistoryId(), selection);
+                } catch (SQLException e) {
+                    String msg = "Could not update Thank status";
+                    Util.reportError(view.getShell(), "Update error", msg, e);
+                }
+            }
+        });
+
+        view.getMassMailingCheckBox().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("massMailingCheckBox.widgetSelected({})", event);
+                // Don't need our cached copy since a checkbox selection requires an enabled view
+                History history = view.getHistory();
+                boolean selection = view.getMassMailingCheckBox().getSelection();
+                history.setMassMailing(selection);
+                try {
+                    HistoryManager.updateIsMassMailing(history.getHistoryId(), selection);
+                } catch (SQLException e) {
+                    String msg = "Could not update Mass Mailing status";
+                    Util.reportError(view.getShell(), "Update error", msg, e);
+                }
+            }
+        });
+
     }
 
     public void commitMessageToTntDb() {

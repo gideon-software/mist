@@ -45,9 +45,10 @@ public class SettingsController {
         MIST.getPrefs().savePreferences();
         PreferenceDialog prefDlg = MIST.getPreferenceManager().createPreferenceDialog(shell);
         int ret = prefDlg.open();
-        if (ret == Window.OK)
+        if (ret == Window.OK) {
             MIST.getPrefs().savePreferences();
-        else {
+            MIST.setLogfileLogLevel(MIST.getPrefs().getString(MIST.PREF_LOGFILE_LOGLEVEL));
+        } else {
             MIST.getPrefs().resetPreferences();
             TntDb.init(); // Forces a reload of the DB settings
         }

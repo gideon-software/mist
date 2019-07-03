@@ -33,6 +33,7 @@ import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.preferencepages.EmailPreferencePage;
 import com.github.tomhallman.mist.preferences.preferencepages.EmailServerPreferencePage;
+import com.github.tomhallman.mist.preferences.preferencepages.LoggingPreferencePage;
 import com.github.tomhallman.mist.preferences.preferencepages.TntDbPreferencePage;
 
 /**
@@ -44,6 +45,7 @@ public class MistPreferenceManager extends PreferenceManager {
     private static final String PREFNODE_TNT = "tnt";
     private static final String PREFNODE_EMAIL = "email";
     private static final String PREFNODE_EMAILSERVER_PREFIX = "server";
+    private static final String PREFNODE_LOGGING = "logging";
 
     private static MistPreferenceManager manager;
     private MistPreferenceDialog preferenceDialog;
@@ -71,7 +73,7 @@ public class MistPreferenceManager extends PreferenceManager {
 
     public void addEmailServerNode(int serverId, boolean refreshAndSelect) {
         log.trace("addEmailServerNode({},{})", serverId, refreshAndSelect);
-        PreferenceNode serverNode = new PreferenceNode(
+        PreferenceNode serverNode = new SmartPreferenceNode(
             getEmailServerNodeName(serverId),
             new EmailServerPreferencePage(serverId));
         addTo(PREFNODE_EMAIL, serverNode);
@@ -83,10 +85,11 @@ public class MistPreferenceManager extends PreferenceManager {
 
     private void addNodes() {
         log.trace("addNodes()");
-        addToRoot(new PreferenceNode(PREFNODE_TNT, new TntDbPreferencePage()));
-        addToRoot(new PreferenceNode(PREFNODE_EMAIL, new EmailPreferencePage()));
+        addToRoot(new SmartPreferenceNode(PREFNODE_TNT, new TntDbPreferencePage()));
+        addToRoot(new SmartPreferenceNode(PREFNODE_EMAIL, new EmailPreferencePage()));
         for (int i = 0; i < EmailModel.getEmailServerCount(); i++)
             addEmailServerNode(i, false);
+        addToRoot(new SmartPreferenceNode(PREFNODE_LOGGING, new LoggingPreferencePage()));
     }
 
     /**

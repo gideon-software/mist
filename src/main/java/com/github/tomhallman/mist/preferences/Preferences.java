@@ -98,6 +98,8 @@ public class Preferences extends PreferenceStore {
         String profileName = MIST.getOption(MIST.OPTION_PROFILE);
         if (profileName != null)
             node += "-" + profileName;
+        else if (MIST.isDevel())
+            node += "-devel";
 
         String path = "";
         if (Util.isWindows())
@@ -141,7 +143,7 @@ public class Preferences extends PreferenceStore {
         log.trace("loadPreferences()");
 
         String path = getPreferencesPath();
-        log.debug(String.format("Loading preferences from [%s]...", path));
+        log.debug(String.format("Loading preferences from '%s'...", path));
 
         this.setFilename(path);
         JFacePreferences.setPreferenceStore(this);
@@ -152,7 +154,7 @@ public class Preferences extends PreferenceStore {
                 load();
                 log.debug("Preferences successfully loaded.");
             } catch (IOException e) {
-                log.error("Couldn't load preferences file from {{}}!", path, e);
+                log.error("Couldn't load preferences file from '{}'!", path, e);
             }
         } else {
             // See if there are MIST 4.x settings that can be loaded
@@ -264,7 +266,7 @@ public class Preferences extends PreferenceStore {
 
         if (needsSaving()) {
             String path = getPreferencesPath();
-            log.debug(String.format("Saving preferences to [%s]...", path));
+            log.debug(String.format("Saving preferences to '%s'...", path));
             try {
                 // Create preference store (including parent folders) if it doesn't exist
                 File file = new File(path);
@@ -273,7 +275,7 @@ public class Preferences extends PreferenceStore {
                 save();
                 log.debug("Preferences successfully saved.");
             } catch (IOException e) {
-                log.error("Couldn't save preferences file at {{}}!", path, e);
+                log.error("Couldn't save preferences file at '{}'!", path, e);
             }
         }
     }

@@ -50,7 +50,7 @@ import com.github.tomhallman.mist.model.MessageModel;
 import com.github.tomhallman.mist.model.data.EmailMessage;
 import com.github.tomhallman.mist.model.data.MessageSource;
 import com.github.tomhallman.mist.tntapi.entities.History;
-import com.github.tomhallman.mist.util.DBTablePrinter;
+import com.github.tomhallman.mist.util.ResultSetFormatter;
 import com.github.tomhallman.mist.util.Util;
 
 /**
@@ -540,7 +540,7 @@ public class TntDb {
             // Save ResultSet state
             int prev = rs.getRow();
 
-            String rsStr = DBTablePrinter.getFormattedResultSet(rs);
+            String rsStr = ResultSetFormatter.getFormattedResultSet(rs);
 
             // Restore ResultSet state
             if (prev == 0)
@@ -672,7 +672,26 @@ public class TntDb {
      *             if there is a database access problem
      */
     public static ResultSet runQuery(String query) throws SQLException {
+        return runQuery(query, true);
+    }
+
+    /**
+     * Runs the specified query on the TntConnect database.
+     * <p>
+     * Does NOT automatically commit changes to the Tnt database.
+     *
+     * @param query
+     *            the query to run
+     * @param enableResultLogging
+     *            true shows result in TRACE logging; false skips it
+     * @return a {@link ResultSet} in the query was a {@code SELECT} statement, otherwise null
+     * @throws SQLException
+     *             if there is a database access problem
+     */
+    public static ResultSet runQuery(String query, boolean enableResultLogging) throws SQLException {
         log.trace("runQuery({})", query);
+        if (!enableResultLogging)
+            log.trace("** Result logging DISABLED for previous query **");
 
         // Create statement that we can scroll over (important for getting size of resultsets)
         PreparedStatement stmt = conn.prepareStatement(
@@ -682,7 +701,8 @@ public class TntDb {
         ResultSet rs = null;
         if (query.startsWith("SELECT")) {
             rs = stmt.executeQuery();
-            log.trace(getResultSetString(rs));
+            if (log.isTraceEnabled() && enableResultLogging)
+                log.trace(getResultSetString(rs));
         } else {
             stmt.executeUpdate();
         }

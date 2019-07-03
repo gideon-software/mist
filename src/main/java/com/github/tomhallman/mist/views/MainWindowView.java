@@ -81,7 +81,6 @@ public class MainWindowView extends ApplicationWindow {
         shell.addShellListener(new ShellAdapter() {
             @Override
             public void shellActivated(ShellEvent e) {
-                log.trace("shellActivated({})", e);
                 Rectangle rect = MIST.getPrefs().getRectangle(PREF_WINDOW_BOUNDS);
                 if (rect.width != 0)
                     shell.setBounds(rect);

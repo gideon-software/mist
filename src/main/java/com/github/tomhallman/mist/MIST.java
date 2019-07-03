@@ -23,8 +23,12 @@ package com.github.tomhallman.mist;
 import java.io.File;
 import java.net.URL;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.eclipse.jface.util.Util;
 import org.eclipse.swt.widgets.Display;
 
@@ -60,39 +64,52 @@ public class MIST {
 
     public final static String OPTION_PROFILE = "profile";
 
+    public final static String PREF_LOGFILE_LOGLEVEL = "mist.logfile.loglevel";
+
+    private static String logfilePath = "";
+
     public static String configureLogging(@SuppressWarnings("rawtypes") Class clazz) {
         String confPath = null;
         String logPath = null;
 
+        String profileName = MIST.getOption(MIST.OPTION_PROFILE);
+        profileName = (profileName == null) ? "" : "-" + profileName;
+
+        String logConfFileName = "log4j2.xml";
+        String logFilename = String.format("mist%s.log", profileName);
+
         if (isDevel()) {
-            confPath = "devel/conf/log4j2.xml";
-            logPath = "devel/logs/mist.log";
+            confPath = String.format("devel/conf/%s", logConfFileName);
+            logPath = String.format("devel/logs/%s", logFilename);
         } else if (Util.isMac()) {
             // Mac OS X: From inside an application bundle
             URL mistJarURL = MIST.class.getProtectionDomain().getCodeSource().getLocation();
             File mistJarFile = new File(mistJarURL.getPath());
-            File logXMLFile = new File(mistJarFile.getParentFile().getParentFile().getPath() + "/conf/log4j2.xml");
+            String logXMLPath = String.format(
+                "%s/conf/%s",
+                mistJarFile.getParentFile().getParentFile().getPath(),
+                logConfFileName);
+            File logXMLFile = new File(logXMLPath);
             confPath = logXMLFile.getAbsolutePath();
-            logPath = System.getProperty("user.home") + "/Library/Logs/" + APP_NAME + "/mist.log";
+            logPath = String.format("%s/Library/Logs/%s/%s", System.getProperty("user.home"), APP_NAME, logFilename);
         } else if (Util.isLinux()) {
             // Linux
             // TODO: Test Linux installation to verify if this works
-            confPath = "conf/log4j2.xml";
-            logPath = System.getProperty("user.home") + "/." + APP_NAME.toLowerCase() + "/mist.log";
+            confPath = String.format("conf/%s", logConfFileName);
+            logPath = String.format("%s/.%s/%s", System.getProperty("user.home"), APP_NAME.toLowerCase(), logFilename);
         } else {
             // Windows
-            confPath = "conf\\log4j2.xml";
-            logPath = System.getenv("APPDATA") + "\\" + APP_NAME + "\\logs\\mist.log";
+            confPath = String.format("conf\\%s", logConfFileName);
+            logPath = String.format("%s\\%s\\logs\\%s", System.getenv("APPDATA"), APP_NAME, logFilename);
         }
         System.setProperty("log.path", logPath);
         System.setProperty("log4j.configurationFile", confPath);
         log = LogManager.getRootLogger();
         try {
-            // TODO: Show absolute paths here
             String logConfFilePath = new File(confPath).getAbsolutePath();
-            String logFilePath = new File(logPath).getAbsolutePath();
+            logfilePath = new File(logPath).getAbsolutePath();
             log.debug("Log configuration path: {}", logConfFilePath);
-            log.debug("Log path: {}", logFilePath);
+            log.debug("Log path: {}", logfilePath);
         } catch (NullPointerException e) {
             System.out.println("Incorrect configuration settings; confPath: " + confPath + "; logPath: " + logPath);
         }
@@ -104,6 +121,10 @@ public class MIST {
         if (ver == null)
             return "(Devel build)";
         return ver;
+    }
+
+    public static String getLogfilePath() {
+        return logfilePath;
     }
 
     public static String getOption(String option) {
@@ -141,17 +162,23 @@ public class MIST {
         // Initialization
         //
 
-        configureLogging(MIST.class);
-
-        Display.setAppName(APP_NAME);
-        new Display(); // Needed for ImageManager::init()
-        Images.init();
-
-        // TODO: do option parsing BEFORE configuring logging...
+        // Command-line arguments
         parseOptions(args);
+
+        // Logging
+        configureLogging(MIST.class);
 
         // Load preferences
         MIST.getPrefs();
+
+        // Set user-specified logging level now that preferences are loaded
+        MIST.getPrefs().setDefault(PREF_LOGFILE_LOGLEVEL, Level.WARN.name());
+        setLogfileLogLevel(MIST.getPrefs().getString(PREF_LOGFILE_LOGLEVEL));
+
+        // Display & images
+        Display.setAppName(APP_NAME);
+        new Display(); // Needed for ImageManager::init()
+        Images.init();
 
         //
         // Fire up MVC framework
@@ -177,5 +204,17 @@ public class MIST {
         OptionParser parser = new OptionParser();
         parser.accepts(OPTION_PROFILE).withRequiredArg();
         options = parser.parse(opts);
+    }
+
+    public static void setLogfileLogLevel(String levelName) {
+        log.info("Setting logfile log level to '{}'", levelName);
+        Level level = Level.toLevel(levelName, Level.OFF);
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final Configuration config = ctx.getConfiguration();
+
+        LoggerConfig rootLoggerConfig = config.getLoggers().get("");
+        rootLoggerConfig.removeAppender("logfile");
+        rootLoggerConfig.addAppender(config.getAppender("logfile"), level, null);
+        ctx.updateLoggers();
     }
 }

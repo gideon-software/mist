@@ -111,8 +111,6 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
             // Note: This code may need to be rewritten if combo isn't set to READ_ONLY
             result = combo.getSelectionItem() != null;
         }
-
-        log.trace("  result is {}", result);
         if (result)
             clearErrorMessage();
         else
@@ -286,6 +284,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * Removes all items from the combo.
      */
     public void removeAll() {
+        log.trace("{{}} removeAll()");
         if (combo != null)
             combo.removeAll();
     }
@@ -298,6 +297,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            and <code>false</code> if it is considered invalid
      */
     public void setEmptySelectionAllowed(boolean allowed) {
+        log.trace("{{}} setEmptySelectionAllowed()", combo);
         emptySelectionAllowed = allowed;
     }
 
@@ -365,7 +365,6 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
         T newItem = combo.getSelectionItem();
         if (newItem != null && !newItem.equals(curItem)) {
-            log.trace("  calling fireValueChanged({},{},{})", VALUE, curItem, newItem);
             fireValueChanged(VALUE, curItem, newItem);
             curItem = newItem;
         }

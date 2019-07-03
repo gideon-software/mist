@@ -21,7 +21,7 @@
   <Loggers>
     <Root level="all">
       <AppenderRef ref="STDOUT" level="warn"/>
-      <AppenderRef ref="logfile" level="warn"/>
+      <AppenderRef ref="logfile" level="debug"/> <!-- overridden at MIST startup --> 
     </Root>
   </Loggers>
   

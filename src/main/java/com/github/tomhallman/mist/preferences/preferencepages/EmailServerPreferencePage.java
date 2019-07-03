@@ -54,73 +54,6 @@ import com.github.tomhallman.mist.util.ui.Images;
  *
  */
 public class EmailServerPreferencePage extends FieldEditorPreferencePage {
-    protected class ConnectListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent e) {
-            log.trace("ConnectListener.widgetSelected({})", e);
-            server.setNickname(nicknameEditor.getStringValue());
-            server.setHost(hostEditor.getStringValue());
-            server.setPort(portEditor.getStringValue());
-            server.setUsername(usernameEditor.getStringValue());
-            server.setPassword(passwordEditor.getPassword());
-            server.setPasswordPrompt(passwordEditor.isPrompt());
-            // Get folder info
-            String prefFolder = EmailServer.getPrefName(id, EmailServer.PREF_FOLDER);
-            String folderName = getPreferenceStore().getString(prefFolder);
-            server.setFolderName(folderName);
-
-            // Connect
-            Util.connectToEmailServer(getShell(), server, false);
-            boolean success = server.isConnected();
-            if (success) {
-                // Save the password
-                passwordEditor.setPassword(server.getPassword());
-                passwordEditor.setPrompt(server.isPasswordPrompt());
-
-                // If there was a previously selected key, use that
-                String oldKey = folderEditor.getSelectionItem();
-
-                // Populate folder list
-                folderEditor.removeAll();
-                for (EmailFolder emailFolder : server.getCompleteFolderList())
-                    if (emailFolder.canHoldMessages())
-                        folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
-
-                folderEditor.setSelection(oldKey != null ? oldKey : folderName);
-
-                // All done with the server for now
-                server.disconnect();
-
-                // Notify user that the connection was successful
-                MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-                msgBox.setMessage("Connection successful!");
-                msgBox.open();
-            }
-            folderEditor.setEnabled(success, getFieldEditorParent());
-        }
-    }
-
-    protected class DeleteListener extends SelectionAdapter {
-        @Override
-        public void widgetSelected(SelectionEvent e) {
-            log.trace("DeleteListener.widgetSelected({})", e);
-
-            // Check with the user
-            MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
-            msgBox.setMessage("Are you sure you want to DELETE this email server?");
-            if (msgBox.open() == SWT.YES) {
-                // Delete server from preference store
-                MIST.getPrefs().setToDefaultIfContains(EmailServer.getPrefName(id, ""));
-
-                // Ready this page for exit by bypassing dialog error checking
-                MIST.getPreferenceManager().getPreferenceDialog().clearCurrentPage();
-
-                // Delete node from preference manager
-                MIST.getPreferenceManager().deleteEmailServerNode(id);
-            }
-        }
-    }
-
     private static Logger log = LogManager.getLogger();
     private int id;
 
@@ -209,7 +142,51 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
 
         // Connect button
         connectButton = new ButtonFieldEditor("Test &Connection / Get Folder List", getFieldEditorParent());
-        connectButton.getButton().addSelectionListener(new ConnectListener());
+        connectButton.getButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                log.trace("connectButton.widgetSelected({})", e);
+                server.setNickname(nicknameEditor.getStringValue());
+                server.setHost(hostEditor.getStringValue());
+                server.setPort(portEditor.getStringValue());
+                server.setUsername(usernameEditor.getStringValue());
+                server.setPassword(passwordEditor.getPassword());
+                server.setPasswordPrompt(passwordEditor.isPrompt());
+                // Get folder info
+                String prefFolder = EmailServer.getPrefName(id, EmailServer.PREF_FOLDER);
+                String folderName = getPreferenceStore().getString(prefFolder);
+                server.setFolderName(folderName);
+
+                // Connect
+                Util.connectToEmailServer(getShell(), server, false);
+                boolean success = server.isConnected();
+                if (success) {
+                    // Save the password
+                    passwordEditor.setPassword(server.getPassword());
+                    passwordEditor.setPrompt(server.isPasswordPrompt());
+
+                    // If there was a previously selected key, use that
+                    String oldKey = folderEditor.getSelectionItem();
+
+                    // Populate folder list
+                    folderEditor.removeAll();
+                    for (EmailFolder emailFolder : server.getCompleteFolderList())
+                        if (emailFolder.canHoldMessages())
+                            folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
+
+                    folderEditor.setSelection(oldKey != null ? oldKey : folderName);
+
+                    // All done with the server for now
+                    server.disconnect();
+
+                    // Notify user that the connection was successful
+                    MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                    msgBox.setMessage("Connection successful!");
+                    msgBox.open();
+                }
+                folderEditor.setEnabled(success, getFieldEditorParent());
+            }
+        });
         addField(connectButton);
 
         // Spacer
@@ -284,7 +261,26 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
 
         // Delete button
         deleteButton = new ButtonFieldEditor("&Delete this Email Server...", getFieldEditorParent());
-        deleteButton.getButton().addSelectionListener(new DeleteListener());
+        deleteButton.getButton().addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                log.trace("deleteButton.widgetSelected({})", e);
+
+                // Check with the user
+                MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
+                msgBox.setMessage("Are you sure you want to DELETE this email server?");
+                if (msgBox.open() == SWT.YES) {
+                    // Delete server from preference store
+                    MIST.getPrefs().setToDefaultIfContains(EmailServer.getPrefName(id, ""));
+
+                    // Ready this page for exit by bypassing dialog error checking
+                    MIST.getPreferenceManager().getPreferenceDialog().clearCurrentPage();
+
+                    // Delete node from preference manager
+                    MIST.getPreferenceManager().deleteEmailServerNode(id);
+                }
+            }
+        });
         addField(deleteButton);
     }
 
