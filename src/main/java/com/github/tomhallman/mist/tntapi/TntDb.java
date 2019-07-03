@@ -741,6 +741,7 @@ public class TntDb {
     public static void startImportService(Shell shell) {
         log.trace("startImportService({})", shell);
 
+        stopImporting = false;
         Util.connectToTntDatabase(shell);
 
         Thread importThread = new Thread() {

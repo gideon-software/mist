@@ -47,33 +47,41 @@ public class ImportButtonController {
             public void widgetSelected(SelectionEvent event) {
                 log.trace("importButton.widgetSelected({})", event);
 
-                // Check for lock file
-                if (isLockFileFound()) {
-                    MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
-                    msgBox.setMessage(
-                        "It appears that TntConnect is currently using your TntConnect database. "
-                            + "It is recommended that you close TntConnect before using MIST to "
-                            + "import email. Otherwise it is possible for data corruption to occur.\n\n"
-                            + "Press OK to continue or Cancel to stop the import.");
-                    if (msgBox.open() != SWT.OK)
+                if (EmailModel.isImporting()) {
+                    // Stop import
+                    EmailModel.stopImportService();
+
+                } else {
+                    // Start import
+
+                    // Check for lock file
+                    if (isLockFileFound()) {
+                        MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
+                        msgBox.setMessage(
+                            "It appears that TntConnect is currently using your TntConnect database. "
+                                + "It is recommended that you close TntConnect before using MIST to "
+                                + "import email. Otherwise it is possible for data corruption to occur.\n\n"
+                                + "Press OK to continue or Cancel to stop the import.");
+                        if (msgBox.open() != SWT.OK)
+                            return;
+                    }
+
+                    //
+                    // Begin importing!
+                    //
+
+                    // Clear last import info
+                    HistoryModel.init();
+                    MessageModel.init();
+
+                    // Start Tnt import service (which runs until MIST closes or Tnt settings change)
+                    TntDb.startImportService(view.getShell());
+                    if (!TntDb.isConnected())
                         return;
+
+                    // Start email import service
+                    EmailModel.startImportService(view.getShell());
                 }
-
-                //
-                // Begin importing!
-                //
-
-                // Clear last import info
-                HistoryModel.init();
-                MessageModel.init();
-
-                // Start Tnt import service
-                TntDb.startImportService(view.getShell());
-                if (!TntDb.isConnected())
-                    return;
-
-                // Start email import service
-                EmailModel.startImportService(view.getShell());
             }
         });
     }

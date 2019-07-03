@@ -390,6 +390,8 @@ public class EmailServer implements Cloneable {
     public void startImportService(Shell shell) {
         log.trace("{{}} startImportService({})", getNickname(), shell);
 
+        stopImporting = false;
+        importComplete = false;
         Util.connectToEmailServer(shell, this, true);
 
         Thread importThread = new Thread() {

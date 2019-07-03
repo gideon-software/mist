@@ -50,11 +50,21 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
 
         // Create import button
         importButton = new Button(this, SWT.PUSH | SWT.CENTER);
-        importButton.setText("&Import Email");
-        importButton.setImage(Images.getImage(Images.ICON_IMPORT_START));
+        configureImportButton(false);
+    }
 
-        // Initial state depends on whether MIST is configured
+    public void configureImportButton(boolean importing) {
+
+        // Initial enabling depends on whether MIST is configured
         importButton.setEnabled(MIST.getPrefs().isConfigured());
+
+        if (importing) {
+            importButton.setText("&Stop Import");
+            importButton.setImage(Images.getImage(Images.ICON_IMPORT_STOP));
+        } else {
+            importButton.setText("&Import Email");
+            importButton.setImage(Images.getImage(Images.ICON_IMPORT_START));
+        }
     }
 
     public Button getImportButton() {
@@ -70,7 +80,7 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
                 @Override
                 public void run() {
                     boolean importing = (Boolean) event.getNewValue();
-                    importButton.setEnabled(!importing);
+                    configureImportButton(importing);
                 }
             });
         }

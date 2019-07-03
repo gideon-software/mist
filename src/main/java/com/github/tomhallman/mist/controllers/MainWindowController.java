@@ -50,7 +50,7 @@ public class MainWindowController {
         view.getShell().addListener(SWT.Close, new Listener() {
             @Override
             public void handleEvent(Event event) {
-                log.trace("CloseListener.handleEvent({})", event);
+                log.trace("closeListener.handleEvent({})", event);
                 event.doit = closeView();
             }
         });
@@ -82,7 +82,7 @@ public class MainWindowController {
             // We're importing - verify that the user wants to close
             int style = SWT.APPLICATION_MODAL | SWT.ICON_QUESTION | SWT.YES | SWT.NO;
             MessageBox msgBox = new MessageBox(new Shell(), style);
-            msgBox.setText("Cancel import?");
+            msgBox.setText("Stop import?");
             msgBox.setMessage(
                 "MIST is still importing. Are you sure you want to quit?\n"
                     + "(Don't worry; MIST can finish later if you like!)");

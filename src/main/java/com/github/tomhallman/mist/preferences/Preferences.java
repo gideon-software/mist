@@ -126,7 +126,7 @@ public class Preferences extends PreferenceStore {
 
         // We need a Tnt DB
         String dbPath = getString(TntDb.PREF_TNT_DBPATH);
-        if (dbPath.isEmpty())
+        if (dbPath.isBlank())
             return false;
 
         // We need at least one email server set up

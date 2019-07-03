@@ -26,8 +26,11 @@ import org.eclipse.jface.util.Util;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.model.EmailModel;
+import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.util.ui.CocoaSWTUIEnhancer;
 import com.github.tomhallman.mist.util.ui.WebpageLinkListener;
 import com.github.tomhallman.mist.views.AboutView;
@@ -61,14 +64,15 @@ public class MainMenuController {
             @Override
             public void handleEvent(Event event) {
                 log.trace("editSettingsListener.handleEvent({})", event);
-                // TODO: Allow loading but not editing?
-                // if (MIST.getMasterModel().isImporting()) {
-                // log.info("Settings may not be modified during import.");
-                // MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.OK);
-                // msgBox.setMessage("Settings may not be modified during import.");
-                // msgBox.open();
-                // return;
-                // }
+                if (EmailModel.isImporting()) {
+                    String msg = "Settings may not be modified while import is running.";
+                    log.info(msg);
+                    MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                    msgBox.setMessage(msg);
+                    msgBox.open();
+                    return;
+                }
+                TntDb.stopImportService(); // if running
                 new SettingsController(view.getShell()).openView();
             }
         };
