@@ -27,6 +27,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.tntapi.TntDb;
 
 public class SettingsController {
@@ -51,6 +52,7 @@ public class SettingsController {
         } else {
             MIST.getPrefs().resetPreferences();
             TntDb.init(); // Forces a reload of the DB settings
+            EmailModel.init(); // Reloads email servers
         }
 
         return ret;

@@ -136,7 +136,6 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         else
             result = stringList.getItemCount() >= minItemCount;
 
-        log.trace("  result is {}", result);
         if (result)
             clearErrorMessage();
         else
@@ -295,6 +294,10 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         return errorMessage;
     }
 
+    public String[] getItems() {
+        return stringList.getItems();
+    }
+
     private String getListString() {
         if (stringList == null)
             return "";
@@ -343,10 +346,8 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
         log.trace("{{}} refreshValidState()", stringList);
         boolean oldState = isValid;
         isValid = checkState();
-        if (isValid != oldState) {
-            log.trace("  calling fireStateChanged({},{},{})", IS_VALID, oldState, isValid);
+        if (isValid != oldState)
             fireStateChanged(IS_VALID, oldState, isValid);
-        }
     }
 
     /**

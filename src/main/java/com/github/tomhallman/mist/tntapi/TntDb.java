@@ -612,7 +612,8 @@ public class TntDb {
 
     public static void init() {
         log.trace("init()");
-        disconnect();
+        if (isConnected())
+            disconnect();
         dbPath = MIST.getPrefs().getString(PREF_TNT_DBPATH);
     }
 

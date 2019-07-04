@@ -38,6 +38,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailFolder;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
@@ -55,7 +56,6 @@ import com.github.tomhallman.mist.util.ui.Images;
  */
 public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private static Logger log = LogManager.getLogger();
-    private int id;
 
     private StringFieldEditor nicknameEditor;
     private StringFieldEditor hostEditor;
@@ -75,12 +75,10 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     public EmailServerPreferencePage(int serverId) {
         super(FieldEditorPreferencePage.GRID);
         log.trace("EmailServerPreferencePage({})", serverId);
-        this.id = serverId;
-        String prefNickname = EmailServer.getPrefName(id, EmailServer.PREF_NICKNAME);
-        setTitle(MIST.getPrefs().getString(prefNickname));
+        server = new EmailServer(serverId);
+        setTitle(server.getNickname());
         setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL_SERVER)));
         // setDescription("description here");
-        server = new EmailServer();
         noDefaultAndApplyButton();
     }
 
@@ -89,9 +87,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         log.trace("createFieldEditors()");
 
         // Nickname
-        String prefNickname = EmailServer.getPrefName(id, EmailServer.PREF_NICKNAME);
         nicknameEditor = new StringFieldEditor(
-            prefNickname,
+            server.getPrefName(EmailServer.PREF_NICKNAME),
             "&Nickname:",
             StringFieldEditor.UNLIMITED,
             StringFieldEditor.VALIDATE_ON_KEY_STROKE,
@@ -110,32 +107,33 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(nicknameEditor);
 
         // Host
-        String prefHost = EmailServer.getPrefName(id, EmailServer.PREF_HOST);
-        hostEditor = new StringFieldEditor(prefHost, "&Host:", getFieldEditorParent());
+        hostEditor = new StringFieldEditor(server.getPrefName(EmailServer.PREF_HOST), "&Host:", getFieldEditorParent());
         hostEditor.setEmptyStringAllowed(false);
         hostEditor.setErrorMessage("Host may not be empty.");
         addField(hostEditor);
 
         // Port
-        String prefPort = EmailServer.getPrefName(id, EmailServer.PREF_PORT);
-        portEditor = new IntegerFieldEditor(prefPort, "P&ort:", getFieldEditorParent());
+        portEditor = new IntegerFieldEditor(
+            server.getPrefName(EmailServer.PREF_PORT),
+            "P&ort:",
+            getFieldEditorParent());
         portEditor.setEmptyStringAllowed(false);
         portEditor.setErrorMessage("Port must be a number.");
         addField(portEditor);
 
         // Username
-        String prefUsername = EmailServer.getPrefName(id, EmailServer.PREF_USERNAME);
-        usernameEditor = new StringFieldEditor(prefUsername, "&Username:", getFieldEditorParent());
+        usernameEditor = new StringFieldEditor(
+            server.getPrefName(EmailServer.PREF_USERNAME),
+            "&Username:",
+            getFieldEditorParent());
         usernameEditor.setEmptyStringAllowed(false);
         usernameEditor.setErrorMessage("Username may not be empty.");
         addField(usernameEditor);
 
         // Password
-        String prefPassword = EmailServer.getPrefName(id, EmailServer.PREF_PASSWORD);
-        String prefPasswordPrompt = EmailServer.getPrefName(id, EmailServer.PREF_PASSWORD_PROMPT);
         passwordEditor = new ForgettablePasswordFieldEditor(
-            prefPassword,
-            prefPasswordPrompt,
+            server.getPrefName(EmailServer.PREF_PASSWORD),
+            server.getPrefName(EmailServer.PREF_PASSWORD_PROMPT),
             "&Password:",
             getFieldEditorParent());
         addField(passwordEditor);
@@ -146,16 +144,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 log.trace("connectButton.widgetSelected({})", e);
-                server.setNickname(nicknameEditor.getStringValue());
-                server.setHost(hostEditor.getStringValue());
-                server.setPort(portEditor.getStringValue());
-                server.setUsername(usernameEditor.getStringValue());
-                server.setPassword(passwordEditor.getPassword());
-                server.setPasswordPrompt(passwordEditor.isPrompt());
-                // Get folder info
-                String prefFolder = EmailServer.getPrefName(id, EmailServer.PREF_FOLDER);
-                String folderName = getPreferenceStore().getString(prefFolder);
-                server.setFolderName(folderName);
+                savePageSettings();
 
                 // Connect
                 Util.connectToEmailServer(getShell(), server, false);
@@ -174,6 +163,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                         if (emailFolder.canHoldMessages())
                             folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
 
+                    String folderName = MIST.getPrefs().getString(server.getPrefName(EmailServer.PREF_FOLDER));
                     folderEditor.setSelection(oldKey != null ? oldKey : folderName);
 
                     // All done with the server for now
@@ -193,10 +183,10 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(new SpacerFieldEditor(getFieldEditorParent()));
 
         // Folder
-        String prefFolder = EmailServer.getPrefName(id, EmailServer.PREF_FOLDER);
-        folderEditor = new SmartComboFieldEditor<String>(prefFolder, "&Folder:", getFieldEditorParent());
+        String folderPrefName = server.getPrefName(EmailServer.PREF_FOLDER);
+        folderEditor = new SmartComboFieldEditor<String>(folderPrefName, "&Folder:", getFieldEditorParent());
         folderEditor.setEmptySelectionAllowed(false);
-        String folderName = getPreferenceStore().getString(prefFolder);
+        String folderName = MIST.getPrefs().getString(folderPrefName);
         if (!folderName.isEmpty()) {
             // We're not connected to the email server, but we know the folder from previous preferences
             folderEditor.add(folderName, folderName);
@@ -207,8 +197,10 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(folderEditor);
 
         // Tnt User ID
-        String prefTntUserId = EmailServer.getPrefName(id, EmailServer.PREF_TNT_USERID);
-        tntUserEditor = new SmartComboFieldEditor<Integer>(prefTntUserId, "&TntConnect User:", getFieldEditorParent());
+        tntUserEditor = new SmartComboFieldEditor<Integer>(
+            server.getPrefName(EmailServer.PREF_TNT_USERID),
+            "&TntConnect User:",
+            getFieldEditorParent());
         tntUserEditor.setEmptySelectionAllowed(false);
         tntUserEditor.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -222,16 +214,17 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         populateUserList();
 
         // My name
-        String prefMyName = EmailServer.getPrefName(id, EmailServer.PREF_MYNAME);
-        myNameEditor = new StringFieldEditor(prefMyName, "&My name:", getFieldEditorParent());
+        myNameEditor = new StringFieldEditor(
+            server.getPrefName(EmailServer.PREF_MYNAME),
+            "&My name:",
+            getFieldEditorParent());
         myNameEditor.setEmptyStringAllowed(false);
         myNameEditor.setErrorMessage("'My name' may not be empty.");
         addField(myNameEditor);
 
         // My email addresses
-        String prefMyAddresses = EmailServer.getPrefName(id, EmailServer.PREF_ADDRESSES_MY);
         myEmailAddressesEditor = new AddEditRemoveListFieldEditor(
-            prefMyAddresses,
+            server.getPrefName(EmailServer.PREF_ADDRESSES_MY),
             "My email &addresses:",
             getFieldEditorParent());
         myEmailAddressesEditor.setAddDialogMessage("Add email address");
@@ -243,9 +236,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(myEmailAddressesEditor);
 
         // Email addresses to ignore
-        String prefIgnoreAddresses = EmailServer.getPrefName(id, EmailServer.PREF_ADDRESSES_IGNORE);
         ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
-            prefIgnoreAddresses,
+            server.getPrefName(EmailServer.PREF_ADDRESSES_IGNORE),
             "Email addresses to &ignore:",
             getFieldEditorParent());
         ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
@@ -270,14 +262,9 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                 MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
                 msgBox.setMessage("Are you sure you want to DELETE this email server?");
                 if (msgBox.open() == SWT.YES) {
-                    // Delete server from preference store
-                    MIST.getPrefs().setToDefaultIfContains(EmailServer.getPrefName(id, ""));
-
-                    // Ready this page for exit by bypassing dialog error checking
-                    MIST.getPreferenceManager().getPreferenceDialog().clearCurrentPage();
-
-                    // Delete node from preference manager
-                    MIST.getPreferenceManager().deleteEmailServerNode(id);
+                    // Remove server from model
+                    EmailModel.removeEmailServer(server);
+                    MIST.getPreferenceManager().postEmailServerRemoved();
                 }
             }
         });
@@ -286,8 +273,6 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
 
     public void populateUserList() {
         log.trace("populateUserList()");
-        String prefTntUserId = EmailServer.getPrefName(id, EmailServer.PREF_TNT_USERID);
-        Integer tntUserId = getPreferenceStore().getInt(prefTntUserId);
 
         // Try to populate the control from the Tnt DB
         Util.connectToTntDatabase(getShell());
@@ -303,8 +288,29 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         } catch (SQLException e) {
             log.warn("Could not add users to user list", e);
         }
-        tntUserEditor.setSelection(oldKey != null ? oldKey : tntUserId);
+        tntUserEditor.setSelection(oldKey != null ? oldKey : server.getTntUserId());
         addField(tntUserEditor);
+    }
+
+    private void savePageSettings() {
+        server.setNickname(nicknameEditor.getStringValue());
+        server.setMyName(myNameEditor.getStringValue());
+        server.setHost(hostEditor.getStringValue());
+        server.setPort(portEditor.getStringValue());
+        server.setUsername(usernameEditor.getStringValue());
+        server.setPassword(passwordEditor.getPassword());
+        server.setPasswordPrompt(passwordEditor.isPrompt());
+        server.setFolderName(folderEditor.getSelectionItem());
+        server.setTntUserId(tntUserEditor.getSelectionItem());
+        server.setMyAddresses(myEmailAddressesEditor.getItems());
+        server.setIgnoreAddresses(ignoreAddressesEditor.getItems());
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        if (!visible)
+            savePageSettings();
     }
 
 }

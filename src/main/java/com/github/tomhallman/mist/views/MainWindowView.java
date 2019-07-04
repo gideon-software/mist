@@ -222,7 +222,7 @@ public class MainWindowView extends ApplicationWindow {
      */
     public void setSashFormWeightPrefData(SashForm sashForm, String prefName, int[] defaultWeights) {
         log.trace("setSashFormWeightPrefData({},{},{})", sashForm, prefName, defaultWeights);
-        MIST.getPrefs().setDefaults(prefName, defaultWeights);
+        MIST.getPrefs().setDefault(prefName, defaultWeights);
         int[] weights = MIST.getPrefs().getInts(prefName);
         sashForm.setWeights(weights);
         // Note: this listener is never called; gave up tying! 2019-07-02 TJH

@@ -22,6 +22,8 @@ package com.github.tomhallman.mist.model;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +31,6 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.data.EmailServer;
-import com.github.tomhallman.mist.preferences.Preferences;
 
 public class EmailModel {
     private static Logger log = LogManager.getLogger();
@@ -38,13 +39,16 @@ public class EmailModel {
     public final static String PREF_ADDRESSES_IGNORE = "email.addresses.ignore";
     public final static String PREF_AUTOTHANK_ENABLED = "email.autothank.enabled";
     public final static String PREF_AUTOTHANK_SUBJECTS = "email.autothank.subjects";
+    public final static String PREF_EMAILSERVERS_COUNT = "email.emailservers.count";
 
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(EmailModel.class);
     public final static String PROP_EMAILSERVER_ADDED = "emailmodel.emailserver.added";
+    public final static String PROP_EMAILSERVER_REMOVED = "emailmodel.emailserver.removed";
+    public final static String PROP_EMAILSERVERS_INIT = "emailmodel.emailservers.init";
     public final static String PROP_IMPORTING = "emailmodel.importstatus.importing";
 
-    private static EmailServer[] emailServers = new EmailServer[0];
+    private static List<EmailServer> emailServers = new ArrayList<EmailServer>();
 
     private static boolean importing = false;
 
@@ -55,20 +59,15 @@ public class EmailModel {
     }
 
     /**
-     * Adds a new email server to the model. A new server ID is assigned.
+     * Adds a new email server to the model.
      * 
      * @param server
-     *            The email server to add.
+     *            The email server to add
      * 
      */
     public static void addEmailServer(EmailServer server) {
-        EmailServer[] newArr = new EmailServer[emailServers.length + 1];
-        int i;
-        for (i = 0; i < emailServers.length; i++)
-            newArr[i] = emailServers[i];
-        server.setId(i);
-        newArr[i] = server;
-        emailServers = newArr;
+        emailServers.add(server);
+        MIST.getPrefs().setValue(PREF_EMAILSERVERS_COUNT, emailServers.size());
         pcs.firePropertyChange(PROP_EMAILSERVER_ADDED, null, server);
     }
 
@@ -91,12 +90,12 @@ public class EmailModel {
         return currentMessages;
     }
 
-    public static EmailServer getEmailServer(int server) {
-        return emailServers[server];
+    public static EmailServer getEmailServer(int serverId) {
+        return emailServers.get(serverId);
     }
 
     public static int getEmailServerCount() {
-        return emailServers.length;
+        return emailServers.size();
     }
 
     public static int getMessageCountTotal() {
@@ -109,59 +108,16 @@ public class EmailModel {
 
     public static void init() {
         log.trace("init()");
-
         importing = false;
-
-        // Close any old connections
-        for (EmailServer emailServer : emailServers)
-            emailServer.disconnect();
-
-        emailServers = new EmailServer[0];
-        Preferences prefs = MIST.getPrefs();
-
-        for (int i = 0; i < MIST.getPreferenceManager().getEmailServerPrefCount(); i++) {
-            // Configure email servers from preferences
-            EmailServer server = new EmailServer();
-            server.setFolderName(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_FOLDER)));
-            server.setHost(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_HOST)));
-            server.setMyName(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_MYNAME)));
-            // Set default password prompt to true
-            prefs.setDefault(EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD_PROMPT), true);
-            server.setPasswordPrompt(prefs.getBoolean(EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD_PROMPT)));
-            server.setPassword(
-                server.isPasswordPrompt() ? "" : prefs.getString(
-                    EmailServer.getPrefName(i, EmailServer.PREF_PASSWORD)));
-            // Set default port to 993
-            prefs.setDefault(EmailServer.getPrefName(i, EmailServer.PREF_PORT), 993);
-            server.setPort(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_PORT)));
-            server.setUsername(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_USERNAME)));
-            server.setNickname(prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_NICKNAME)));
-            server.setTntUserId(prefs.getInt(EmailServer.getPrefName(i, EmailServer.PREF_TNT_USERID)));
-            server.setIgnoreAddresses(prefs.getStrings(EmailServer.getPrefName(i, EmailServer.PREF_ADDRESSES_IGNORE)));
-            server.setMyAddresses(prefs.getStrings(EmailServer.getPrefName(i, EmailServer.PREF_ADDRESSES_MY)));
-            addEmailServer(server);
-        }
+        loadEmailServers();
     }
 
-    /**
-     * TODO
-     * 
-     * @param email
-     * @return
-     */
     public static boolean isEmailInIgnoreList(String email) {
         log.trace("isEmailInList({},{})", email);
         String[] ignoreList = MIST.getPrefs().getStrings(PREF_ADDRESSES_IGNORE);
         return isEmailInList(email, ignoreList);
     }
 
-    /**
-     * TODO
-     * 
-     * @param email
-     * @param list
-     * @return
-     */
     public static boolean isEmailInList(String email, String[] list) {
         for (String entry : list) {
             if (entry.contains("*") || entry.contains("?")) {
@@ -180,6 +136,45 @@ public class EmailModel {
 
     public static boolean isImporting() {
         return importing;
+    }
+
+    private static void loadEmailServers() {
+        log.trace("loadEmailServers()");
+        emailServers = new ArrayList<EmailServer>();
+        MIST.getPrefs().setDefault(PREF_EMAILSERVERS_COUNT, 0);
+        int emailServerCount = MIST.getPrefs().getInt(PREF_EMAILSERVERS_COUNT);
+        for (int i = 0; i < emailServerCount; i++) {
+            // Pass in server ID; email servers will configure themselves from preferences
+            EmailServer server = new EmailServer(i);
+            addEmailServer(server);
+        }
+        pcs.firePropertyChange(PROP_EMAILSERVERS_INIT, null, emailServers.size());
+    }
+
+    /**
+     * Removes an email server from the model.
+     * 
+     * @param server
+     *            The email server to remove
+     * 
+     */
+    public static void removeEmailServer(EmailServer server) {
+        int id = server.getId();
+        emailServers.remove(server);
+        MIST.getPrefs().setValue(PREF_EMAILSERVERS_COUNT, emailServers.size());
+
+        server.clearPreferences(); // So the server is no longer stored in preferences
+        pcs.firePropertyChange(PROP_EMAILSERVER_REMOVED, null, id);
+
+        // Because server IDs have contiguous IDs (0, 1, 2, etc.), we must reassign IDs
+        // The easiest way to do this is to work directly on the preferences, then reload the servers
+        // TODO: Test this
+        for (int i = id; i < getEmailServerCount(); i++)
+            MIST.getPrefs().replacePrefNames(EmailServer.getPrefPrefix(i), EmailServer.getPrefPrefix(i + 1));
+        // Clear last one
+        MIST.getPrefs().setToDefaultIfContains(EmailServer.getPrefPrefix(getEmailServerCount()));
+
+        EmailModel.loadEmailServers();
     }
 
     public static void removePropertyChangeListener(PropertyChangeListener listener) {

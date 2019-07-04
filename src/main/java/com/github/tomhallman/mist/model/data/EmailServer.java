@@ -39,12 +39,15 @@ import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.MessageModel;
+import com.github.tomhallman.mist.preferences.Preferences;
 import com.github.tomhallman.mist.util.Util;
 
 public class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
 
-    public final static String PREF_PREFIX = "emailserver";
+    public final static int DEFAULT_PORT = 993;
+
+    private final static String PREF_PREFIX = "emailserver";
     public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
     public final static String PREF_ADDRESSES_MY = "addresses.my";
     public final static String PREF_FOLDER = "folder";
@@ -81,22 +84,27 @@ public class EmailServer implements Cloneable {
     private int currentMessageNumber;
     private int totalMessages;
 
-    public EmailServer() {
-        log.trace("EmailServer()");
+    public EmailServer(int id) {
+        log.trace("EmailServer({})", id);
+        setId(id);
         init();
     }
 
-    public static String getPrefName(int serverId, String name) {
-        return String.format("%s.%s.%s", PREF_PREFIX, serverId, name);
+    public static String getPrefPrefix(int id) {
+        return String.format("%s.%s", PREF_PREFIX, id);
     }
 
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        log.trace("{{}} clone()", getNickname());
-        EmailServer es2 = (EmailServer) super.clone();
-        // Deep copy non-primitives (arrays of primitives also ok)
-        // We're only concerned with settings here; not the folder/store stuff, etc.
-        return es2;
+    public void addIgnoreAddress(String email) {
+        log.trace("addIgnoreAddress({})", email);
+        String[] newIgnoreAddresses = new String[ignoreAddresses.length + 1];
+        System.arraycopy(ignoreAddresses, 0, newIgnoreAddresses, 0, ignoreAddresses.length);
+        newIgnoreAddresses[newIgnoreAddresses.length] = email;
+        setIgnoreAddresses(newIgnoreAddresses);
+    }
+
+    public void clearPreferences() {
+        log.trace("clearPreferences()");
+        MIST.getPrefs().setToDefaultIfContains(getPrefName("")); // Will clear all prefs matching this emailserver
     }
 
     public void connect(boolean selectFolder) throws EmailServerException {
@@ -149,6 +157,16 @@ public class EmailServer implements Cloneable {
                 store = null;
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this)
+            return true;
+        if (!(obj instanceof EmailServer))
+            return false;
+        EmailServer server2 = (EmailServer) obj;
+        return server2.getId() == id;
     }
 
     public EmailFolder[] getCompleteFolderList() {
@@ -230,7 +248,7 @@ public class EmailServer implements Cloneable {
             return nickname;
         if (host != null)
             return host;
-        return "";
+        return "ID:" + id;
     }
 
     public String getPassword() {
@@ -239,6 +257,10 @@ public class EmailServer implements Cloneable {
 
     public String getPort() {
         return port;
+    }
+
+    public String getPrefName(String name) {
+        return String.format("%s.%s.%s", PREF_PREFIX, id, name);
     }
 
     public String getSelectedFolder() throws EmailServerException {
@@ -268,22 +290,33 @@ public class EmailServer implements Cloneable {
         log.trace("{{}} init()", getNickname());
 
         // Close any old connections
-        disconnect();
+        if (isConnected())
+            disconnect();
 
-        id = -1;
+        //
+        // Load settings from preferences, providing reasonable defaults
+        //
 
-        host = "";
-        myName = "";
-        nickname = "";
-        password = "";
-        passwordPrompt = true;
-        port = "";
-        username = "";
-        tntUserId = 0;
-        ignoreAddresses = new String[0];
-        myAddresses = new String[0];
-        folderName = "";
+        Preferences prefs = MIST.getPrefs();
+        setFolderName(prefs.getString(getPrefName(EmailServer.PREF_FOLDER)));
+        setHost(prefs.getString(getPrefName(EmailServer.PREF_HOST)));
+        setMyName(prefs.getString(getPrefName(EmailServer.PREF_MYNAME)));
+        setUsername(prefs.getString(getPrefName(EmailServer.PREF_USERNAME)));
+        setNickname(prefs.getString(getPrefName(EmailServer.PREF_NICKNAME)));
+        setTntUserId(prefs.getInt(getPrefName(EmailServer.PREF_TNT_USERID)));
+        setIgnoreAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_IGNORE)));
+        setMyAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_MY)));
 
+        // Set default password prompt
+        prefs.setDefault(getPrefName(EmailServer.PREF_PASSWORD_PROMPT), true);
+        setPasswordPrompt(prefs.getBoolean(getPrefName(EmailServer.PREF_PASSWORD_PROMPT)));
+        setPassword(passwordPrompt ? "" : prefs.getString(getPrefName(EmailServer.PREF_PASSWORD)));
+
+        // Set default port
+        prefs.setDefault(getPrefName(EmailServer.PREF_PORT), DEFAULT_PORT);
+        setPort(prefs.getString(getPrefName(EmailServer.PREF_PORT)));
+
+        // Initialize non-preference data
         folder = null;
         store = null;
         currentMessageNumber = 0;
@@ -297,15 +330,9 @@ public class EmailServer implements Cloneable {
         return store != null;
     }
 
-    /**
-     * TODO
-     * 
-     * @param email
-     * @return
-     */
     public boolean isEmailInIgnoreList(String email) {
         log.trace("isEmailInIgnoreList({})", email);
-        String[] ignoreList = MIST.getPrefs().getStrings(getPrefName(id, PREF_ADDRESSES_IGNORE));
+        String[] ignoreList = MIST.getPrefs().getStrings(getPrefName(PREF_ADDRESSES_IGNORE));
         return EmailModel.isEmailInList(email, ignoreList);
     }
 
@@ -334,50 +361,61 @@ public class EmailServer implements Cloneable {
 
     public void setFolderName(String folderName) {
         this.folderName = folderName;
+        MIST.getPrefs().setValue(getPrefName(PREF_FOLDER), folderName);
     }
 
     public void setHost(String host) {
         this.host = host;
+        MIST.getPrefs().setValue(getPrefName(PREF_HOST), host);
     }
 
-    public void setId(int id) {
+    private void setId(int id) {
         this.id = id;
     }
 
     public void setIgnoreAddresses(String[] ignoreAddresses) {
         this.ignoreAddresses = ignoreAddresses;
+        MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_IGNORE), ignoreAddresses);
     }
 
     public void setMyAddresses(String[] myAddresses) {
         this.myAddresses = myAddresses;
+        MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_MY), myAddresses);
     }
 
     public void setMyName(String myName) {
         this.myName = myName;
+        MIST.getPrefs().setValue(getPrefName(PREF_MYNAME), myName);
     }
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+        MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), nickname);
     }
 
     public void setPassword(String password) {
         this.password = password;
+        MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD), password);
     }
 
     public void setPasswordPrompt(boolean prompt) {
         this.passwordPrompt = prompt;
+        MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD_PROMPT), prompt);
     }
 
     public void setPort(String port) {
         this.port = port;
+        MIST.getPrefs().setValue(getPrefName(PREF_PORT), port);
     }
 
-    public void setTntUserId(Integer userId) {
-        tntUserId = userId;
+    public void setTntUserId(Integer tntUserId) {
+        this.tntUserId = tntUserId;
+        MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERID), tntUserId);
     }
 
     public void setUsername(String username) {
         this.username = username;
+        MIST.getPrefs().setValue(getPrefName(PREF_USERNAME), username);
     }
 
     /**
@@ -443,6 +481,7 @@ public class EmailServer implements Cloneable {
 
                 EmailModel.serverComplete();
                 log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
+
             } // run()
         };
         importThread.setName(String.format("ESImport%s", id));

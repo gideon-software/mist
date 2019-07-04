@@ -75,15 +75,14 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
-        if (EmailModel.PROP_IMPORTING.equals(event.getPropertyName())) {
+        if (EmailModel.PROP_IMPORTING.equals(event.getPropertyName())
+            || EmailModel.PROP_EMAILSERVERS_INIT.equals(event.getPropertyName())) {
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
-                    boolean importing = (Boolean) event.getNewValue();
-                    configureImportButton(importing);
+                    configureImportButton(EmailModel.isImporting());
                 }
             });
         }
-
     }
 }

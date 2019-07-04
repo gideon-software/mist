@@ -59,4 +59,14 @@ public class MistPreferenceDialog extends PreferenceDialog {
             getShell().setText("Settings"); // As opposed to "Preferences"
     }
 
+    /**
+     * For some reason, the {@link PreferenceDialog} implementation of {@link #cancelPressed()} calls
+     * {@link #handleSave()}. We definitely don't want that, so we're overriding it here. We'll handle
+     * the saving ourselves after this method returns.
+     */
+    @Override
+    protected void handleSave() {
+        log.trace("handleSave() <does nothing>");
+    }
+
 }

@@ -23,7 +23,9 @@ package com.github.tomhallman.mist.preferences;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.prefs.BackingStoreException;
 
 import org.apache.commons.lang.StringUtils;
@@ -35,14 +37,13 @@ import org.eclipse.jface.util.Util;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.github.tomhallman.mist.MIST;
+import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.tntapi.TntDb;
 
 public class Preferences extends PreferenceStore {
     private static Logger log = LogManager.getLogger();
 
-    // We use JFace's Preferences functionality here, which somewhat breaks our normal MVC
-    // architecture, but it's worthwhile for simplicity.
     private static Preferences prefs;
 
     private static final String DEFAULT_SEPARATOR = ";";
@@ -53,7 +54,6 @@ public class Preferences extends PreferenceStore {
      */
     private Preferences() {
         log.trace("Preferences()");
-        loadPreferences();
     }
 
     /**
@@ -65,6 +65,7 @@ public class Preferences extends PreferenceStore {
     public static synchronized Preferences getInstance() {
         if (prefs == null) {
             prefs = new Preferences();
+            prefs.loadPreferences();
         }
         return prefs;
     }
@@ -130,7 +131,7 @@ public class Preferences extends PreferenceStore {
             return false;
 
         // We need at least one email server set up
-        if (MIST.getPreferenceManager().getEmailServerPrefCount() == 0)
+        if (EmailModel.getEmailServerCount() == 0)
             return false;
 
         return true;
@@ -175,40 +176,19 @@ public class Preferences extends PreferenceStore {
                 setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
 
                 // Pre-5.0 stored its one email server under "Mail" node
+                EmailServer server = new EmailServer(0);
+                server.setFolderName(oldPrefs.node("Mail").get("Folder", ""));
+                server.setHost(oldPrefs.node("Mail").get("Host", ""));
+                server.setMyName(oldPrefs.node("Mail").get("MyName", ""));
+                server.setNickname(oldPrefs.node("Mail").get("Host", "")); // There was no nickname; use host name
+                server.setPassword(oldPrefs.node("Mail").get("Password", ""));
+                server.setPasswordPrompt(oldPrefs.node("Mail").getBoolean("PasswordPrompt", true));
+                server.setPort(oldPrefs.node("Mail").get("Port", ""));
+                server.setUsername(oldPrefs.node("Mail").get("User", ""));
 
-                // Folder
-                String oldVal = oldPrefs.node("Mail").get("Folder", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_FOLDER), oldVal);
-
-                // Host
-                oldVal = oldPrefs.node("Mail").get("Host", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_HOST), oldVal);
-
-                // My name
-                oldVal = oldPrefs.node("Mail").get("MyName", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_MYNAME), oldVal);
-
-                // Password
-                oldVal = oldPrefs.node("Mail").get("Password", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD), oldVal);
-
-                // Password prompt
-                Boolean oldValBool = oldPrefs.node("Mail").getBoolean("PasswordPrompt", true);
-                // Set the default here because we'll soon save our preferences
-                setDefault(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD_PROMPT), true);
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PASSWORD_PROMPT), oldValBool);
-
-                // Port
-                oldVal = oldPrefs.node("Mail").get("Port", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_PORT), Integer.parseInt(oldVal));
-
-                // Username
-                oldVal = oldPrefs.node("Mail").get("User", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_USERNAME), oldVal);
-
-                // There was no nickname; use host name
-                oldVal = oldPrefs.node("Mail").get("Host", "");
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_NICKNAME), oldVal);
+                // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
+                server.setTntUserId(oldPrefs.node("TntMPD").getInt("UserId", 0));
+                // Ignore former TntMPD/Username pref; no longer needed
 
                 // Addresses to ignore for this email server
                 List<String> ignoreAddresses = new ArrayList<String>();
@@ -219,9 +199,7 @@ public class Preferences extends PreferenceStore {
                     if (val != null)
                         ignoreAddresses.add(val);
                 } while (val != null);
-                setValues(
-                    EmailServer.getPrefName(0, EmailServer.PREF_ADDRESSES_IGNORE),
-                    ignoreAddresses.toArray(new String[0]));
+                server.setIgnoreAddresses(ignoreAddresses.toArray(new String[0]));
 
                 // "My" Addresses for this email server
                 List<String> myAddresses = new ArrayList<String>();
@@ -232,14 +210,8 @@ public class Preferences extends PreferenceStore {
                     if (val != null)
                         myAddresses.add(val);
                 } while (val != null);
-                setValues(
-                    EmailServer.getPrefName(0, EmailServer.PREF_ADDRESSES_MY),
-                    myAddresses.toArray(new String[0]));
-
-                // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
-                Integer oldValInt = oldPrefs.node("TntMPD").getInt("UserId", 0);
-                setValue(EmailServer.getPrefName(0, EmailServer.PREF_TNT_USERID), oldValInt);
-                // Ignore former TntMPD/Username pref; no longer needed
+                server.setMyAddresses(myAddresses.toArray(new String[0]));
+                EmailModel.addEmailServer(server);
 
                 log.info("4.x preferences successfully loaded.");
                 return true;
@@ -251,11 +223,36 @@ public class Preferences extends PreferenceStore {
     }
 
     /**
+     * Replaces all preference names containing {@code oldPrefName} with {@code newPrefName}. Partial matches okay.
+     * 
+     * @param oldPrefName
+     *            the old preference name
+     * @param newPrefName
+     *            the new preference name
+     */
+    public void replacePrefNames(String oldPrefName, String newPrefName) {
+        log.trace("replacePrefNames({},{})", oldPrefName, newPrefName);
+
+        // Create renamed preferences
+        Map<String, String> newPrefs = new HashMap<String, String>();
+        for (String prefName : preferenceNames())
+            if (prefName.contains(oldPrefName))
+                newPrefs.put(prefName.replace(oldPrefName, newPrefName), getString(oldPrefName));
+
+        // Remove old preferences
+        setToDefaultIfContains(oldPrefName);
+
+        // Add new preferences
+        for (String key : newPrefs.keySet())
+            setValue(key, newPrefs.get(key));
+    }
+
+    /**
      * Resets preference store to last saved state
      */
     public void resetPreferences() {
         log.trace("resetPreferences()");
-        prefs = new Preferences();
+        loadPreferences();
     }
 
     /**
@@ -280,29 +277,28 @@ public class Preferences extends PreferenceStore {
         }
     }
 
-    public void setDefaults(String name, int[] values) {
+    public void setDefault(String name, int[] values) {
         String[] strValues = new String[values.length];
         for (int i = 0; i < values.length; i++)
             strValues[i] = String.valueOf(values[i]);
-        setDefaults(name, strValues);
+        setDefault(name, strValues);
     }
 
-    public void setDefaults(String name, String[] values) {
+    public void setDefault(String name, String[] values) {
         setDefault(name, StringUtils.join(values, Preferences.getSeparator()));
     }
 
     /**
-     * Sets all preferences to their default values if the preference name contains the specified string
+     * Sets all preferences to their default values if the preference name contains the specified string.
      * 
      * @param name
      *            The string to look for
      */
     public void setToDefaultIfContains(String name) {
         log.trace("setToDefaultIfContains({})", name);
-        String[] prefNames = preferenceNames();
-        for (int i = 0; i < prefNames.length; i++)
-            if (prefNames[i].contains(name))
-                setToDefault(prefNames[i]);
+        for (String prefName : preferenceNames())
+            if (prefName.contains(name))
+                setToDefault(prefName);
     }
 
     public void setValue(String name, Rectangle rect) {

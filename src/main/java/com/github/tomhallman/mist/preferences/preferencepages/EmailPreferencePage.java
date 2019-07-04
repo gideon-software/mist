@@ -67,15 +67,13 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 log.trace("addServerButton.widgetSelected({})", e);
-                // We "add a server" here by creating it in preferences, then refreshing the dialog
-                // This breaks assumptions about how preferences are usually handled, so this is a
-                // bit of hack.
                 // TODO: Use a wizard here instead
-                int serverId = MIST.getPreferenceManager().getEmailServerPrefCount();
-                String prefName = EmailServer.getPrefName(serverId, EmailServer.PREF_NICKNAME);
-                MIST.getPrefs().setValue(prefName, "New Email Server");
+
+                EmailServer server = new EmailServer(EmailModel.getEmailServerCount());
+                server.setNickname("New Email Server");
+
                 // This refreshes the PreferenceDialog so the new server shows up
-                MIST.getPreferenceManager().addEmailServerNode(serverId, true);
+                MIST.getPreferenceManager().addEmailServerNode(server.getId(), true);
             }
         });
         addField(addServerButton);

@@ -26,7 +26,6 @@ import org.eclipse.jface.wizard.Wizard;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
-import com.github.tomhallman.mist.model.data.EmailServer;
 import com.github.tomhallman.mist.preferences.Preferences;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 
@@ -43,14 +42,6 @@ public class IgnoreContactWizard extends Wizard {
         log.trace("IgnoreContactWizard({})", contactInfo);
         this.contactInfo = contactInfo;
         setWindowTitle("Ignore Contact Wizard");
-    }
-
-    private void addIgnoreEmailToPref(String prefName, String emailToIgnore) {
-        log.trace("addIgnoreEmailToPref({},{})", prefName, emailToIgnore);
-        // Get preference (char-separated list of strings)
-        String ignoreEmailPref = MIST.getPrefs().getString(prefName);
-        // Add email
-        MIST.getPrefs().setValue(prefName, ignoreEmailPref + Preferences.getSeparator() + emailToIgnore);
     }
 
     @Override
@@ -76,11 +67,16 @@ public class IgnoreContactWizard extends Wizard {
         log.trace("performFinish()");
 
         String email = ignoreSettingsPage.getEmail().trim();
-        if (ignoreSettingsPage.isGlobalCheckSelected())
-            addIgnoreEmailToPref(EmailModel.PREF_ADDRESSES_IGNORE, email);
-        else {
+        if (ignoreSettingsPage.isGlobalCheckSelected()) {
+            // Get preference (char-separated list of strings)
+            String ignoreEmailPref = MIST.getPrefs().getString(EmailModel.PREF_ADDRESSES_IGNORE);
+            // Add email
+            MIST.getPrefs().setValue(
+                EmailModel.PREF_ADDRESSES_IGNORE,
+                ignoreEmailPref + Preferences.getSeparator() + email);
+        } else {
             for (int id : ignoreSettingsPage.getSelectedServerIds())
-                addIgnoreEmailToPref(EmailServer.getPrefName(id, EmailServer.PREF_ADDRESSES_IGNORE), email);
+                EmailModel.getEmailServer(id).addIgnoreAddress(email);
         }
 
         return true;

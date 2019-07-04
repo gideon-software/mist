@@ -44,7 +44,6 @@ public class MistPreferenceManager extends PreferenceManager {
 
     private static final String PREFNODE_TNT = "tnt";
     private static final String PREFNODE_EMAIL = "email";
-    private static final String PREFNODE_EMAILSERVER_PREFIX = "server";
     private static final String PREFNODE_LOGGING = "logging";
 
     private static MistPreferenceManager manager;
@@ -74,7 +73,7 @@ public class MistPreferenceManager extends PreferenceManager {
     public void addEmailServerNode(int serverId, boolean refreshAndSelect) {
         log.trace("addEmailServerNode({},{})", serverId, refreshAndSelect);
         PreferenceNode serverNode = new SmartPreferenceNode(
-            getEmailServerNodeName(serverId),
+            EmailServer.getPrefPrefix(serverId),
             new EmailServerPreferencePage(serverId));
         addTo(PREFNODE_EMAIL, serverNode);
         if (refreshAndSelect) {
@@ -87,16 +86,10 @@ public class MistPreferenceManager extends PreferenceManager {
         log.trace("addNodes()");
         addToRoot(new SmartPreferenceNode(PREFNODE_TNT, new TntDbPreferencePage()));
         addToRoot(new SmartPreferenceNode(PREFNODE_EMAIL, new EmailPreferencePage()));
-        for (int i = 0; i < EmailModel.getEmailServerCount(); i++)
-            addEmailServerNode(i, false);
+        reloadEmailServerNodes();
         addToRoot(new SmartPreferenceNode(PREFNODE_LOGGING, new LoggingPreferencePage()));
     }
 
-    /**
-     * 
-     * @param shell
-     * @return
-     */
     public MistPreferenceDialog createPreferenceDialog(Shell shell) {
         log.trace("createPreferenceDialog({})", shell);
         removeAll();
@@ -110,44 +103,43 @@ public class MistPreferenceManager extends PreferenceManager {
     }
 
     /**
-     * 
-     * @param serverId
-     */
-    public void deleteEmailServerNode(int serverId) {
-        log.trace("deleteEmailServerNode({})", serverId);
-        IPreferenceNode emailNode = find(PREFNODE_EMAIL);
-        emailNode.remove(getEmailServerNodeName(serverId));
-        preferenceDialog.getTreeViewer().setSelection(new StructuredSelection(emailNode));
-        refreshPreferenceDialogTree();
-    }
-
-    private String getEmailServerNodeName(int serverId) {
-        return PREFNODE_EMAILSERVER_PREFIX + serverId;
-    }
-
-    /**
-     * @return The number of email servers stored in the preferences
-     */
-    public int getEmailServerPrefCount() {
-        Preferences prefs = MIST.getPrefs();
-        int i = 0;
-        // Nickname can not be empty, so we can know if a server exists
-        while (!prefs.getString(EmailServer.getPrefName(i, EmailServer.PREF_NICKNAME)).isEmpty())
-            i++;
-        return i;
-    }
-
-    /**
      * @return the preferenceDialog
      */
     public MistPreferenceDialog getPreferenceDialog() {
         return preferenceDialog;
     }
 
+    public void postEmailServerRemoved() {
+        // Ready the current page for exit by bypassing dialog error checking
+        MIST.getPreferenceManager().getPreferenceDialog().clearCurrentPage();
+
+        // Reload email server nodes
+        reloadEmailServerNodes();
+
+        // Select the email node
+        preferenceDialog.getTreeViewer().setSelection(new StructuredSelection(find(PREFNODE_EMAIL)));
+
+        // Refresh the tree
+        refreshPreferenceDialogTree();
+    }
+
     private void refreshPreferenceDialogTree() {
         log.trace("refreshPreferenceDialogTree()");
         if (preferenceDialog != null)
             preferenceDialog.getTreeViewer().refresh(true);
+    }
+
+    private void reloadEmailServerNodes() {
+        log.trace("loadEmailServerNodes()");
+
+        // First remove all the nodes
+        IPreferenceNode emailNode = find(PREFNODE_EMAIL);
+        for (IPreferenceNode node : emailNode.getSubNodes())
+            emailNode.remove(node);
+
+        // Then add them all back
+        for (int i = 0; i < EmailModel.getEmailServerCount(); i++)
+            addEmailServerNode(i, false);
     }
 
 }
