@@ -66,7 +66,7 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
         addServerButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                log.trace("AddServerListener.widgetSelected({})", e);
+                log.trace("addServerButton.widgetSelected({})", e);
                 // We "add a server" here by creating it in preferences, then refreshing the dialog
                 // This breaks assumptions about how preferences are usually handled, so this is a
                 // bit of hack.
