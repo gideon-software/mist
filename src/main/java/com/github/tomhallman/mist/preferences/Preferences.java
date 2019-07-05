@@ -179,12 +179,12 @@ public class Preferences extends PreferenceStore {
                 EmailServer server = new EmailServer(0);
                 server.setFolderName(oldPrefs.node("Mail").get("Folder", ""));
                 server.setHost(oldPrefs.node("Mail").get("Host", ""));
-                server.setMyName(oldPrefs.node("Mail").get("MyName", ""));
                 server.setNickname(oldPrefs.node("Mail").get("Host", "")); // There was no nickname; use host name
                 server.setPassword(oldPrefs.node("Mail").get("Password", ""));
                 server.setPasswordPrompt(oldPrefs.node("Mail").getBoolean("PasswordPrompt", true));
                 server.setPort(oldPrefs.node("Mail").get("Port", ""));
                 server.setUsername(oldPrefs.node("Mail").get("User", ""));
+                // We no longer use the "MyName" feature
 
                 // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
                 server.setTntUserId(oldPrefs.node("TntMPD").getInt("UserId", 0));

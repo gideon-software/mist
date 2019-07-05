@@ -52,7 +52,6 @@ import com.github.tomhallman.mist.tntapi.UserManager;
 import com.github.tomhallman.mist.tntapi.entities.User;
 import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.util.ui.Images;
-import com.github.tomhallman.mist.util.ui.SmartCombo;
 
 /**
  *
@@ -68,7 +67,6 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private ButtonFieldEditor connectButton;
     private SmartComboFieldEditor<String> folderEditor;
     private SmartComboFieldEditor<Integer> tntUserEditor;
-    private StringFieldEditor myNameEditor;
     private AddEditRemoveListFieldEditor myEmailAddressesEditor;
     private AddEditRemoveListFieldEditor ignoreAddressesEditor;
     private ButtonFieldEditor deleteButton;
@@ -228,15 +226,6 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             "&TntConnect User:",
             getFieldEditorParent());
         tntUserEditor.setEmptySelectionAllowed(false);
-        SmartCombo<Integer> tntUserEditorCombo = tntUserEditor.getComboControl(getFieldEditorParent());
-        tntUserEditorCombo.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent event) {
-                log.trace("tntUserEditorCombo.widgetSelected({})", event);
-                if (myNameEditor.getStringValue().isEmpty())
-                    myNameEditor.setStringValue(tntUserEditor.getSelectionValue());
-            }
-        });
         tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
         Button tntUserEditorButton = tntUserEditor.getButtonControl(getFieldEditorParent());
         tntUserEditorButton.setImage(Images.getImage(Images.ICON_RELOAD));
@@ -276,15 +265,6 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         }
         tntUserEditor.setEnabled(false, getFieldEditorParent());
         addField(tntUserEditor);
-
-        // My name
-        myNameEditor = new StringFieldEditor(
-            server.getPrefName(EmailServer.PREF_MYNAME),
-            "&My name:",
-            getFieldEditorParent());
-        myNameEditor.setEmptyStringAllowed(false);
-        myNameEditor.setErrorMessage("'My name' may not be empty.");
-        addField(myNameEditor);
 
         // My email addresses
         myEmailAddressesEditor = new AddEditRemoveListFieldEditor(
@@ -349,7 +329,6 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
 
     private void savePageSettings() {
         server.setNickname(nicknameEditor.getStringValue());
-        server.setMyName(myNameEditor.getStringValue());
         server.setHost(hostEditor.getStringValue());
         server.setPort(portEditor.getStringValue());
         server.setUsername(usernameEditor.getStringValue());

@@ -57,7 +57,6 @@ public class EmailServer implements Cloneable {
     public final static String PREF_PORT = "port";
     public final static String PREF_NICKNAME = "nickname";
     public final static String PREF_USERNAME = "username";
-    public final static String PREF_MYNAME = "myname";
     public final static String PREF_TNT_USERID = "tnt.user.id";
     public final static String PREF_TNT_USERNAME = "tnt.user.username";
 
@@ -69,7 +68,6 @@ public class EmailServer implements Cloneable {
     private int id;
 
     private String host;
-    private String myName;
     private String nickname;
     private String password;
     private boolean passwordPrompt;
@@ -236,10 +234,6 @@ public class EmailServer implements Cloneable {
         return myAddresses;
     }
 
-    public String getMyName() {
-        return myName;
-    }
-
     public javax.mail.Message getNextMessage() throws EmailServerException {
         log.trace("{{}} getNextMessage()", getNickname());
         try {
@@ -311,7 +305,6 @@ public class EmailServer implements Cloneable {
         Preferences prefs = MIST.getPrefs();
         setFolderName(prefs.getString(getPrefName(EmailServer.PREF_FOLDER)));
         setHost(prefs.getString(getPrefName(EmailServer.PREF_HOST)));
-        setMyName(prefs.getString(getPrefName(EmailServer.PREF_MYNAME)));
         setUsername(prefs.getString(getPrefName(EmailServer.PREF_USERNAME)));
         setNickname(prefs.getString(getPrefName(EmailServer.PREF_NICKNAME)));
         setTntUserId(prefs.getInt(getPrefName(EmailServer.PREF_TNT_USERID)));
@@ -393,11 +386,6 @@ public class EmailServer implements Cloneable {
     public void setMyAddresses(String[] myAddresses) {
         this.myAddresses = myAddresses;
         MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_MY), myAddresses);
-    }
-
-    public void setMyName(String myName) {
-        this.myName = myName;
-        MIST.getPrefs().setValue(getPrefName(PREF_MYNAME), myName);
     }
 
     public void setNickname(String nickname) {
