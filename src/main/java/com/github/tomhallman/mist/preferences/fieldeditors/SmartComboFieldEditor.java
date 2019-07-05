@@ -31,9 +31,9 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
 import com.github.tomhallman.mist.util.ui.SmartCombo;
@@ -45,9 +45,19 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     private static Logger log = LogManager.getLogger();
 
     /**
-     * The smart combo field, or <code>null</code> if none.
+     * The smart combo field, or null if none.
      */
-    private SmartCombo<T> combo;
+    private SmartCombo<T> combo = null;
+
+    /**
+     * The action button, or null if none.
+     */
+    private Button button = null;
+
+    /**
+     * Whether to include an action button.
+     */
+    private boolean hasButton = false;
 
     /**
      * Cached valid state
@@ -60,18 +70,26 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     private T curItem;
 
     /**
-     * The error message, or <code>null</code> if none.
+     * The error message, or null if none.
      */
     private String errorMessage = "Selection cannot be empty";
 
     /**
-     * Indicates whether an empty selection is legal; <code>true</code> by default
+     * Indicates whether an empty selection is legal; true by default
      */
     private boolean emptySelectionAllowed = true;
 
     public SmartComboFieldEditor(String name, String labelText, Composite parent) {
-        super(name, labelText, parent);
-        log.trace("SmartComboFieldEditor({},{},{})", name, labelText, parent);
+        this(name, labelText, parent, false);
+    }
+
+    public SmartComboFieldEditor(String name, String labelText, Composite parent, boolean hasButton) {
+        log.trace("SmartComboFieldEditor({},{},{},{})", name, labelText, parent, hasButton);
+        this.hasButton = true;
+
+        // Copied from super constructor; hasButton must be set before createControl!
+        super.init(name, labelText);
+        super.createControl(parent);
     }
 
     /**
@@ -82,16 +100,16 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
             combo.add(item, value);
     }
 
-    public void addSelectionListener(SelectionAdapter selectionAdapter) {
-        combo.addSelectionListener(selectionAdapter);
-    }
-
     @Override
     protected void adjustForNumColumns(int numColumns) {
         log.trace("{{}} adjustForNumColumns({})", combo, numColumns);
         // We only grab excess space if we have to.
         // If another field editor has more columns then we assume it is setting the width.
-        onGridData(combo).horizontalSpan(numColumns - 1).grabExcessHorizontalSpace(numColumns - 1 == 1);
+        if (hasButton) {
+            onGridData(combo).horizontalSpan(numColumns - 2).grabExcessHorizontalSpace(numColumns - 2 == 1);
+        } else {
+            onGridData(combo).horizontalSpan(numColumns - 1).grabExcessHorizontalSpace(numColumns - 1 == 1);
+        }
     }
 
     /**
@@ -126,6 +144,11 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
         combo = getComboControl(parent);
         applyGridData(combo).withHorizontalFill();
+
+        if (hasButton) {
+            button = getButtonControl(parent);
+            applyGridData(button).horizontalAlignment(SWT.FILL);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -165,9 +188,40 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     }
 
     /**
+     * Returns this field editor's button.
+     * 
+     * @return the button or null if no button is created [yet]
+     */
+    protected Button getButtonControl() {
+        log.trace("{{}} getButtonControl()", combo);
+        return button;
+    }
+
+    /**
+     * Returns this field editor's button.
+     * <p>
+     * The button is created if it does not yet exist (and {@code hasButton} is true).
+     * </p>
+     *
+     * @param parent
+     *            the parent
+     * @return the button
+     */
+    public Button getButtonControl(Composite parent) {
+        log.trace("{{}} getButtonControl({})", combo, parent);
+        if (button == null) {
+            button = new Button(parent, SWT.PUSH);
+        } else {
+            checkParent(button, parent);
+        }
+        return button;
+
+    }
+
+    /**
      * Returns this field editor's combo control.
      * 
-     * @return the combo control or <code>null</code> if no combo field is created yet
+     * @return the combo control or null if no combo field is created yet
      */
     protected SmartCombo<T> getComboControl() {
         log.trace("{{}} getComboControl()", combo);
@@ -184,7 +238,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            the parent
      * @return the combo control
      */
-    protected SmartCombo<T> getComboControl(Composite parent) {
+    public SmartCombo<T> getComboControl(Composite parent) {
         log.trace("{{}} getComboControl({})", combo, parent);
         if (combo == null) {
             combo = new SmartCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
@@ -226,7 +280,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
     @Override
     public int getNumberOfControls() {
-        return 2; // Label + combo
+        return hasButton ? 3 : 2; // Label + combo (+ maybe button)
     }
 
     /**
@@ -252,6 +306,10 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
         return emptySelectionAllowed;
     }
 
+    public boolean isEnabled(Composite parent) {
+        return getComboControl(parent).isEnabled();
+    }
+
     /*
      * (non-Javadoc)
      * Method declared on FieldEditor.
@@ -274,10 +332,8 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
         log.trace("{{}} refreshValidState()", combo);
         boolean oldState = isValid;
         isValid = checkState();
-        if (isValid != oldState) {
-            log.trace("  calling fireStateChanged({},{},{})", IS_VALID, oldState, isValid);
+        if (isValid != oldState)
             fireStateChanged(IS_VALID, oldState, isValid);
-        }
     }
 
     /**

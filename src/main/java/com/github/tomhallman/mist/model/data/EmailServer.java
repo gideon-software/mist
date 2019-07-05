@@ -59,6 +59,7 @@ public class EmailServer implements Cloneable {
     public final static String PREF_USERNAME = "username";
     public final static String PREF_MYNAME = "myname";
     public final static String PREF_TNT_USERID = "tnt.user.id";
+    public final static String PREF_TNT_USERNAME = "tnt.user.username";
 
     // Import controls
     private boolean stopImporting = false;
@@ -75,6 +76,12 @@ public class EmailServer implements Cloneable {
     private String port;
     private String username;
     private Integer tntUserId;
+    /**
+     * Cached copy of user's Tnt username. Helps avoid expensive call to DB when viewing settings.
+     * <p>
+     * If tntUserId != 0, this should have a value.
+     */
+    private String tntUsername;
     private String[] ignoreAddresses;
     private String[] myAddresses;
     private String folderName;
@@ -274,6 +281,10 @@ public class EmailServer implements Cloneable {
         return tntUserId;
     }
 
+    public String getTntUsername() {
+        return tntUsername;
+    }
+
     public int getTotalMessages() {
         return totalMessages;
     }
@@ -304,6 +315,7 @@ public class EmailServer implements Cloneable {
         setUsername(prefs.getString(getPrefName(EmailServer.PREF_USERNAME)));
         setNickname(prefs.getString(getPrefName(EmailServer.PREF_NICKNAME)));
         setTntUserId(prefs.getInt(getPrefName(EmailServer.PREF_TNT_USERID)));
+        setTntUsername(prefs.getString(getPrefName(EmailServer.PREF_TNT_USERNAME)));
         setIgnoreAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_IGNORE)));
         setMyAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_MY)));
 
@@ -410,7 +422,13 @@ public class EmailServer implements Cloneable {
 
     public void setTntUserId(Integer tntUserId) {
         this.tntUserId = tntUserId;
-        MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERID), tntUserId);
+        if (tntUserId != null) // next call only takes int, so no nulls!
+            MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERID), tntUserId);
+    }
+
+    public void setTntUsername(String tntUsername) {
+        this.tntUsername = tntUsername;
+        MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERNAME), tntUsername);
     }
 
     public void setUsername(String username) {

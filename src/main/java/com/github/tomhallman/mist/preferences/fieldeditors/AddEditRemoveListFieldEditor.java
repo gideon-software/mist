@@ -512,7 +512,6 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
 
         String newListString = getListString();
         if (!newListString.equals(curListString)) {
-            log.trace("  calling fireValueChanged({},{},{})", VALUE, curListString, newListString);
             fireValueChanged(VALUE, curListString, newListString);
             curListString = newListString;
         }

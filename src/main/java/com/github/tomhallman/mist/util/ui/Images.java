@@ -47,6 +47,7 @@ public class Images {
     public static final String ICON_MATCH_CONTACT = "icon-match-contact";
     public static final String ICON_MESSAGE_TO_ME = "icon-msg-to-me";
     public static final String ICON_MESSAGE_FROM_ME = "icon-msg-from-me";
+    public static final String ICON_RELOAD = "icon-reload";
     public static final String ICON_SETTINGS = "icon-settings";
     public static final String ICON_TNT = "icon-tnt";
 
@@ -113,6 +114,7 @@ public class Images {
         put(ICON_MATCH_CONTACT, imgLoc + "icons/user-plus-solid.png");
         put(ICON_MESSAGE_TO_ME, imgLoc + "icons/angle-left-solid.png");
         put(ICON_MESSAGE_FROM_ME, imgLoc + "icons/angle-right-solid.png");
+        put(ICON_RELOAD, imgLoc + "icons/redo-alt-solid-mod.png");
         put(ICON_SETTINGS, imgLoc + "icons/cog-solid.png");
         put(ICON_TNT, imgLoc + "icons/tnt.png");
 

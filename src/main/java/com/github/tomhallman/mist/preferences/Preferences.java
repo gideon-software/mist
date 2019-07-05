@@ -188,7 +188,7 @@ public class Preferences extends PreferenceStore {
 
                 // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"
                 server.setTntUserId(oldPrefs.node("TntMPD").getInt("UserId", 0));
-                // Ignore former TntMPD/Username pref; no longer needed
+                server.setTntUsername(oldPrefs.node("TntMPD").get("Username", ""));
 
                 // Addresses to ignore for this email server
                 List<String> ignoreAddresses = new ArrayList<String>();

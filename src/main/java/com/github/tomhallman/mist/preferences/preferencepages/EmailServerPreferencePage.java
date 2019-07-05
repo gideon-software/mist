@@ -34,6 +34,7 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
@@ -46,10 +47,12 @@ import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ForgettablePasswordFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SmartComboFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
+import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.tntapi.UserManager;
 import com.github.tomhallman.mist.tntapi.entities.User;
 import com.github.tomhallman.mist.util.Util;
 import com.github.tomhallman.mist.util.ui.Images;
+import com.github.tomhallman.mist.util.ui.SmartCombo;
 
 /**
  *
@@ -80,6 +83,34 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL_SERVER)));
         // setDescription("description here");
         noDefaultAndApplyButton();
+    }
+
+    protected boolean connectToServer() {
+        savePageSettings();
+
+        Util.connectToEmailServer(getShell(), server, false);
+        boolean success = server.isConnected();
+        if (success) {
+            // Save the password
+            passwordEditor.setPassword(server.getPassword());
+            passwordEditor.setPrompt(server.isPasswordPrompt());
+
+            // If there was a previously selected key, use that
+            String oldKey = folderEditor.getSelectionItem();
+
+            // Populate folder list
+            folderEditor.removeAll();
+            for (EmailFolder emailFolder : server.getCompleteFolderList())
+                if (emailFolder.canHoldMessages())
+                    folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
+
+            folderEditor.setSelection(oldKey != null ? oldKey : server.getFolder());
+
+            // All done with the server for now
+            server.disconnect();
+        }
+        folderEditor.setEnabled(success, getFieldEditorParent());
+        return success;
     }
 
     @Override
@@ -139,42 +170,19 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(passwordEditor);
 
         // Connect button
-        connectButton = new ButtonFieldEditor("Test &Connection / Get Folder List", getFieldEditorParent());
+        connectButton = new ButtonFieldEditor("Test &Connection", getFieldEditorParent());
         connectButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
-            public void widgetSelected(SelectionEvent e) {
-                log.trace("connectButton.widgetSelected({})", e);
-                savePageSettings();
-
-                // Connect
-                Util.connectToEmailServer(getShell(), server, false);
-                boolean success = server.isConnected();
-                if (success) {
-                    // Save the password
-                    passwordEditor.setPassword(server.getPassword());
-                    passwordEditor.setPrompt(server.isPasswordPrompt());
-
-                    // If there was a previously selected key, use that
-                    String oldKey = folderEditor.getSelectionItem();
-
-                    // Populate folder list
-                    folderEditor.removeAll();
-                    for (EmailFolder emailFolder : server.getCompleteFolderList())
-                        if (emailFolder.canHoldMessages())
-                            folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
-
-                    String folderName = MIST.getPrefs().getString(server.getPrefName(EmailServer.PREF_FOLDER));
-                    folderEditor.setSelection(oldKey != null ? oldKey : folderName);
-
-                    // All done with the server for now
-                    server.disconnect();
-
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("connectButton.widgetSelected({})", event);
+                if (connectToServer()) {
                     // Notify user that the connection was successful
-                    MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                    MessageBox msgBox = new MessageBox(
+                        ((Button) event.getSource()).getShell(),
+                        SWT.ICON_INFORMATION | SWT.OK);
                     msgBox.setMessage("Connection successful!");
                     msgBox.open();
                 }
-                folderEditor.setEnabled(success, getFieldEditorParent());
             }
         });
         addField(connectButton);
@@ -183,35 +191,91 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(new SpacerFieldEditor(getFieldEditorParent()));
 
         // Folder
-        String folderPrefName = server.getPrefName(EmailServer.PREF_FOLDER);
-        folderEditor = new SmartComboFieldEditor<String>(folderPrefName, "&Folder:", getFieldEditorParent());
+        folderEditor = new SmartComboFieldEditor<String>(
+            server.getPrefName(EmailServer.PREF_FOLDER),
+            "&Folder:",
+            getFieldEditorParent(),
+            true);
         folderEditor.setEmptySelectionAllowed(false);
-        String folderName = MIST.getPrefs().getString(folderPrefName);
-        if (!folderName.isEmpty()) {
+        if (!server.getFolder().isEmpty()) {
             // We're not connected to the email server, but we know the folder from previous preferences
-            folderEditor.add(folderName, folderName);
-            folderEditor.setSelection(folderName);
+            folderEditor.add(server.getFolder(), server.getFolder());
+            folderEditor.setSelection(server.getFolder());
         }
         folderEditor.setEnabled(false, getFieldEditorParent());
         folderEditor.setErrorMessage("An email folder must be selected.");
+        Button folderEditorButton = folderEditor.getButtonControl(getFieldEditorParent());
+        folderEditorButton.setImage(Images.getImage(Images.ICON_RELOAD));
+        folderEditorButton.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("folderEditorButton.widgetSelected({})", event);
+                if (connectToServer()) {
+                    MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                    msgBox.setMessage("Folders reloaded from email server.");
+                    msgBox.open();
+                }
+            }
+        });
         addField(folderEditor);
 
-        // Tnt User ID
+        // Tnt User ID (and username)
+        // Note: Tnt Username must be treated specially, since fieldEditor doesn't know about it directly
+        // See performOk
+        String tntUserIdPrefName = server.getPrefName(EmailServer.PREF_TNT_USERID);
         tntUserEditor = new SmartComboFieldEditor<Integer>(
-            server.getPrefName(EmailServer.PREF_TNT_USERID),
+            tntUserIdPrefName,
             "&TntConnect User:",
             getFieldEditorParent());
         tntUserEditor.setEmptySelectionAllowed(false);
-        tntUserEditor.addSelectionListener(new SelectionAdapter() {
+        SmartCombo<Integer> tntUserEditorCombo = tntUserEditor.getComboControl(getFieldEditorParent());
+        tntUserEditorCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
+                log.trace("tntUserEditorCombo.widgetSelected({})", event);
                 if (myNameEditor.getStringValue().isEmpty())
                     myNameEditor.setStringValue(tntUserEditor.getSelectionValue());
             }
         });
         tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
+        Button tntUserEditorButton = tntUserEditor.getButtonControl(getFieldEditorParent());
+        tntUserEditorButton.setImage(Images.getImage(Images.ICON_RELOAD));
+        tntUserEditorButton.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("tntUserEditorButton.widgetSelected({})", event);
+                // Try to populate the control from the Tnt DB
+                Util.connectToTntDatabase(getShell());
+
+                if (TntDb.isConnected()) {
+                    // If there was a previously selected key, use that
+                    Integer oldKey = tntUserEditor.getSelectionItem();
+
+                    // Populate user list
+                    tntUserEditor.removeAll();
+                    try {
+                        for (User user : UserManager.getUserList())
+                            tntUserEditor.add(user.getId(), user.getUsername());
+                        tntUserEditor.setEnabled(true, getFieldEditorParent());
+                    } catch (SQLException e) {
+                        log.warn("Could not add users to user list", e);
+                        tntUserEditor.setEnabled(false, getFieldEditorParent());
+                    }
+                    tntUserEditor.setSelection(oldKey != null ? oldKey : server.getTntUserId());
+
+                    MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                    msgBox.setMessage("Users reloaded from TntConnect.");
+                    msgBox.open();
+                }
+            }
+        });
+        if (server.getTntUserId() != 0) {
+            // Load cached username into combo and select
+            tntUserEditor.add(server.getTntUserId(), server.getTntUsername());
+            tntUserEditor.setSelection(server.getTntUserId());
+        }
+        tntUserEditor.setEnabled(false, getFieldEditorParent());
         addField(tntUserEditor);
-        populateUserList();
 
         // My name
         myNameEditor = new StringFieldEditor(
@@ -255,8 +319,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         deleteButton = new ButtonFieldEditor("&Delete this Email Server...", getFieldEditorParent());
         deleteButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
-            public void widgetSelected(SelectionEvent e) {
-                log.trace("deleteButton.widgetSelected({})", e);
+            public void widgetSelected(SelectionEvent event) {
+                log.trace("deleteButton.widgetSelected({})", event);
 
                 // Check with the user
                 MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
@@ -271,25 +335,16 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         addField(deleteButton);
     }
 
-    public void populateUserList() {
-        log.trace("populateUserList()");
-
-        // Try to populate the control from the Tnt DB
-        Util.connectToTntDatabase(getShell());
-
-        // If there was a previously selected key, use that
-        Integer oldKey = tntUserEditor.getSelectionItem();
-
-        // Populate user list
-        tntUserEditor.removeAll();
-        try {
-            for (User user : UserManager.getUserList())
-                tntUserEditor.add(user.getId(), user.getUsername());
-        } catch (SQLException e) {
-            log.warn("Could not add users to user list", e);
+    @Override
+    public boolean performOk() {
+        boolean ok = super.performOk();
+        if (ok) {
+            // Save the Tnt username; the tntUserEditor doesn't know to do this!
+            MIST.getPrefs().setValue(
+                server.getPrefName(EmailServer.PREF_TNT_USERNAME),
+                tntUserEditor.getSelectionValue());
         }
-        tntUserEditor.setSelection(oldKey != null ? oldKey : server.getTntUserId());
-        addField(tntUserEditor);
+        return ok;
     }
 
     private void savePageSettings() {
@@ -302,6 +357,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         server.setPasswordPrompt(passwordEditor.isPrompt());
         server.setFolderName(folderEditor.getSelectionItem());
         server.setTntUserId(tntUserEditor.getSelectionItem());
+        server.setTntUsername(tntUserEditor.getSelectionValue());
         server.setMyAddresses(myEmailAddressesEditor.getItems());
         server.setIgnoreAddresses(ignoreAddressesEditor.getItems());
     }
