@@ -70,7 +70,8 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
                 // TODO: Use a wizard here instead
 
                 EmailServer server = new EmailServer(EmailModel.getEmailServerCount());
-                server.setNickname("New Email Server");
+                server.setNickname(EmailServer.NEW_NICKNAME);
+                EmailModel.addEmailServer(server);
 
                 // This refreshes the PreferenceDialog so the new server shows up
                 MIST.getPreferenceManager().addEmailServerNode(server.getId(), true);

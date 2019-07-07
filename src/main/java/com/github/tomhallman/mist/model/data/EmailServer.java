@@ -46,6 +46,7 @@ public class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
 
     public final static int DEFAULT_PORT = 993;
+    public static final String NEW_NICKNAME = "New Email Server";
 
     private final static String PREF_PREFIX = "emailserver";
     public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
@@ -366,7 +367,8 @@ public class EmailServer implements Cloneable {
 
     public void setFolderName(String folderName) {
         this.folderName = folderName;
-        MIST.getPrefs().setValue(getPrefName(PREF_FOLDER), folderName);
+        if (folderName != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_FOLDER), folderName);
     }
 
     public void setHost(String host) {
@@ -410,13 +412,14 @@ public class EmailServer implements Cloneable {
 
     public void setTntUserId(Integer tntUserId) {
         this.tntUserId = tntUserId;
-        if (tntUserId != null) // next call only takes int, so no nulls!
+        if (tntUserId != null)
             MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERID), tntUserId);
     }
 
     public void setTntUsername(String tntUsername) {
         this.tntUsername = tntUsername;
-        MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERNAME), tntUsername);
+        if (tntUsername != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERNAME), tntUsername);
     }
 
     public void setUsername(String username) {

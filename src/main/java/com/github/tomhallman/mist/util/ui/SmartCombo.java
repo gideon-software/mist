@@ -171,7 +171,11 @@ public class SmartCombo<T> extends Composite {
     }
 
     public String getSelectionValue() {
-        return combo.getItem(combo.getSelectionIndex());
+        log.trace("getSelectionValue()");
+        int selectionIndex = getSelectionIndex();
+        if (selectionIndex != -1)
+            return combo.getItem(selectionIndex);
+        return null;
     }
 
     public String getText() {

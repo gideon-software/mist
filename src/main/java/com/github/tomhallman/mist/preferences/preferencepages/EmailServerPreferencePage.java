@@ -224,7 +224,8 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         tntUserEditor = new SmartComboFieldEditor<Integer>(
             tntUserIdPrefName,
             "&TntConnect User:",
-            getFieldEditorParent());
+            getFieldEditorParent(),
+            true);
         tntUserEditor.setEmptySelectionAllowed(false);
         tntUserEditor.setErrorMessage("A TntConnect user must be selected.");
         Button tntUserEditorButton = tntUserEditor.getButtonControl(getFieldEditorParent());
@@ -344,8 +345,13 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     @Override
     public void setVisible(boolean visible) {
         super.setVisible(visible);
-        if (!visible)
+        if (visible) {
+            nicknameEditor.setFocus();
+            if (EmailServer.NEW_NICKNAME.equals(server.getNickname()))
+                nicknameEditor.getTextControl(getFieldEditorParent()).selectAll();
+        } else {
             savePageSettings();
+        }
     }
 
 }

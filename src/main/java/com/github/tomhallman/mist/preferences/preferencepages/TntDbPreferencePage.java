@@ -29,10 +29,12 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import com.github.tomhallman.mist.MIST;
@@ -69,6 +71,7 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
     protected void createFieldEditors() {
         log.trace("createFieldEditors()");
         tntDbPath = new FileFieldEditor(TntDb.PREF_TNT_DBPATH, "&TntConnect Database:", true, getFieldEditorParent());
+        tntDbPath.setErrorMessage("Please select a TntConnect database.");
         tntDbPath.setEmptyStringAllowed(false);
         tntDbPath.setFileExtensions(new String[] { "*.mpddb", "*.*" });
         Text control = tntDbPath.getTextControl(getFieldEditorParent());
@@ -121,6 +124,10 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
                     for (int i = 0; i < EmailModel.getEmailServerCount(); i++)
                         EmailModel.getEmailServer(i).setTntUserId(0); // Set to default
                 }
+                // Tell the user
+                MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+                msgBox.setMessage("Successfully connected to TntConnect database.");
+                msgBox.open();
             } else {
                 setErrorMessage("Error accessing TntConnect database");
                 setValid(false);

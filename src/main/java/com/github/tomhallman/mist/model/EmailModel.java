@@ -41,6 +41,11 @@ public class EmailModel {
     public final static String PREF_AUTOTHANK_SUBJECTS = "email.autothank.subjects";
     public final static String PREF_EMAILSERVERS_COUNT = "email.emailservers.count";
 
+    // Default values
+    private final static String[] DEFAULT_ADDRESSES_IGNORE = new String[] { "mailer-daemon@*" };
+    private final static boolean DEFAULT_AUTOTHANK_ENABLED = true;
+    private final static String[] DEFAULT_AUTOTHANK_SUBJECTS = new String[] { "Thank" };
+
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(EmailModel.class);
     public final static String PROP_EMAILSERVER_ADDED = "emailmodel.emailserver.added";
@@ -109,6 +114,13 @@ public class EmailModel {
     public static void init() {
         log.trace("init()");
         importing = false;
+
+        // Set default preferences
+        MIST.getPrefs().setDefault(PREF_AUTOTHANK_ENABLED, DEFAULT_AUTOTHANK_ENABLED);
+        MIST.getPrefs().setDefault(PREF_AUTOTHANK_SUBJECTS, DEFAULT_AUTOTHANK_SUBJECTS);
+        MIST.getPrefs().setDefault(PREF_ADDRESSES_IGNORE, DEFAULT_ADDRESSES_IGNORE);
+
+        // Load email servers
         loadEmailServers();
     }
 
@@ -152,7 +164,7 @@ public class EmailModel {
     }
 
     /**
-     * Removes an email server from the model.
+     * Removes an email server from the model, including stored preferences, if it exists.
      * 
      * @param server
      *            The email server to remove

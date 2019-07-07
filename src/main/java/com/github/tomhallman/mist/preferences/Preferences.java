@@ -78,6 +78,15 @@ public class Preferences extends PreferenceStore {
         separator = sep;
     }
 
+    /**
+     * Clears all current preferences
+     */
+    private void clearPreferences() {
+        log.trace("clearPreferences()");
+        for (String pref : preferenceNames())
+            setToDefault(pref);
+    }
+
     public int[] getInts(String name) {
         String[] strings = getStrings(name);
         int[] ints = new int[strings.length];
@@ -252,6 +261,7 @@ public class Preferences extends PreferenceStore {
      */
     public void resetPreferences() {
         log.trace("resetPreferences()");
+        clearPreferences();
         loadPreferences();
     }
 

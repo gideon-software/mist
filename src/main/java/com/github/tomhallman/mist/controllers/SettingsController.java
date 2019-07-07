@@ -52,8 +52,9 @@ public class SettingsController {
         } else {
             MIST.getPrefs().resetPreferences();
             TntDb.init(); // Forces a reload of the DB settings
-            EmailModel.init(); // Reloads email servers
         }
+
+        EmailModel.init(); // Reloads email servers
 
         return ret;
     }

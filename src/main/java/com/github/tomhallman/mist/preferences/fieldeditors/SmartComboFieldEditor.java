@@ -85,7 +85,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
     public SmartComboFieldEditor(String name, String labelText, Composite parent, boolean hasButton) {
         log.trace("SmartComboFieldEditor({},{},{},{})", name, labelText, parent, hasButton);
-        this.hasButton = true;
+        this.hasButton = hasButton;
 
         // Copied from super constructor; hasButton must be set before createControl!
         super.init(name, labelText);
@@ -209,6 +209,8 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      */
     public Button getButtonControl(Composite parent) {
         log.trace("{{}} getButtonControl({})", combo, parent);
+        if (!hasButton)
+            return null;
         if (button == null) {
             button = new Button(parent, SWT.PUSH);
         } else {
