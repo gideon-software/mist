@@ -38,10 +38,6 @@ public class SimpleEmailLink extends Link {
 
     private String email = "";
 
-    /**
-     * @param parent
-     * @param style
-     */
     public SimpleEmailLink(Composite parent, int style) {
         super(parent, style);
         log.trace("SimpleEmailLink()", parent, style);
@@ -52,10 +48,8 @@ public class SimpleEmailLink extends Link {
                 log.trace("SimpleEmailLink.widgetSelected({})", event);
                 if (!Program.launch("mailto:" + email)) {
                     Util.reportError(
-                        getShell(),
                         "Unable to load default email client",
-                        "There was a problem loading your default email client. You can manually write to: " + email,
-                        null);
+                        "There was a problem loading your default email client. You can manually write to: " + email);
                 }
             }
         });

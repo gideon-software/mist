@@ -90,7 +90,7 @@ public class LoggingPreferencePage extends FieldEditorPreferencePage {
                     String msg = String.format(
                         "There was a problem loading your default file explorer. You can find the folder at '%s'",
                         folderPath);
-                    Util.reportError(getShell(), "Unable to load folder in default file explorer", msg, null);
+                    Util.reportError("Unable to load folder in default file explorer", msg);
                 }
             }
         });

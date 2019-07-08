@@ -72,11 +72,11 @@ public class TaskItemView implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
-        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())) {
+        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
-                    // We need to determine how many messages there are and what message we're on
                     if (taskItem != null) {
                         int total = EmailModel.getMessageCountTotal();
                         int current = EmailModel.getCurrentMessageNumberTotal();

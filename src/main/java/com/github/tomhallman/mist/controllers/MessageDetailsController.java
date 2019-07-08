@@ -102,7 +102,7 @@ public class MessageDetailsController {
                     HistoryManager.updateIsChallenge(history.getHistoryId(), selection);
                 } catch (SQLException e) {
                     String msg = "Could not update Partnership Challenge status";
-                    Util.reportError(view.getShell(), "Update error", msg, e);
+                    Util.reportError("Update error", msg, e);
                 }
             }
         });
@@ -119,7 +119,7 @@ public class MessageDetailsController {
                     HistoryManager.updateIsThank(history.getHistoryId(), selection);
                 } catch (SQLException e) {
                     String msg = "Could not update Thank status";
-                    Util.reportError(view.getShell(), "Update error", msg, e);
+                    Util.reportError("Update error", msg, e);
                 }
             }
         });
@@ -136,7 +136,7 @@ public class MessageDetailsController {
                     HistoryManager.updateIsMassMailing(history.getHistoryId(), selection);
                 } catch (SQLException e) {
                     String msg = "Could not update Mass Mailing status";
-                    Util.reportError(view.getShell(), "Update error", msg, e);
+                    Util.reportError("Update error", msg, e);
                 }
             }
         });
@@ -154,7 +154,7 @@ public class MessageDetailsController {
         try {
             HistoryManager.updateNotes(historyId, msgStr);
         } catch (SQLException e) {
-            Util.reportError(view.getShell(), "Update error", "Could not update history body", e);
+            Util.reportError("Update error", "Could not update history body", e);
         }
     }
 
@@ -169,7 +169,7 @@ public class MessageDetailsController {
         try {
             HistoryManager.updateDescription(historyId, subjectStr);
         } catch (SQLException e) {
-            Util.reportError(view.getShell(), "Update error", "Could not update history subject", e);
+            Util.reportError("Update error", "Could not update history subject", e);
         }
     }
 }

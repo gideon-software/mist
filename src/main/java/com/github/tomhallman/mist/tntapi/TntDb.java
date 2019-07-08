@@ -793,7 +793,7 @@ public class TntDb {
                                 @Override
                                 public void run() {
                                     String msg = "Error while importing email into TntConnect.";
-                                    Util.reportError(MIST.getView().getShell(), "Import error", msg, e);
+                                    Util.reportError("Import error", msg, e);
                                 }
                             });
                         }

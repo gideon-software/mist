@@ -44,6 +44,7 @@ import com.github.tomhallman.mist.views.MainWindowView;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import net.htmlparser.jericho.LoggerProvider;
 
 /**
  * Main MIST class.
@@ -113,6 +114,10 @@ public class MIST {
         } catch (NullPointerException e) {
             System.out.println("Incorrect configuration settings; confPath: " + confPath + "; logPath: " + logPath);
         }
+
+        // Disable Jericho logging
+        net.htmlparser.jericho.Config.LoggerProvider = LoggerProvider.DISABLED;
+
         return logPath;
     }
 

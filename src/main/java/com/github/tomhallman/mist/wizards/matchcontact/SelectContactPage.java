@@ -73,7 +73,7 @@ public class SelectContactPage extends WizardPage {
         try {
             contactList = ContactManager.getContactList();
         } catch (SQLException e) {
-            Util.reportError(getShell(), "Database connection error", "Could not load contact list", e);
+            Util.reportError("Database connection error", "Could not load contact list", e);
         }
 
         // Get contact names
@@ -136,7 +136,7 @@ public class SelectContactPage extends WizardPage {
             try {
                 contact = ContactManager.get(contactId);
             } catch (SQLException e) {
-                Util.reportError(getShell(), "Database connection error", "Could not load contact", e);
+                Util.reportError("Database connection error", "Could not load contact", e);
                 return null;
             }
             if (contact.hasSpouse())
@@ -155,7 +155,7 @@ public class SelectContactPage extends WizardPage {
         try {
             contact = ContactManager.get(getSelectedContactId());
         } catch (SQLException e) {
-            Util.reportError(getShell(), "Database connection error", "Could not load contact", e);
+            Util.reportError("Database connection error", "Could not load contact", e);
             return null;
         }
 

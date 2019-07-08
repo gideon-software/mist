@@ -37,11 +37,9 @@ public class AboutController {
         log.trace("AboutController({})", view);
         this.view = view;
         view.create();
-        view.getFacebookButton().addSelectionListener(
-            new WebpageLinkListener(view.getShell(), "MIST's Facebook page", MIST.FACEBOOK));
-        view.getHomepageLink().addSelectionListener(
-            new WebpageLinkListener(view.getShell(), "MIST's homepage", MIST.HOMEPAGE));
-        view.getMailingListLink().addSelectionListener(new EmailLinkListener(view.getShell(), MIST.USERLIST));
+        view.getFacebookButton().addSelectionListener(new WebpageLinkListener("MIST's Facebook page", MIST.FACEBOOK));
+        view.getHomepageLink().addSelectionListener(new WebpageLinkListener("MIST's homepage", MIST.HOMEPAGE));
+        view.getMailingListLink().addSelectionListener(new EmailLinkListener(MIST.USERLIST));
     }
 
     public int openView() {

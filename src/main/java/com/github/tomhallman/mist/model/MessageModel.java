@@ -36,6 +36,7 @@ public class MessageModel {
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(MessageModel.class);
     public final static String PROP_MESSAGE_ADD = "messagemodel.message.add";
+    public final static String PROP_MESSAGE_INIT = "messagemodel.message.init";
 
     // TODO: volatile needed?
     private static volatile Queue<MessageSource> messageQueue = new LinkedList<MessageSource>();
@@ -74,7 +75,7 @@ public class MessageModel {
     public static void init() {
         log.trace("init()");
         messageQueue = new LinkedList<MessageSource>();
-        pcs.firePropertyChange(PROP_MESSAGE_ADD, false, true); // Newly-initialized message list!
+        pcs.firePropertyChange(PROP_MESSAGE_INIT, false, true); // Newly-initialized message list!
     }
 
     public static void removePropertyChangeListener(PropertyChangeListener listener) {

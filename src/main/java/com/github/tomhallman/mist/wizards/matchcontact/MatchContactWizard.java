@@ -114,7 +114,7 @@ public class MatchContactWizard extends Wizard {
             try {
                 contactId = ContactManager.create(contact);
             } catch (TntDbException | SQLException e) {
-                Util.reportError(getShell(), "Database error", "Could not create contact", e);
+                Util.reportError("Database error", "Could not create contact", e);
                 return false;
             }
 
@@ -130,7 +130,7 @@ public class MatchContactWizard extends Wizard {
             try {
                 ContactManager.addNewEmailAddress(email, contactId, usePrimaryContact);
             } catch (SQLException | TntDbException e) {
-                Util.reportError(getShell(), "Database error", "Could not create contact", e);
+                Util.reportError("Database error", "Could not create contact", e);
                 return false;
             }
         }

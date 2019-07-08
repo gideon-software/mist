@@ -111,7 +111,7 @@ public class MainWindowController {
         try {
             MIST.getPrefs().save();
         } catch (IOException e) {
-            Util.reportError(view.getShell(), "Error", "Could not save preferences.", e);
+            Util.reportError("Error", "Could not save preferences.", e);
         }
 
         return view.close();

@@ -37,8 +37,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.window.Window;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
+import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.exceptions.TntDbException;
 import com.github.tomhallman.mist.model.data.EmailServer;
@@ -166,7 +170,7 @@ public class Util {
             String msg = String.format(
                 "Unable to connect to email server '%s'.\nPlease check your settings and try again.",
                 emailServer.getNickname());
-            reportError(shell, "Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
+            reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Only needed if run is cancelable
         }
@@ -194,7 +198,7 @@ public class Util {
             dialog.run(true, false, new TntConnectionRunnable());
         } catch (InvocationTargetException e) {
             String msg = "Unable to connect to Tnt database.\nPlease check your settings and try again.";
-            reportError(shell, "Tnt database connection failure", msg, e.getCause()); // We want the cause, not the ITE
+            reportError("Tnt database connection failure", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Only needed if run is cancelable
         }
@@ -229,50 +233,61 @@ public class Util {
     }
 
     /**
-     * Shows JFace ErrorDialog but improved by constructing full stack trace in
-     * detail area.
+     * Shows JFace ErrorDialog but improved by constructing full stack trace in detail area.
      * 
      * @see https://stackoverflow.com/a/9404081
      */
-    public static void reportError(Shell shell, String title, String msg, Throwable e) {
-        // log.trace("reportError({},{},{},{})", shell, title, msg, e);
+    public static void reportError(String title, String msg) {
+        reportError(title, msg, null);
+    }
 
+    /**
+     * Shows JFace ErrorDialog but improved by constructing full stack trace in detail area.
+     * 
+     * @see https://stackoverflow.com/a/9404081
+     */
+    public static void reportError(String title, String msg, Throwable e) {
+
+        if (e == null) {
+            // First log the error, if possible
+            if (log != null)
+                log.error(String.format("%s: %s", title, msg));
+            // No throwable, so use simple MessageBox rather than ErrorDialog
+            MessageBox msgBox = new MessageBox(Display.getDefault().getActiveShell(), SWT.ICON_ERROR | SWT.OK);
+            msgBox.setText(title);
+            msgBox.setMessage(msg);
+            msgBox.open();
+            return;
+        }
+
+        // First log the error, if possible
         if (log != null)
-            if (e != null)
-                log.error(title, e);
-            else
-                log.error(title);
+            log.error(String.format("%s: %s", title, msg), e);
 
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
 
-        final String trace = sw.toString(); // stack trace as a string
+        final String trace = stringWriter.toString(); // stack trace as a string
 
-        // Temp holder of child statuses
         List<Status> childStatuses = new ArrayList<>();
 
         // Split output by OS-independent new-line
-        for (String line : trace.split(System.getProperty("line.separator"))) {
+        for (String line : trace.split(System.lineSeparator())) {
             // build & add status
-            childStatuses.add(new Status(IStatus.ERROR, "MIST", line));
+            childStatuses.add(new Status(IStatus.ERROR, MIST.APP_NAME, line));
         }
 
         // convert to array of statuses
         String localizedMessage = e.getLocalizedMessage() == null ? e.toString() : e.getLocalizedMessage();
         MultiStatus ms = new MultiStatus(
-            "MIST",
+            MIST.APP_NAME,
             IStatus.ERROR,
             childStatuses.toArray(new Status[] {}),
             localizedMessage,
             e);
 
-        if (shell == null || shell.isDisposed()) {
-            log.error("Tried to show error to user but shell is invalid: {}; printing stack trace", shell);
-            e.printStackTrace();
-        } else {
-            ErrorDialog.openError(shell, title, msg, ms);
-        }
+        ErrorDialog.openError(Display.getDefault().getActiveShell(), title, msg, ms);
     }
 
 }

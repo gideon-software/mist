@@ -147,6 +147,7 @@ public class EmailServer implements Cloneable {
                 totalMessages = folder.getMessageCount();
             } catch (MessagingException e) {
                 folder = null;
+                disconnect();
                 throw new EmailServerException(e);
             }
         }
@@ -188,7 +189,7 @@ public class EmailServer implements Cloneable {
             for (int i = 0; i < folders.length; i++)
                 emailFolders[i] = new EmailFolder(folders[i]);
             return emailFolders;
-        } catch (MessagingException e) {
+        } catch (MessagingException | IllegalStateException e) {
             log.error("{{}} Unable to retrieve folder list", getNickname());
             return new EmailFolder[0];
         }
@@ -373,7 +374,8 @@ public class EmailServer implements Cloneable {
 
     public void setHost(String host) {
         this.host = host;
-        MIST.getPrefs().setValue(getPrefName(PREF_HOST), host);
+        if (host != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_HOST), host);
     }
 
     private void setId(int id) {
@@ -382,22 +384,26 @@ public class EmailServer implements Cloneable {
 
     public void setIgnoreAddresses(String[] ignoreAddresses) {
         this.ignoreAddresses = ignoreAddresses;
-        MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_IGNORE), ignoreAddresses);
+        if (ignoreAddresses != null)
+            MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_IGNORE), ignoreAddresses);
     }
 
     public void setMyAddresses(String[] myAddresses) {
         this.myAddresses = myAddresses;
-        MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_MY), myAddresses);
+        if (myAddresses != null)
+            MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_MY), myAddresses);
     }
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
-        MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), nickname);
+        if (nickname != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), nickname);
     }
 
     public void setPassword(String password) {
         this.password = password;
-        MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD), password);
+        if (password != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD), password);
     }
 
     public void setPasswordPrompt(boolean prompt) {
@@ -424,7 +430,8 @@ public class EmailServer implements Cloneable {
 
     public void setUsername(String username) {
         this.username = username;
-        MIST.getPrefs().setValue(getPrefName(PREF_USERNAME), username);
+        if (username != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_USERNAME), username);
     }
 
     /**
@@ -460,15 +467,14 @@ public class EmailServer implements Cloneable {
                         message = getNextMessage();
                         MessageModel.addMessage(new EmailMessage(EmailServer.this, message));
                     } catch (EmailServerException e) {
-                        String msg = String.format(
-                            "Can't retrieve message %s on server '%s'",
-                            currentMessageNumber,
-                            nickname);
-                        log.error(e);
                         Display.getDefault().syncExec(new Runnable() {
                             @Override
                             public void run() {
-                                Util.reportError(MIST.getView().getShell(), "Email server error", msg, e);
+                                String msg = String.format(
+                                    "Can't retrieve message %s on server '%s'",
+                                    currentMessageNumber,
+                                    nickname);
+                                Util.reportError("Email server error", msg, e);
                             }
                         });
                     }
@@ -493,8 +499,11 @@ public class EmailServer implements Cloneable {
 
             } // run()
         };
-        importThread.setName(String.format("ESImport%s", id));
-        importThread.start();
+        if (isConnected()) {
+            importThread.setName(String.format("ESImport%s", id));
+            importThread.start();
+        } else
+            importComplete = true;
     }
 
     public void stopImportService() {

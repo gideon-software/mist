@@ -62,7 +62,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
 
     // Property change values
-    public final static String PROP_MESSAGE = "MessagesView.message";
+    public final static String PROP_MESSAGE_SELECTED = "MessagesView.message.selected";
 
     // Table columns
     public final static int COL_STATUS = 0;
@@ -114,7 +114,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
                 History history = (History) messagesTable.getSelection()[0].getData(DATA_HISTORY);
                 if (newSelectionIndex != oldSelectionIndex) {
                     oldSelectionIndex = newSelectionIndex;
-                    pcs.firePropertyChange(PROP_MESSAGE, null, history);
+                    pcs.firePropertyChange(PROP_MESSAGE_SELECTED, null, history);
                 }
             }
         });

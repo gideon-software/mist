@@ -172,7 +172,7 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
             clearControls();
             history = null;
 
-        } else if (MessagesView.PROP_MESSAGE.equals(event.getPropertyName())) {
+        } else if (MessagesView.PROP_MESSAGE_SELECTED.equals(event.getPropertyName())) {
             // A new message has been selected; load the details
             history = (History) event.getNewValue();
 

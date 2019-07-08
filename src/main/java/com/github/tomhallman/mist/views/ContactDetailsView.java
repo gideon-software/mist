@@ -171,7 +171,7 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
                     pledgeLabel.requestLayout();
                     contactDetailsGroup.layout();
                 } catch (TntDbException | SQLException e) {
-                    Util.reportError(getShell(), "Database connection error", "Could not load contact", e);
+                    Util.reportError("Database connection error", "Could not load contact", e);
                     return;
                 }
             }

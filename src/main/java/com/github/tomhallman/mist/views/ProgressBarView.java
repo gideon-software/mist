@@ -64,17 +64,14 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
-        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())) {
+        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
                     int total = EmailModel.getMessageCountTotal();
                     int current = EmailModel.getCurrentMessageNumberTotal();
-
-                    if (progressBar.getSelection() == 0) {
-                        progressBar.setMaximum(total);
-                        log.debug("Setting progress bar maximum to {}", total);
-                    }
+                    progressBar.setMaximum(total);
                     progressBar.setSelection(current);
                 }
             });

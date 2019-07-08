@@ -24,32 +24,29 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.program.Program;
-import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.util.Util;
 
 public class WebpageLinkListener extends SelectionAdapter {
     private static Logger log = LogManager.getLogger();
     private String link = "";
-    private Shell shell = null;
     private String text = "";
 
-    public WebpageLinkListener(Shell shell, String text, String link) {
-        log.trace("WebpageLinkListener({},{},{})", shell, text, link);
-        this.shell = shell;
+    public WebpageLinkListener(String text, String link) {
+        log.trace("WebpageLinkListener({},{})", text, link);
         this.link = link;
         this.text = text;
     }
 
+    @Override
     public void widgetSelected(SelectionEvent event) {
         log.trace("widgetSelected({})", event);
         if (!Program.launch(link)) {
-            String msg = String
-                .format(
-                    "There was a problem loading %s in your default web browser. You can find it at %s",
-                    text,
-                    link);
-            Util.reportError(shell, "Unable to load URL in default browser", msg, null);
+            String msg = String.format(
+                "There was a problem loading %s in your default web browser. You can find it at %s",
+                text,
+                link);
+            Util.reportError("Unable to load URL in default browser", msg);
         }
     }
 }

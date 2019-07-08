@@ -24,24 +24,20 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.program.Program;
-import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.util.Util;
 
 public class EmailLinkListener extends SelectionAdapter {
     private static Logger log = LogManager.getLogger();
     private String email = "";
-    private Shell shell = null;
 
-    public EmailLinkListener(Shell shell) {
-        log.trace("EmailLinkListener({})", shell);
-        this.shell = shell;
+    public EmailLinkListener() {
+        log.trace("EmailLinkListener()");
         this.email = "";
     }
 
-    public EmailLinkListener(Shell shell, String email) {
-        log.trace("EmailLinkListener({},{}", shell, email);
-        this.shell = shell;
+    public EmailLinkListener(String email) {
+        log.trace("EmailLinkListener({})", email);
         this.email = email == null ? "" : email;
     }
 
@@ -58,7 +54,7 @@ public class EmailLinkListener extends SelectionAdapter {
         log.trace("EmailLinkListener.widgetSelected({})", event);
         if (!Program.launch("mailto:" + email)) {
             String msg = "There was a problem loading your default email client. You can manually write to: " + email;
-            Util.reportError(shell, "Unable to load default email client", msg, null);
+            Util.reportError("Unable to load default email client", msg);
         }
     }
 }

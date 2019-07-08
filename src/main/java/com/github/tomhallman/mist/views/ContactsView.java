@@ -41,7 +41,6 @@ import org.eclipse.swt.widgets.List;
 import com.github.tomhallman.mist.model.HistoryModel;
 import com.github.tomhallman.mist.tntapi.entities.ContactInfo;
 import com.github.tomhallman.mist.tntapi.entities.History;
-import com.github.tomhallman.mist.util.Util;
 
 public class ContactsView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -153,16 +152,16 @@ public class ContactsView extends Composite implements PropertyChangeListener {
                 public void run() {
                     // Get the removed contact
                     ContactInfo ci = (ContactInfo) event.getNewValue();
+                    String name = ci.getName();
                     if (ci.getId() == null)
-                        ci.setName(" [?] " + ci.getName());
+                        ci.setName(String.format(" [?] %s", name));
 
                     // Remove the associated contact
                     int index = contacts.indexOf(ci);
-                    if (index != -1) {
+                    if (index != -1) { // And if not, they were already removed!
                         contacts.remove(index);
                         contactList.remove(index);
-                    } else
-                        Util.reportError(getShell(), "Error", "Could not remove contact", null);
+                    }
 
                     oldSelectionIndex = -1;
                 }

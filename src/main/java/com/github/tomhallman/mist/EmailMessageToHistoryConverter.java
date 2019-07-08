@@ -59,7 +59,7 @@ public class EmailMessageToHistoryConverter {
         try {
             int numMatches = ContactManager.getContactsByEmailCount(history.getContactInfo().getInfo());
             if (numMatches == 0) {
-                log.warn(
+                log.info(
                     "Contact not found in Tnt for '{}'. Skipping message for this contact.",
                     history.getContactInfo().getInfo());
                 if (history.getStatus() == History.STATUS_NONE)

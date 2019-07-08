@@ -321,9 +321,10 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         boolean ok = super.performOk();
         if (ok) {
             // Save the Tnt username; the tntUserEditor doesn't know to do this!
-            MIST.getPrefs().setValue(
-                server.getPrefName(EmailServer.PREF_TNT_USERNAME),
-                tntUserEditor.getSelectionValue());
+            if (tntUserEditor != null) // We may not have loaded the page!
+                MIST.getPrefs().setValue(
+                    server.getPrefName(EmailServer.PREF_TNT_USERNAME),
+                    tntUserEditor.getSelectionValue());
         }
         return ok;
     }

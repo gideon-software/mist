@@ -93,7 +93,6 @@ public class MainMenuController {
             view.getAboutItem().addListener(SWT.Selection, aboutListener);
         }
         // All platforms
-        view.getManualItem().addSelectionListener(
-            new WebpageLinkListener(view.getShell(), "the MIST User Manual", MIST.MANUAL));
+        view.getManualItem().addSelectionListener(new WebpageLinkListener("the MIST User Manual", MIST.MANUAL));
     }
 }
