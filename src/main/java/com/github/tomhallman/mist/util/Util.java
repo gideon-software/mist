@@ -166,7 +166,7 @@ public class Util {
             String msg = String.format(
                 "Unable to connect to email server '%s'.\nPlease check your settings and try again.",
                 emailServer.getNickname());
-            reportError(shell, "Email connection failed", msg, e);
+            reportError(shell, "Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Only needed if run is cancelable
         }
@@ -194,7 +194,7 @@ public class Util {
             dialog.run(true, false, new TntConnectionRunnable());
         } catch (InvocationTargetException e) {
             String msg = "Unable to connect to Tnt database.\nPlease check your settings and try again.";
-            reportError(shell, "Tnt database connection failure", msg, e);
+            reportError(shell, "Tnt database connection failure", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Only needed if run is cancelable
         }
