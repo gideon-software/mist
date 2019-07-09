@@ -24,6 +24,7 @@ import java.sql.SQLException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceDialog;
@@ -59,6 +60,7 @@ import com.github.tomhallman.mist.util.ui.Images;
 public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private static Logger log = LogManager.getLogger();
 
+    private BooleanFieldEditor enabledEditor;
     private StringFieldEditor nicknameEditor;
     private StringFieldEditor hostEditor;
     private IntegerFieldEditor portEditor;
@@ -134,6 +136,13 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             }
         });
         addField(nicknameEditor);
+
+        // Enabled
+        enabledEditor = new BooleanFieldEditor(
+            server.getPrefName(EmailServer.PREF_ENABLED),
+            "Enabled",
+            getFieldEditorParent());
+        addField(enabledEditor);
 
         // Host
         hostEditor = new StringFieldEditor(server.getPrefName(EmailServer.PREF_HOST), "&Host:", getFieldEditorParent());
@@ -330,6 +339,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     }
 
     private void savePageSettings() {
+        server.setEnabled(enabledEditor.getBooleanValue());
         server.setNickname(nicknameEditor.getStringValue());
         server.setHost(hostEditor.getStringValue());
         server.setPort(portEditor.getStringValue());

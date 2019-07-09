@@ -139,8 +139,8 @@ public class Preferences extends PreferenceStore {
         if (dbPath.isBlank())
             return false;
 
-        // We need at least one email server set up
-        if (EmailModel.getEmailServerCount() == 0)
+        // We need at least one email server set up and enabled
+        if (EmailModel.getEnabledEmailServerCount() == 0)
             return false;
 
         return true;
@@ -186,6 +186,7 @@ public class Preferences extends PreferenceStore {
 
                 // Pre-5.0 stored its one email server under "Mail" node
                 EmailServer server = new EmailServer(0);
+                server.setEnabled(true);
                 server.setFolderName(oldPrefs.node("Mail").get("Folder", ""));
                 server.setHost(oldPrefs.node("Mail").get("Host", ""));
                 server.setNickname(oldPrefs.node("Mail").get("Host", "")); // There was no nickname; use host name

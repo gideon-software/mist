@@ -116,7 +116,6 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             "Emails to or from these addresses will not be imported;"
                 + System.lineSeparator()
                 + "(Use * for any string and ? for any character)");
-
         addField(ignoreAddressesEditor);
     }
 

@@ -51,6 +51,7 @@ public class EmailServer implements Cloneable {
     private final static String PREF_PREFIX = "emailserver";
     public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
     public final static String PREF_ADDRESSES_MY = "addresses.my";
+    public final static String PREF_ENABLED = "enabled";
     public final static String PREF_FOLDER = "folder";
     public final static String PREF_HOST = "host";
     public final static String PREF_PASSWORD = "password";
@@ -62,12 +63,17 @@ public class EmailServer implements Cloneable {
     public final static String PREF_TNT_USERNAME = "tnt.user.username";
 
     // Import controls
-    private boolean stopImporting = false;
-    private boolean importComplete = false;
+    private boolean stopImporting;
+    /**
+     * True if an import has been started via startImportService() and completed (whether it "worked" or not.)
+     * False otherwise.
+     */
+    private boolean importComplete;
 
     // Server properties
     private int id;
 
+    private boolean enabled;
     private String host;
     private String nickname;
     private String password;
@@ -305,14 +311,15 @@ public class EmailServer implements Cloneable {
         //
 
         Preferences prefs = MIST.getPrefs();
-        setFolderName(prefs.getString(getPrefName(EmailServer.PREF_FOLDER)));
-        setHost(prefs.getString(getPrefName(EmailServer.PREF_HOST)));
-        setUsername(prefs.getString(getPrefName(EmailServer.PREF_USERNAME)));
-        setNickname(prefs.getString(getPrefName(EmailServer.PREF_NICKNAME)));
-        setTntUserId(prefs.getInt(getPrefName(EmailServer.PREF_TNT_USERID)));
-        setTntUsername(prefs.getString(getPrefName(EmailServer.PREF_TNT_USERNAME)));
-        setIgnoreAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_IGNORE)));
-        setMyAddresses(prefs.getStrings(getPrefName(EmailServer.PREF_ADDRESSES_MY)));
+        setEnabled(prefs.getBoolean(getPrefName(PREF_ENABLED)));
+        setFolderName(prefs.getString(getPrefName(PREF_FOLDER)));
+        setHost(prefs.getString(getPrefName(PREF_HOST)));
+        setUsername(prefs.getString(getPrefName(PREF_USERNAME)));
+        setNickname(prefs.getString(getPrefName(PREF_NICKNAME)));
+        setTntUserId(prefs.getInt(getPrefName(PREF_TNT_USERID)));
+        setTntUsername(prefs.getString(getPrefName(PREF_TNT_USERNAME)));
+        setIgnoreAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_IGNORE)));
+        setMyAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_MY)));
 
         // Set default password prompt
         prefs.setDefault(getPrefName(EmailServer.PREF_PASSWORD_PROMPT), true);
@@ -343,6 +350,10 @@ public class EmailServer implements Cloneable {
         return EmailModel.isEmailInList(email, ignoreList);
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
     public boolean isImportComplete() {
         return importComplete;
     }
@@ -366,6 +377,10 @@ public class EmailServer implements Cloneable {
         return passwordPrompt;
     }
 
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     public void setFolderName(String folderName) {
         this.folderName = folderName;
         if (folderName != null)
@@ -386,6 +401,15 @@ public class EmailServer implements Cloneable {
         this.ignoreAddresses = ignoreAddresses;
         if (ignoreAddresses != null)
             MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_IGNORE), ignoreAddresses);
+    }
+
+    /**
+     * Set importComplete; if true, also notify the EmailModel.
+     */
+    private void setImportComplete(boolean importComplete) {
+        this.importComplete = importComplete;
+        if (importComplete)
+            EmailModel.serverComplete();
     }
 
     public void setMyAddresses(String[] myAddresses) {
@@ -444,8 +468,17 @@ public class EmailServer implements Cloneable {
     public void startImportService(Shell shell) {
         log.trace("{{}} startImportService({})", getNickname(), shell);
 
+        if (!isEnabled()) {
+            log.warn("{{}} Cannot start import - server is disabled!");
+            setImportComplete(true); // Debatable whether this should be set here...
+            return;
+        }
+
+        // Make sure we're in the proper state
         stopImporting = false;
         importComplete = false;
+
+        // Connect!
         Util.connectToEmailServer(shell, this, true);
 
         Thread importThread = new Thread() {
@@ -480,9 +513,13 @@ public class EmailServer implements Cloneable {
                     }
                 }
 
-                importComplete = true;
+                // We're done
                 disconnect();
+                // Import is complete
+                setImportComplete(true);
+                log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
 
+                // If we're done because there were no messages, tell the user.
                 if (totalMessages == 0) {
                     String msg = String.format("'%s' had no messages to import.", nickname);
                     log.info(msg);
@@ -494,16 +531,15 @@ public class EmailServer implements Cloneable {
                     });
                 }
 
-                EmailModel.serverComplete();
-                log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
-
             } // run()
         };
         if (isConnected()) {
             importThread.setName(String.format("ESImport%s", id));
             importThread.start();
-        } else
-            importComplete = true;
+        } else {
+            // We didn't connect, so our import is done
+            setImportComplete(true);
+        }
     }
 
     public void stopImportService() {

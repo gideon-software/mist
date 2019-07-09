@@ -103,6 +103,14 @@ public class EmailModel {
         return emailServers.size();
     }
 
+    public static int getEnabledEmailServerCount() {
+        int count = 0;
+        for (EmailServer emailServer : emailServers)
+            if (emailServer.isEnabled())
+                count++;
+        return count;
+    }
+
     public static int getMessageCountTotal() {
         int totalMessages = 0;
         for (EmailServer emailServer : emailServers)
@@ -198,11 +206,14 @@ public class EmailModel {
      */
     public static void serverComplete() {
         log.trace("serverComplete()");
-        // Check all email server statuses to see if they're *all* done
+        // Check all enabled email server statuses to see if they're *all* done
         boolean stillImporting = false;
-        for (EmailServer emailServer : emailServers)
-            if (!emailServer.isImportComplete())
+        for (EmailServer emailServer : emailServers) {
+            if (!emailServer.isEnabled())
+                continue;
+            else if (!emailServer.isImportComplete())
                 stillImporting = true;
+        }
         setImporting(stillImporting);
     }
 
@@ -224,7 +235,8 @@ public class EmailModel {
         log.trace("startImportService({})", shell);
         setImporting(true);
         for (EmailServer emailServer : emailServers)
-            emailServer.startImportService(shell);
+            if (emailServer.isEnabled())
+                emailServer.startImportService(shell);
     }
 
     public static void stopImportService() {
