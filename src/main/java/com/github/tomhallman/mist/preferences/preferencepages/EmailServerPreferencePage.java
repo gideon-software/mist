@@ -43,6 +43,8 @@ import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailFolder;
 import com.github.tomhallman.mist.model.data.EmailServer;
+import com.github.tomhallman.mist.model.data.GmailServer;
+import com.github.tomhallman.mist.model.data.ImapServer;
 import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ForgettablePasswordFieldEditor;
@@ -69,6 +71,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private ButtonFieldEditor connectButton;
     private SmartComboFieldEditor<String> folderEditor;
     private SmartComboFieldEditor<Integer> tntUserEditor;
+    private BooleanFieldEditor useSslEditor;
     private AddEditRemoveListFieldEditor myEmailAddressesEditor;
     private AddEditRemoveListFieldEditor ignoreAddressesEditor;
     private ButtonFieldEditor deleteButton;
@@ -78,7 +81,11 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     public EmailServerPreferencePage(int serverId) {
         super(FieldEditorPreferencePage.GRID);
         log.trace("EmailServerPreferencePage({})", serverId);
-        server = new EmailServer(serverId);
+        String type = EmailModel.getEmailServerType(serverId);
+        if (EmailServer.TYPE_IMAP.equals(type))
+            server = new ImapServer(serverId);
+        else if (EmailServer.TYPE_GMAIL.equals(type))
+            server = new GmailServer(serverId);
         setTitle(server.getNickname());
         setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL_SERVER)));
         // setDescription("description here");
@@ -91,9 +98,11 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         Util.connectToEmailServer(getShell(), server, false);
         boolean success = server.isConnected();
         if (success) {
-            // Save the password
-            passwordEditor.setPassword(server.getPassword());
-            passwordEditor.setPrompt(server.isPasswordPrompt());
+            if (EmailServer.TYPE_IMAP.equals(server.getType())) {
+                // Save the password
+                passwordEditor.setPassword(((ImapServer) server).getPassword());
+                passwordEditor.setPrompt(((ImapServer) server).isPasswordPrompt());
+            }
 
             // If there was a previously selected key, use that
             String oldKey = folderEditor.getSelectionItem();
@@ -144,20 +153,32 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             getFieldEditorParent());
         addField(enabledEditor);
 
-        // Host
-        hostEditor = new StringFieldEditor(server.getPrefName(EmailServer.PREF_HOST), "&Host:", getFieldEditorParent());
-        hostEditor.setEmptyStringAllowed(false);
-        hostEditor.setErrorMessage("Host may not be empty.");
-        addField(hostEditor);
+        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
+            // Host
+            hostEditor = new StringFieldEditor(
+                server.getPrefName(ImapServer.PREF_HOST),
+                "&Host:",
+                getFieldEditorParent());
+            hostEditor.setEmptyStringAllowed(false);
+            hostEditor.setErrorMessage("Host may not be empty.");
+            addField(hostEditor);
 
-        // Port
-        portEditor = new IntegerFieldEditor(
-            server.getPrefName(EmailServer.PREF_PORT),
-            "P&ort:",
-            getFieldEditorParent());
-        portEditor.setEmptyStringAllowed(false);
-        portEditor.setErrorMessage("Port must be a number.");
-        addField(portEditor);
+            // Use SSL
+            useSslEditor = new BooleanFieldEditor(
+                server.getPrefName(ImapServer.PREF_USESSL),
+                "Use SSL (IMAPS)",
+                getFieldEditorParent());
+            addField(useSslEditor);
+
+            // Port
+            portEditor = new IntegerFieldEditor(
+                server.getPrefName(ImapServer.PREF_PORT),
+                "P&ort:",
+                getFieldEditorParent());
+            portEditor.setEmptyStringAllowed(false);
+            portEditor.setErrorMessage("Port must be a number.");
+            addField(portEditor);
+        }
 
         // Username
         usernameEditor = new StringFieldEditor(
@@ -168,13 +189,15 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         usernameEditor.setErrorMessage("Username may not be empty.");
         addField(usernameEditor);
 
-        // Password
-        passwordEditor = new ForgettablePasswordFieldEditor(
-            server.getPrefName(EmailServer.PREF_PASSWORD),
-            server.getPrefName(EmailServer.PREF_PASSWORD_PROMPT),
-            "&Password:",
-            getFieldEditorParent());
-        addField(passwordEditor);
+        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
+            // Password
+            passwordEditor = new ForgettablePasswordFieldEditor(
+                server.getPrefName(ImapServer.PREF_PASSWORD),
+                server.getPrefName(ImapServer.PREF_PASSWORD_PROMPT),
+                "&Password:",
+                getFieldEditorParent());
+            addField(passwordEditor);
+        }
 
         // Connect button
         connectButton = new ButtonFieldEditor("Test &Connection", getFieldEditorParent());
@@ -341,16 +364,20 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private void savePageSettings() {
         server.setEnabled(enabledEditor.getBooleanValue());
         server.setNickname(nicknameEditor.getStringValue());
-        server.setHost(hostEditor.getStringValue());
-        server.setPort(portEditor.getStringValue());
         server.setUsername(usernameEditor.getStringValue());
-        server.setPassword(passwordEditor.getPassword());
-        server.setPasswordPrompt(passwordEditor.isPrompt());
         server.setFolderName(folderEditor.getSelectionItem());
         server.setTntUserId(tntUserEditor.getSelectionItem());
         server.setTntUsername(tntUserEditor.getSelectionValue());
         server.setMyAddresses(myEmailAddressesEditor.getItems());
         server.setIgnoreAddresses(ignoreAddressesEditor.getItems());
+
+        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
+            ((ImapServer) server).setHost(hostEditor.getStringValue());
+            ((ImapServer) server).setPort(portEditor.getStringValue());
+            ((ImapServer) server).setPassword(passwordEditor.getPassword());
+            ((ImapServer) server).setPasswordPrompt(passwordEditor.isPrompt());
+            ((ImapServer) server).setUseSsl(useSslEditor.getBooleanValue());
+        }
     }
 
     @Override

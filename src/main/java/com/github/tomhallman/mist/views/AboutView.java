@@ -98,7 +98,7 @@ public class AboutView extends Dialog {
         homepageLink.setText(String.format("Homepage: <a>%s</a>", MIST.HOMEPAGE));
         mailingListLink = new Link(rightComp, SWT.NONE);
         // TODO: Reformat into two controls to use SimpleEmailLink (and remove EmailLinkListener?)
-        mailingListLink.setText(String.format("Mailing list: <a>%s</a>", MIST.USERLIST));
+        mailingListLink.setText(String.format("Email support: <a>%s</a>", MIST.EMAIL_SUPPORT));
         new Label(rightComp, SWT.NONE);
         (new Label(rightComp, SWT.NONE)).setText(
             ""

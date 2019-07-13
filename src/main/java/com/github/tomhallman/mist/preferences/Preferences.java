@@ -33,12 +33,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.preference.PreferenceStore;
-import org.eclipse.jface.util.Util;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
-import com.github.tomhallman.mist.model.data.EmailServer;
+import com.github.tomhallman.mist.model.data.ImapServer;
 import com.github.tomhallman.mist.tntapi.TntDb;
 
 public class Preferences extends PreferenceStore {
@@ -102,21 +101,12 @@ public class Preferences extends PreferenceStore {
      */
     protected String getPreferencesPath() {
         log.trace("getPreferencesPath()");
-        String appName = MIST.APP_NAME.toLowerCase();
-
-        String node = appName;
-        String profileName = MIST.getOption(MIST.OPTION_PROFILE);
-        if (profileName != null)
-            node += "-" + profileName;
-        else if (MIST.isDevel())
-            node += "-devel";
-
-        String path = "";
-        if (Util.isWindows())
-            path = String.format("%s\\%s\\%s.properties", System.getenv("APPDATA"), appName, node);
-        else // Mac or Linux
-            path = String.format("%s/.%s/%s.properties", System.getProperty("user.home"), appName, node);
-        return path;
+        return MIST.getUserDataDir()
+            + "conf"
+            + File.separator
+            + MIST.APP_NAME.toLowerCase()
+            + MIST.getProfileExt()
+            + ".properties";
     }
 
     public Rectangle getRectangle(String name) {
@@ -184,8 +174,8 @@ public class Preferences extends PreferenceStore {
 
                 setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
 
-                // Pre-5.0 stored its one email server under "Mail" node
-                EmailServer server = new EmailServer(0);
+                // Pre-5.0 stored its one IMAP server under "Mail" node
+                ImapServer server = new ImapServer(0);
                 server.setEnabled(true);
                 server.setFolderName(oldPrefs.node("Mail").get("Folder", ""));
                 server.setHost(oldPrefs.node("Mail").get("Host", ""));

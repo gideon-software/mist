@@ -31,6 +31,8 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.data.EmailServer;
+import com.github.tomhallman.mist.model.data.GmailServer;
+import com.github.tomhallman.mist.model.data.ImapServer;
 
 public class EmailModel {
     private static Logger log = LogManager.getLogger();
@@ -103,6 +105,16 @@ public class EmailModel {
         return emailServers.size();
     }
 
+    public static String getEmailServerType(int serverId) {
+        if (serverId < emailServers.size()) {
+            // Return value from instantiated server
+            return emailServers.get(serverId).getType();
+        } else {
+            // Return value from preferences (because we're probably trying to instantiate the server)
+            return MIST.getPrefs().getString(EmailServer.getPrefName(EmailServer.PREF_TYPE, serverId));
+        }
+    }
+
     public static int getEnabledEmailServerCount() {
         int count = 0;
         for (EmailServer emailServer : emailServers)
@@ -164,8 +176,13 @@ public class EmailModel {
         MIST.getPrefs().setDefault(PREF_EMAILSERVERS_COUNT, 0);
         int emailServerCount = MIST.getPrefs().getInt(PREF_EMAILSERVERS_COUNT);
         for (int i = 0; i < emailServerCount; i++) {
-            // Pass in server ID; email servers will configure themselves from preferences
-            EmailServer server = new EmailServer(i);
+            String type = getEmailServerType(i);
+            // Email servers will configure themselves from saved preferences
+            EmailServer server = null;
+            if (EmailServer.TYPE_IMAP.equals(type))
+                server = new ImapServer(i);
+            else if (EmailServer.TYPE_GMAIL.equals(type))
+                server = new GmailServer(i);
             addEmailServer(server);
         }
         pcs.firePropertyChange(PROP_EMAILSERVERS_INIT, null, emailServers.size());

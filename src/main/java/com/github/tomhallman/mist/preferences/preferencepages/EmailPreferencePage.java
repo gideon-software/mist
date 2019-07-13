@@ -33,6 +33,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.model.EmailModel;
 import com.github.tomhallman.mist.model.data.EmailServer;
+import com.github.tomhallman.mist.model.data.ImapServer;
 import com.github.tomhallman.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.github.tomhallman.mist.preferences.fieldeditors.SpacerFieldEditor;
@@ -67,9 +68,9 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 log.trace("addServerButton.widgetSelected({})", e);
-                // TODO: Use a wizard here instead
+                // TODO: Use a wizard here instead!!
 
-                EmailServer server = new EmailServer(EmailModel.getEmailServerCount());
+                EmailServer server = new ImapServer(EmailModel.getEmailServerCount());
                 server.setNickname(EmailServer.NEW_NICKNAME);
                 EmailModel.addEmailServer(server);
 

@@ -20,13 +20,9 @@
 
 package com.github.tomhallman.mist.model.data;
 
-import java.util.Properties;
-
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
 import javax.mail.Store;
 
 import org.apache.logging.log4j.LogManager;
@@ -42,25 +38,25 @@ import com.github.tomhallman.mist.model.MessageModel;
 import com.github.tomhallman.mist.preferences.Preferences;
 import com.github.tomhallman.mist.util.Util;
 
-public class EmailServer implements Cloneable {
+public abstract class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
-
-    public final static int DEFAULT_PORT = 993;
-    public static final String NEW_NICKNAME = "New Email Server";
 
     private final static String PREF_PREFIX = "emailserver";
     public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
     public final static String PREF_ADDRESSES_MY = "addresses.my";
     public final static String PREF_ENABLED = "enabled";
     public final static String PREF_FOLDER = "folder";
-    public final static String PREF_HOST = "host";
-    public final static String PREF_PASSWORD = "password";
-    public final static String PREF_PASSWORD_PROMPT = "password.prompt";
-    public final static String PREF_PORT = "port";
     public final static String PREF_NICKNAME = "nickname";
     public final static String PREF_USERNAME = "username";
     public final static String PREF_TNT_USERID = "tnt.user.id";
     public final static String PREF_TNT_USERNAME = "tnt.user.username";
+    public final static String PREF_TYPE = "type";
+
+    public final static String TYPE_IMAP = "imap";
+    public final static String TYPE_GMAIL = "gmail";
+
+    // Defaults
+    public static final String NEW_NICKNAME = "New Email Server";
 
     // Import controls
     private boolean stopImporting;
@@ -73,33 +69,35 @@ public class EmailServer implements Cloneable {
     // Server properties
     private int id;
 
-    private boolean enabled;
-    private String host;
-    private String nickname;
-    private String password;
-    private boolean passwordPrompt;
-    private String port;
-    private String username;
-    private Integer tntUserId;
+    protected boolean enabled;
+    protected String nickname;
+    protected String username;
+    protected Integer tntUserId;
     /**
      * Cached copy of user's Tnt username. Helps avoid expensive call to DB when viewing settings.
      * <p>
      * If tntUserId != 0, this should have a value.
      */
-    private String tntUsername;
-    private String[] ignoreAddresses;
-    private String[] myAddresses;
-    private String folderName;
+    protected String tntUsername;
+    protected String type;
+    protected String[] ignoreAddresses;
+    protected String[] myAddresses;
+    protected String folderName;
 
-    private Store store;
-    private Folder folder;
-    private int currentMessageNumber;
-    private int totalMessages;
+    protected Store store;
+    protected Folder folder;
+    protected int currentMessageNumber;
+    protected int totalMessages;
 
-    public EmailServer(int id) {
+    public EmailServer(int id, String type) {
         log.trace("EmailServer({})", id);
         setId(id);
+        setType(type);
         init();
+    }
+
+    public static String getPrefName(String name, int serverId) {
+        return String.format("%s.%s.%s", PREF_PREFIX, serverId, name);
     }
 
     public static String getPrefPrefix(int id) {
@@ -119,45 +117,7 @@ public class EmailServer implements Cloneable {
         MIST.getPrefs().setToDefaultIfContains(getPrefName("")); // Will clear all prefs matching this emailserver
     }
 
-    public void connect(boolean selectFolder) throws EmailServerException {
-        log.trace("{{}} connect()", getNickname());
-        log.debug("{{}} Connecting to email server at '{}:{}'...", getNickname(), getHost(), getPort());
-
-        Session sess = Session.getDefaultInstance(getConnectionProperties(), null);
-        store = null;
-        folder = null;
-        currentMessageNumber = 0;
-        totalMessages = 0;
-
-        try {
-            store = sess.getStore("imaps"); // IMAPS = port 993; TODO: Allow IMAP too
-        } catch (NoSuchProviderException e) {
-            throw new EmailServerException(e);
-        }
-
-        try {
-            store.connect(getHost(), getUsername(), getPassword());
-        } catch (MessagingException e) {
-            // Important: if there is was failed email connection and the user had been prompted
-            // for email, clear the password now. That way they'll be asked again next time.
-            if (isPasswordPrompt())
-                setPassword(null);
-            store = null;
-            throw new EmailServerException(e);
-        }
-
-        if (selectFolder) {
-            try {
-                folder = store.getFolder(getFolder());
-                folder.open(Folder.READ_ONLY);
-                totalMessages = folder.getMessageCount();
-            } catch (MessagingException e) {
-                folder = null;
-                disconnect();
-                throw new EmailServerException(e);
-            }
-        }
-    }
+    public abstract void connect(boolean selectFolder) throws EmailServerException;
 
     public void disconnect() {
         log.trace("{{}} disconnect()", getNickname());
@@ -201,33 +161,12 @@ public class EmailServer implements Cloneable {
         }
     }
 
-    public Properties getConnectionProperties() {
-        log.trace("{{}} getConnectionProperties()", getNickname());
-        Properties props = new Properties();
-        props.setProperty("mail.host", getHost());
-        props.setProperty("mail.port", getPort());
-        props.setProperty("mail.user", getUsername());
-        props.setProperty("mail.password", getPassword());
-
-        // Don't verify server identity. This is required for self-signed
-        // certificates, which missionaries may very well use ;)
-        // Source: http://stackoverflow.com/a/5730201/1307022
-        props.setProperty("mail.imaps.ssl.checkserveridentity", "false");
-        props.setProperty("mail.imaps.ssl.trust", "*");
-
-        return props;
-    }
-
     public int getCurrentMessageNumber() {
         return currentMessageNumber;
     }
 
     public String getFolder() {
         return folderName;
-    }
-
-    public String getHost() {
-        return host;
     }
 
     public int getId() {
@@ -255,21 +194,11 @@ public class EmailServer implements Cloneable {
         // This should never be null, as it's used even in logging for the email server
         if (nickname != null)
             return nickname;
-        if (host != null)
-            return host;
         return "ID:" + id;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public String getPort() {
-        return port;
-    }
-
     public String getPrefName(String name) {
-        return String.format("%s.%s.%s", PREF_PREFIX, id, name);
+        return getPrefName(name, id);
     }
 
     public String getSelectedFolder() throws EmailServerException {
@@ -289,6 +218,10 @@ public class EmailServer implements Cloneable {
 
     public int getTotalMessages() {
         return totalMessages;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public String getUsername() {
@@ -313,22 +246,13 @@ public class EmailServer implements Cloneable {
         Preferences prefs = MIST.getPrefs();
         setEnabled(prefs.getBoolean(getPrefName(PREF_ENABLED)));
         setFolderName(prefs.getString(getPrefName(PREF_FOLDER)));
-        setHost(prefs.getString(getPrefName(PREF_HOST)));
         setUsername(prefs.getString(getPrefName(PREF_USERNAME)));
         setNickname(prefs.getString(getPrefName(PREF_NICKNAME)));
         setTntUserId(prefs.getInt(getPrefName(PREF_TNT_USERID)));
         setTntUsername(prefs.getString(getPrefName(PREF_TNT_USERNAME)));
         setIgnoreAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_IGNORE)));
         setMyAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_MY)));
-
-        // Set default password prompt
-        prefs.setDefault(getPrefName(EmailServer.PREF_PASSWORD_PROMPT), true);
-        setPasswordPrompt(prefs.getBoolean(getPrefName(EmailServer.PREF_PASSWORD_PROMPT)));
-        setPassword(passwordPrompt ? "" : prefs.getString(getPrefName(EmailServer.PREF_PASSWORD)));
-
-        // Set default port
-        prefs.setDefault(getPrefName(EmailServer.PREF_PORT), DEFAULT_PORT);
-        setPort(prefs.getString(getPrefName(EmailServer.PREF_PORT)));
+        setType(prefs.getString(getPrefName(PREF_TYPE)));
 
         // Initialize non-preference data
         folder = null;
@@ -358,25 +282,6 @@ public class EmailServer implements Cloneable {
         return importComplete;
     }
 
-    public boolean isPasswordNeeded() {
-        log.trace("isPasswordNeeded()");
-        // If there is no email password prompt, no password is needed
-        if (!isPasswordPrompt() && !getPassword().isEmpty())
-            return false;
-
-        // If there is an email password prompt, do we already have the password
-        // from a previous successful connection? (email password is not empty)
-        // Note: A failed prompted connection sets the password to empty as well
-        if (getPassword().isEmpty())
-            return true;
-        else
-            return false;
-    }
-
-    public boolean isPasswordPrompt() {
-        return passwordPrompt;
-    }
-
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -385,12 +290,6 @@ public class EmailServer implements Cloneable {
         this.folderName = folderName;
         if (folderName != null)
             MIST.getPrefs().setValue(getPrefName(PREF_FOLDER), folderName);
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-        if (host != null)
-            MIST.getPrefs().setValue(getPrefName(PREF_HOST), host);
     }
 
     private void setId(int id) {
@@ -424,22 +323,6 @@ public class EmailServer implements Cloneable {
             MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), nickname);
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-        if (password != null)
-            MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD), password);
-    }
-
-    public void setPasswordPrompt(boolean prompt) {
-        this.passwordPrompt = prompt;
-        MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD_PROMPT), prompt);
-    }
-
-    public void setPort(String port) {
-        this.port = port;
-        MIST.getPrefs().setValue(getPrefName(PREF_PORT), port);
-    }
-
     public void setTntUserId(Integer tntUserId) {
         this.tntUserId = tntUserId;
         if (tntUserId != null)
@@ -450,6 +333,12 @@ public class EmailServer implements Cloneable {
         this.tntUsername = tntUsername;
         if (tntUsername != null)
             MIST.getPrefs().setValue(getPrefName(PREF_TNT_USERNAME), tntUsername);
+    }
+
+    public void setType(String type) {
+        this.type = type;
+        if (type != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_TYPE), type);
     }
 
     public void setUsername(String username) {

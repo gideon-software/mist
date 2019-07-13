@@ -56,10 +56,12 @@ public class MIST {
     private static OptionSet options = null;
 
     public final static String APP_NAME = "MIST";
-    public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
-    public final static String HOMEPAGE = "https://github.com/tomhallman/mist";
+    public final static String COMPANY_NAME = "Gideon Software";
+    public final static String COMPANY_NAME_NO_SPACES = "GideonSoftware";
+    public final static String HOMEPAGE = "https://github.com/gideon-software/mist";
     public final static String MANUAL = "https://github.com/tomhallman/mist/wiki/manual";
-    public final static String USERLIST = "mist-users@googlegroups.com"; // TODO
+    public final static String EMAIL_SUPPORT = "mist-support@gideonsoftware.com";
+    public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
 
     public final static String REGEX_EMAILADDRESS = "([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)";
 
@@ -67,20 +69,19 @@ public class MIST {
 
     public final static String PREF_LOGFILE_LOGLEVEL = "mist.logfile.loglevel";
 
+    private static String profileExt = "";
+    private static String userDataDir = "";
     private static String logfilePath = "";
 
     public static String configureLogging(@SuppressWarnings("rawtypes") Class clazz) {
-        String confPath = null;
+        String logConfPath = null;
         String logPath = null;
 
-        String profileName = MIST.getOption(MIST.OPTION_PROFILE);
-        profileName = (profileName == null) ? "" : "-" + profileName;
-
         String logConfFileName = "log4j2.xml";
-        String logFilename = String.format("mist%s.log", profileName);
+        String logFilename = String.format("mist%s.log", getProfileExt());
 
         if (isDevel()) {
-            confPath = String.format("devel/conf/%s", logConfFileName);
+            logConfPath = String.format("devel/conf/%s", logConfFileName);
             logPath = String.format("devel/logs/%s", logFilename);
         } else if (Util.isMac()) {
             // Mac OS X: From inside an application bundle
@@ -91,34 +92,56 @@ public class MIST {
                 mistJarFile.getParentFile().getParentFile().getPath(),
                 logConfFileName);
             File logXMLFile = new File(logXMLPath);
-            confPath = logXMLFile.getAbsolutePath();
+            logConfPath = logXMLFile.getAbsolutePath();
             logPath = String.format("%s/Library/Logs/%s/%s", System.getProperty("user.home"), APP_NAME, logFilename);
         } else if (Util.isLinux()) {
             // Linux
             // TODO: Test Linux installation to verify if this works
-            confPath = String.format("conf/%s", logConfFileName);
-            logPath = String.format("%s/.%s/%s", System.getProperty("user.home"), APP_NAME.toLowerCase(), logFilename);
+            logConfPath = String.format("conf/%s", logConfFileName);
+            logPath = getUserDataDir() + "logs/" + logFilename;
         } else {
             // Windows
-            confPath = String.format("conf\\%s", logConfFileName);
-            logPath = String.format("%s\\%s\\logs\\%s", System.getenv("APPDATA"), APP_NAME, logFilename);
+            logConfPath = String.format("conf\\%s", logConfFileName);
+            logPath = getUserDataDir() + "logs\\" + logFilename;
         }
         System.setProperty("log.path", logPath);
-        System.setProperty("log4j.configurationFile", confPath);
+        System.setProperty("log4j.configurationFile", logConfPath);
         log = LogManager.getRootLogger();
         try {
-            String logConfFilePath = new File(confPath).getAbsolutePath();
+            String logConfFilePath = new File(logConfPath).getAbsolutePath();
             logfilePath = new File(logPath).getAbsolutePath();
             log.debug("Log configuration path: {}", logConfFilePath);
             log.debug("Log path: {}", logfilePath);
         } catch (NullPointerException e) {
-            System.out.println("Incorrect configuration settings; confPath: " + confPath + "; logPath: " + logPath);
+            System.out.println("Incorrect configuration settings; confPath: " + logConfPath + "; logPath: " + logPath);
         }
 
         // Disable Jericho logging
         net.htmlparser.jericho.Config.LoggerProvider = LoggerProvider.DISABLED;
 
         return logPath;
+    }
+
+    private static void configureUserSettings() {
+        // Set global profile extenson, which can be configured via options or on account of being in Devel mode
+        String profileOptionStr = getOption(OPTION_PROFILE);
+        if (profileOptionStr != null)
+            profileExt = "-" + profileOptionStr;
+        else if (isDevel())
+            profileExt += "-devel";
+        else
+            profileExt = "";
+
+        // Set user data dir
+        userDataDir = "";
+        if (Util.isWindows())
+            userDataDir = String.format("%s\\%s\\", System.getenv("APPDATA"), APP_NAME.toLowerCase());
+        else if (Util.isLinux())
+            userDataDir = String.format("%s/.%s/", System.getProperty("user.home"), APP_NAME.toLowerCase());
+        else { // Mac
+            userDataDir = ""; // TODO! Also use in configureLogging()
+        }
+
     }
 
     public static String getAppVersion() {
@@ -142,6 +165,14 @@ public class MIST {
 
     public static Preferences getPrefs() {
         return Preferences.getInstance();
+    }
+
+    public static String getProfileExt() {
+        return profileExt;
+    }
+
+    public static String getUserDataDir() {
+        return userDataDir;
     }
 
     public static MainWindowView getView() {
@@ -169,6 +200,9 @@ public class MIST {
 
         // Command-line arguments
         parseOptions(args);
+
+        // User settings
+        configureUserSettings();
 
         // Logging
         configureLogging(MIST.class);

@@ -46,6 +46,7 @@ import com.github.tomhallman.mist.MIST;
 import com.github.tomhallman.mist.exceptions.EmailServerException;
 import com.github.tomhallman.mist.exceptions.TntDbException;
 import com.github.tomhallman.mist.model.data.EmailServer;
+import com.github.tomhallman.mist.model.data.ImapServer;
 import com.github.tomhallman.mist.model.data.PasswordData;
 import com.github.tomhallman.mist.tntapi.TntDb;
 import com.github.tomhallman.mist.util.ui.MistProgressMonitorDialog;
@@ -72,16 +73,20 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
         try {
             server.connect(selectFolder);
 
-            // If save password had been requested, store in preferences now that we know it worked
-            if (passwordData != null && server.isConnected() && passwordData.isSavePassword()) {
-                server.setPasswordPrompt(false);
-                server.setPassword(passwordData.getPassword());
+            if (server instanceof ImapServer) {
+                // If save password had been requested, store in preferences now that we know it worked
+                if (passwordData != null && server.isConnected() && passwordData.isSavePassword()) {
+                    ((ImapServer) server).setPasswordPrompt(false);
+                    ((ImapServer) server).setPassword(passwordData.getPassword());
+                }
             }
 
         } catch (EmailServerException e) {
-            // If we'd asked for the password, clear it again
-            if (passwordData != null)
-                server.setPassword("");
+            if (server instanceof ImapServer) {
+                // If we'd asked for the password, clear it again
+                if (passwordData != null)
+                    ((ImapServer) server).setPassword("");
+            }
 
             throw new InvocationTargetException(e);
         }
@@ -153,13 +158,15 @@ public class Util {
 
         // TODO: Handle null shell
 
-        // Get password if prompting is required
         PasswordData passwordData = null;
-        if (emailServer.isPasswordNeeded()) {
-            passwordData = Util.promptForEmailPassword(shell, emailServer.getNickname());
-            if (passwordData == null)
-                return;
-            emailServer.setPassword(passwordData.getPassword());
+        if (emailServer instanceof ImapServer) {
+            // Get password if prompting is required
+            if (((ImapServer) emailServer).isPasswordNeeded()) {
+                passwordData = Util.promptForEmailPassword(shell, emailServer.getNickname());
+                if (passwordData == null)
+                    return;
+                ((ImapServer) emailServer).setPassword(passwordData.getPassword());
+            }
         }
 
         try {
@@ -172,7 +179,9 @@ public class Util {
                 emailServer.getNickname());
             reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
-            // Only needed if run is cancelable
+            // Not currently enabled...
+            log.info(String.format("Connection to email server '%s' canceled.", emailServer.getNickname()));
+            emailServer.disconnect();
         }
     }
 
@@ -197,10 +206,12 @@ public class Util {
             dialog.setTitle("Connecting");
             dialog.run(true, false, new TntConnectionRunnable());
         } catch (InvocationTargetException e) {
-            String msg = "Unable to connect to Tnt database.\nPlease check your settings and try again.";
+            String msg = "Unable to connect to TntConnect database.\nPlease check your settings and try again.";
             reportError("Tnt database connection failure", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
-            // Only needed if run is cancelable
+            // Not currently enabled...
+            log.info("Connection to TntConnect database canceled.");
+            TntDb.disconnect();
         }
     }
 
