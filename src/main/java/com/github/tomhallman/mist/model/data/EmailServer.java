@@ -123,10 +123,13 @@ public abstract class EmailServer implements Cloneable {
         log.trace("{{}} disconnect()", getNickname());
         if (store != null) {
             try {
+                if (folder != null && folder.isOpen())
+                    folder.close();
                 store.close();
             } catch (MessagingException e) {
                 log.warn("{{}} Unable to disconnect from message store", getNickname(), e);
             } finally {
+                folder = null;
                 store = null;
             }
         }
@@ -181,14 +184,7 @@ public abstract class EmailServer implements Cloneable {
         return myAddresses;
     }
 
-    public javax.mail.Message getNextMessage() throws EmailServerException {
-        log.trace("{{}} getNextMessage()", getNickname());
-        try {
-            return folder.getMessage(++currentMessageNumber);
-        } catch (MessagingException e) {
-            throw new EmailServerException(e);
-        }
-    }
+    public abstract Message getNextMessage() throws EmailServerException;
 
     public String getNickname() {
         // This should never be null, as it's used even in logging for the email server
@@ -204,7 +200,7 @@ public abstract class EmailServer implements Cloneable {
     public String getSelectedFolder() throws EmailServerException {
         log.trace("{{}} getSelectedFolder()", getNickname());
         if (folder == null)
-            throw new EmailServerException("[" + getNickname() + "] Email folder is not selected");
+            throw new EmailServerException(String.format("{%s} Email folder is not selected", getNickname()));
         return folder.getName();
     }
 

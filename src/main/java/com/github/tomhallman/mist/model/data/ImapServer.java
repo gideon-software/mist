@@ -23,6 +23,7 @@ package com.github.tomhallman.mist.model.data;
 import java.util.Properties;
 
 import javax.mail.Folder;
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -120,6 +121,16 @@ public class ImapServer extends EmailServer {
 
     public String getHost() {
         return host;
+    }
+
+    @Override
+    public Message getNextMessage() throws EmailServerException {
+        log.trace("{{}} getNextMessage()", getNickname());
+        try {
+            return folder.getMessage(++currentMessageNumber);
+        } catch (MessagingException e) {
+            throw new EmailServerException(e);
+        }
     }
 
     public String getPassword() {
