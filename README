@@ -1,8 +1,7 @@
 MIST (eMail Import System for TntConnect) README
 ================================================
 MIST allows you to easily import email into TntConnect history from any IMAP
-(email) server, including Gmail. For details, see the online user manual:
-https://github.com/tomhallman/mist/wiki/manual
+(email) server, including Gmail.
 
 MIST is free software and is released under the GNU Public License (GPL), 
 which means that the source code for MIST is freely available - and always 
@@ -13,11 +12,8 @@ Note: MIST is not directly affiliated with TntConnect or TntWare, but we hope
 it will be useful to the TntConnect community! Please do not seek help for 
 MIST on the TntConnect forums. Instead, use the MIST support email below.
 
-MIST homepage, including user manual:
-https://github.com/tomhallman/mist
-
-MIST Support (for getting help):
-mist-support@googlegroups.com
+MIST Homepage: https://www.gideonsoftware.com
+MIST Support: mist-support@gideonsoftware.com
 
 
 License Information
@@ -32,8 +28,4 @@ https://creativecommons.org/licenses/by/4.0/ and applies to:
 Thanks also to these sites offering free icons which derived the MIST icons:
 - Templay (http://templay.de), for the 32x32, 48x48 and 64x64 "mail" icons
 - Led24 (http://led24.de/iconset), for the 16x16 "mail" icon
-- FreeIconsWeb (http://www.freeiconsweb.com) for locating them! 
-
-
-"He who did not spare His own Son but gave Him up for us all, how will He not
- also with Him graciously give us all things?" (Romans 8:32, ESV)
+- FreeIconsWeb (http://www.freeiconsweb.com) for locating them!

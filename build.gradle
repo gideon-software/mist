@@ -9,7 +9,7 @@ repositories {
 jar {
     version = '5.0'
     manifest {
-        attributes 'Main-Class': 'com.github.tomhallman.mist.MIST'
+        attributes 'Main-Class': 'com.gideonsoftware.mist.MIST'
     }
 }
 
