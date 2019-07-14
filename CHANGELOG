@@ -4,6 +4,9 @@ Change Log for MIST 5.0
   * View messages grouped by contact.
   * Match unknown contacts - even creating new ones - within MIST.
   * Make changes to the email history subject, body and more directly in MIST.  
+* Dramatically-improved Gmail support
+  * Uses secure Google OAuth2 authentication.
+  * No more need to change labels just before import in order to get all email.
 * Import from multiple email servers at once.
 * Match email addresses using wildcards.
 * Automatically mark emails as "Thanks" based on subject matching.
