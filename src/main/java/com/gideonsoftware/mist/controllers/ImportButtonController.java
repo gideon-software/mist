@@ -75,12 +75,12 @@ public class ImportButtonController {
                     MessageModel.init();
 
                     // Start Tnt import service (which runs until MIST closes or Tnt settings change)
-                    TntDb.startImportService(view.getShell());
+                    TntDb.startImportService();
                     if (!TntDb.isConnected())
                         return;
 
                     // Start email import service
-                    EmailModel.startImportService(view.getShell());
+                    EmailModel.startImportService();
                 }
             }
         });

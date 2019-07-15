@@ -65,7 +65,7 @@ public class MainMenuController {
                 log.trace("editSettingsListener.handleEvent({})", event);
                 if (EmailModel.isImporting()) {
                     String msg = "Settings may not be modified while import is running.";
-                    log.info(msg);
+                    log.debug(msg);
                     MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.OK);
                     msgBox.setMessage(msg);
                     msgBox.open();

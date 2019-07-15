@@ -115,7 +115,7 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
 
             TntDb.setTntDatabasePath(tntDbPath.getStringValue());
 
-            Util.connectToTntDatabase(getShell());
+            Util.connectToTntDatabase();
             if (TntDb.isConnected()) {
                 setErrorMessage(null);
                 setValid(true);

@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.preferences.Preferences;
+import com.gideonsoftware.mist.util.Util;
 
 /**
  * 
@@ -61,8 +62,15 @@ public class ImapServer extends EmailServer {
     }
 
     @Override
-    public void connect(boolean selectFolder) throws EmailServerException {
+    public void connect() throws EmailServerException {
         log.trace("{{}} connect()", getNickname());
+
+        // Initialize values
+        store = null;
+        folder = null;
+        currentMessageNumber = 0;
+        totalMessages = 0;
+
         log.debug(
             "{{}} Connecting to {} server at '{}:{}'...",
             getNickname(),
@@ -70,16 +78,18 @@ public class ImapServer extends EmailServer {
             getHost(),
             getPort());
 
-        store = null;
-        folder = null;
-        currentMessageNumber = 0;
-        totalMessages = 0;
-
+        // Set connection properties
         Properties props = new Properties();
         props.setProperty("mail.host", getHost());
         props.setProperty("mail.port", getPort());
         props.setProperty("mail.user", getUsername());
-        props.setProperty("mail.password", getPassword());
+        props.setProperty("mail.password", getPassword()); // Will prompt user if needed
+
+        if (password == null) {
+            log.debug("{{}} User has not provided a password; canceling connection attempt.", getNickname());
+            return;
+        }
+
         if (useSsl) {
             // Don't verify server identity. This is required for self-signed
             // certificates, which missionaries may very well use ;)
@@ -92,31 +102,18 @@ public class ImapServer extends EmailServer {
         try {
             store = sess.getStore(useSsl ? "imaps" : "imap");
         } catch (NoSuchProviderException e) {
-            throw new EmailServerException(e);
+            throw new EmailServerException(e); // Shouldn't happen...
         }
 
         try {
-            store.connect(getHost(), getUsername(), getPassword());
+            store.connect(host, username, password);
         } catch (MessagingException e) {
-            // Important: if there is was failed email connection and the user had been prompted
-            // for email, clear the password now. That way they'll be asked again next time.
-            if (isPasswordPrompt())
-                setPassword(null);
+            // We should ask the user for their password again next time.
+            setPassword("");
             store = null;
             throw new EmailServerException(e);
         }
 
-        if (selectFolder) {
-            try {
-                folder = store.getFolder(getFolder());
-                folder.open(Folder.READ_ONLY);
-                totalMessages = folder.getMessageCount();
-            } catch (MessagingException e) {
-                folder = null;
-                disconnect();
-                throw new EmailServerException(e);
-            }
-        }
     }
 
     public String getHost() {
@@ -133,7 +130,27 @@ public class ImapServer extends EmailServer {
         }
     }
 
+    /**
+     * Returns the password for this server connection, prompting the user if necessary.
+     * 
+     * @return the password for this server connection
+     */
     public String getPassword() {
+        log.trace("{{}} getPassword()", getNickname());
+
+        // Get password if prompting is required
+        if (isPasswordNeeded()) {
+            PasswordData passwordData = Util.promptForEmailPassword(getNickname());
+            // If the user canceled, set an empty string password
+            if (passwordData != null) {
+                // Set the password and whether to prompt in the future
+                setPassword(passwordData.getPassword());
+                setPasswordPrompt(!passwordData.isSavePassword());
+            } else {
+                setPassword("");
+            }
+        }
+
         return password;
     }
 
@@ -169,14 +186,14 @@ public class ImapServer extends EmailServer {
 
     public boolean isPasswordNeeded() {
         log.trace("isPasswordNeeded()");
-        // If there is no email password prompt, no password is needed
-        if (!isPasswordPrompt() && !getPassword().isEmpty())
+        // If there is no email password prompt (and the password isn't empty), no password is needed
+        if (!isPasswordPrompt() && !password.isEmpty())
             return false;
 
         // If there is an email password prompt, do we already have the password
         // from a previous successful connection? (email password is not empty)
         // Note: A failed prompted connection sets the password to empty as well
-        if (getPassword().isEmpty())
+        if (password.isEmpty())
             return true;
         else
             return false;
@@ -188,6 +205,31 @@ public class ImapServer extends EmailServer {
 
     public boolean isUseSsl() {
         return useSsl;
+    }
+
+    @Override
+    public void loadMessageList() throws EmailServerException {
+        log.trace("loadMessageList()");
+        try {
+            totalMessages = folder.getMessageCount();
+        } catch (MessagingException e) {
+            folder = null;
+            disconnect();
+            throw new EmailServerException(e);
+        }
+    }
+
+    @Override
+    public void openFolder() throws EmailServerException {
+        log.trace("openFolder()");
+        try {
+            folder = store.getFolder(getFolder());
+            folder.open(Folder.READ_ONLY);
+        } catch (MessagingException e) {
+            folder = null;
+            disconnect();
+            throw new EmailServerException(e);
+        }
     }
 
     public void setHost(String host) {

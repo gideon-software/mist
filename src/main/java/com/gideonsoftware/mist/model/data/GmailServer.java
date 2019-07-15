@@ -86,7 +86,7 @@ public class GmailServer extends EmailServer {
      * @see https://javaee.github.io/javamail/OAuth2
      */
     @Override
-    public void connect(boolean selectFolder) throws EmailServerException {
+    public void connect() throws EmailServerException {
         log.trace("{{}} connect()", getNickname());
         log.debug("{{}} Connecting to Gmail...", getNickname());
 
@@ -123,59 +123,6 @@ public class GmailServer extends EmailServer {
             store = null;
             throw new EmailServerException(e);
         }
-
-        if (selectFolder) {
-            try {
-                folder = store.getFolder(getFolder());
-                folder.open(Folder.READ_ONLY);
-
-                // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
-                // labeled, but not subsequent message (even though it looks like it in the Gmail interface.
-                // Thus, we must get not only the messages in this folder, but all messages in the threads as well.
-
-                TreeSet<Long> msgIdSet = new TreeSet<Long>();
-                TreeSet<Long> thrIdSet = new TreeSet<Long>();
-
-                for (Message msg : folder.getMessages()) {
-                    GmailMessage gMsg = (GmailMessage) msg;
-                    long msgId = gMsg.getMsgId();
-                    long thrId = gMsg.getThrId();
-                    if (msgIdSet.add(msgId)) {
-                        log.trace("Adding Gmail message ID " + msgId);
-                        if (thrIdSet.add(thrId)) {
-                            log.trace("Adding Gmail thread ID " + thrId);
-                        }
-                    }
-                }
-                // Now, go back through the thread IDs and make sure we got all the messages
-                // First open the All Mail Folder
-                allMailFolder = store.getFolder("[Gmail]/All Mail");
-                allMailFolder.open(Folder.READ_ONLY);
-                // For each thread ID
-                for (long thrId : thrIdSet) {
-                    // Find all messages with that thread ID
-                    for (Message msg : allMailFolder.search(new GmailThrIdTerm(thrId))) {
-                        GmailMessage gMsg = (GmailMessage) msg;
-                        // Try to add them to our message set
-                        if (msgIdSet.add(gMsg.getMsgId())) {
-                            log.trace(
-                                String.format(
-                                    "Adding Gmail message ID %s from thread ID %s",
-                                    gMsg.getMsgId(),
-                                    gMsg.getThrId()));
-                        }
-                    }
-                }
-                messageIds = msgIdSet.toArray(new Long[0]);
-                totalMessages = messageIds.length;
-            } catch (MessagingException e) {
-                folder = null;
-                allMailFolder = null;
-                disconnect();
-                throw new EmailServerException(e);
-            }
-        }
-
     }
 
     @Override
@@ -265,7 +212,7 @@ public class GmailServer extends EmailServer {
     }
 
     private String getSecureFilePath() {
-        return MIST.getUserDataDir() + ".secure_store";
+        return MIST.getUserDataDir() + ".secure";
     }
 
     @Override
@@ -273,6 +220,66 @@ public class GmailServer extends EmailServer {
         super.init();
         allMailFolder = null;
         messageIds = new Long[0];
+    }
+
+    @Override
+    public void loadMessageList() throws EmailServerException {
+        log.trace("loadMessageList()");
+        try {
+            // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
+            // labeled, but not subsequent messages (even though it looks like it in the Gmail interface.
+            // Thus, we must get not only the messages in this folder, but all messages in their threads as well.
+
+            // First, get all the thread IDs for the messages in our folder
+            TreeSet<Long> thrIdSet = new TreeSet<Long>();
+            for (Message msg : folder.getMessages()) {
+                long thrId = ((GmailMessage) msg).getThrId();
+                if (thrIdSet.add(thrId))
+                    log.trace("Adding Gmail thread ID " + thrId);
+            }
+
+            // Now, go back through the thread IDs and get all the messages
+            // First open the All Mail Folder
+            allMailFolder = store.getFolder("[Gmail]/All Mail");
+            allMailFolder.open(Folder.READ_ONLY);
+
+            TreeSet<Long> msgIdSet = new TreeSet<Long>();
+            // For each thread ID
+            for (long thrId : thrIdSet) {
+                // Find all messages with that thread ID
+                for (Message msg : allMailFolder.search(new GmailThrIdTerm(thrId))) {
+                    GmailMessage gMsg = (GmailMessage) msg;
+                    // Try to add them to our message set
+                    if (msgIdSet.add(gMsg.getMsgId())) {
+                        log.trace(
+                            String.format(
+                                "Adding Gmail message ID %s from thread ID %s",
+                                gMsg.getMsgId(),
+                                gMsg.getThrId()));
+                    }
+                }
+            }
+            messageIds = msgIdSet.toArray(new Long[0]);
+            totalMessages = messageIds.length;
+        } catch (MessagingException e) {
+            folder = null;
+            allMailFolder = null;
+            disconnect();
+            throw new EmailServerException(e);
+        }
+    }
+
+    @Override
+    public void openFolder() throws EmailServerException {
+        log.trace("openFolder()");
+        try {
+            folder = store.getFolder(getFolder());
+            folder.open(Folder.READ_ONLY);
+        } catch (MessagingException e) {
+            folder = null;
+            disconnect();
+            throw new EmailServerException(e);
+        }
     }
 
 }

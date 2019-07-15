@@ -95,7 +95,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     protected boolean connectToServer() {
         savePageSettings();
 
-        Util.connectToEmailServer(getShell(), server, false);
+        Util.connectToEmailServer(server, true, false);
         boolean success = server.isConnected();
         if (success) {
             if (EmailServer.TYPE_IMAP.equals(server.getType())) {
@@ -267,7 +267,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             public void widgetSelected(SelectionEvent event) {
                 log.trace("tntUserEditorButton.widgetSelected({})", event);
                 // Try to populate the control from the Tnt DB
-                Util.connectToTntDatabase(getShell());
+                Util.connectToTntDatabase();
 
                 if (TntDb.isConnected()) {
                     // If there was a previously selected key, use that

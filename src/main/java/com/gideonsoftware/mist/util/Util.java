@@ -25,6 +25,7 @@ import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,13 +41,11 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.model.data.EmailServer;
-import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.model.data.PasswordData;
 import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.util.ui.MistProgressMonitorDialog;
@@ -55,63 +54,33 @@ import com.gideonsoftware.mist.util.ui.PasswordInputDialog;
 class EmailConnectionRunnable implements IRunnableWithProgress {
 
     private EmailServer server;
-    private boolean selectFolder;
-    private PasswordData passwordData;
+    private boolean openFolder;
+    private boolean loadMessageList;
 
-    public EmailConnectionRunnable(EmailServer server, boolean selectFolder, PasswordData passwordData) {
+    public EmailConnectionRunnable(EmailServer server, boolean openFolder, boolean loadMessageList) {
         this.server = server;
-        this.selectFolder = selectFolder;
-        this.passwordData = passwordData;
+        this.openFolder = openFolder;
+        this.loadMessageList = loadMessageList;
     }
 
     @Override
     public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-
-        String msg = String.format("Connecting to email server '%s'", server.getNickname());
-        monitor.beginTask(msg, IProgressMonitor.UNKNOWN);
-
+        monitor.beginTask(
+            String.format("%s: Connecting to email server...", server.getNickname()),
+            IProgressMonitor.UNKNOWN);
         try {
-            server.connect(selectFolder);
-
-            if (server instanceof ImapServer) {
-                // If save password had been requested, store in preferences now that we know it worked
-                if (passwordData != null && server.isConnected() && passwordData.isSavePassword()) {
-                    ((ImapServer) server).setPasswordPrompt(false);
-                    ((ImapServer) server).setPassword(passwordData.getPassword());
+            server.connect();
+            if (server.isConnected() && openFolder) {
+                monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
+                server.openFolder();
+                if (loadMessageList) {
+                    monitor.setTaskName(String.format("%s: Loading message list...", server.getNickname()));
+                    server.loadMessageList();
                 }
             }
-
         } catch (EmailServerException e) {
-            if (server instanceof ImapServer) {
-                // If we'd asked for the password, clear it again
-                if (passwordData != null)
-                    ((ImapServer) server).setPassword("");
-            }
-
             throw new InvocationTargetException(e);
         }
-
-        monitor.done();
-    }
-
-}
-
-class TntConnectionRunnable implements IRunnableWithProgress {
-
-    public TntConnectionRunnable() {
-    }
-
-    @Override
-    public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-
-        monitor.beginTask("Connecting to TntConnect database", IProgressMonitor.UNKNOWN);
-
-        try {
-            TntDb.connect(true);
-        } catch (TntDbException e) {
-            throw new InvocationTargetException(e, e.getMessage());
-        }
-
         monitor.done();
     }
 }
@@ -142,75 +111,74 @@ public class Util {
     /**
      * Attempts to establish a connection to the given email server.
      * 
-     * @param shell
-     *            the shell for notifying the user of the connection taking place; if null, no notification will take
-     *            place
      * @param emailServer
      *            the email server to connect to
-     * @param selectFolder
-     *            true if the email server's folder should be selected; false if not
+     * @param openFolder
+     *            true if the email server's folder should be opened; false if not
+     * @param loadMessageList
+     *            true if we should load the message list; false if not
      */
-    public static void connectToEmailServer(Shell shell, EmailServer emailServer, boolean selectFolder) {
-        log.trace("connectToEmailServer({},{},{})", shell, emailServer, selectFolder);
+    public static void connectToEmailServer(EmailServer emailServer, boolean openFolder, boolean loadMessageList) {
+        log.trace("connectToEmailServer({},{},{})", emailServer, openFolder, loadMessageList);
 
         if (emailServer == null || emailServer.isConnected())
             return;
 
-        // TODO: Handle null shell
-
-        PasswordData passwordData = null;
-        if (emailServer instanceof ImapServer) {
-            // Get password if prompting is required
-            if (((ImapServer) emailServer).isPasswordNeeded()) {
-                passwordData = Util.promptForEmailPassword(shell, emailServer.getNickname());
-                if (passwordData == null)
-                    return;
-                ((ImapServer) emailServer).setPassword(passwordData.getPassword());
+        Display.getDefault().syncExec(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(
+                        Display.getDefault().getActiveShell());
+                    dialog.setTitle("Connecting");
+                    dialog.run(true, false, new EmailConnectionRunnable(emailServer, openFolder, loadMessageList));
+                } catch (InvocationTargetException e) {
+                    String msg = String.format(
+                        "Unable to connect to email server '%s'.\nPlease check your settings and try again.",
+                        emailServer.getNickname());
+                    reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
+                } catch (InterruptedException e) {
+                    // Not currently enabled...
+                    log.debug("{{}} Connection to email server canceled.", emailServer.getNickname());
+                    emailServer.disconnect();
+                }
             }
-        }
-
-        try {
-            MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(shell);
-            dialog.setTitle("Connecting");
-            dialog.run(true, false, new EmailConnectionRunnable(emailServer, selectFolder, passwordData));
-        } catch (InvocationTargetException e) {
-            String msg = String.format(
-                "Unable to connect to email server '%s'.\nPlease check your settings and try again.",
-                emailServer.getNickname());
-            reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
-        } catch (InterruptedException e) {
-            // Not currently enabled...
-            log.info(String.format("Connection to email server '%s' canceled.", emailServer.getNickname()));
-            emailServer.disconnect();
-        }
+        });
     }
 
     /**
      * Establishes a connection to the TntConnect database
      * 
-     * @param shell
-     *            The window's shell
      * @param tntDb
      *            The TntConnect database
      */
-    public static void connectToTntDatabase(Shell shell) {
-        log.trace("connectToTntDatabase({})", shell);
+    public static void connectToTntDatabase() {
+        log.trace("connectToTntDatabase()");
 
         if (TntDb.isConnected())
             return;
 
-        // TODO: Handle null shell
-
         try {
-            MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(shell);
+            MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(Display.getDefault().getActiveShell());
             dialog.setTitle("Connecting");
-            dialog.run(true, false, new TntConnectionRunnable());
+            dialog.run(true, false, new IRunnableWithProgress() {
+                @Override
+                public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+                    monitor.beginTask("Connecting to TntConnect database...", IProgressMonitor.UNKNOWN);
+                    try {
+                        TntDb.connect(true);
+                    } catch (TntDbException e) {
+                        throw new InvocationTargetException(e, e.getMessage());
+                    }
+                    monitor.done();
+                }
+            });
         } catch (InvocationTargetException e) {
             String msg = "Unable to connect to TntConnect database.\nPlease check your settings and try again.";
-            reportError("Tnt database connection failure", msg, e.getCause()); // We want the cause, not the ITE
+            reportError("TntConnect database connection failure", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Not currently enabled...
-            log.info("Connection to TntConnect database canceled.");
+            log.debug("Connection to TntConnect database canceled.");
             TntDb.disconnect();
         }
     }
@@ -218,29 +186,36 @@ public class Util {
     /**
      * Prompts the user for their email password
      * 
-     * @param shell
-     *            shell from which to open the prompt; null returns null
      * @param serverNickname
      *            Nickname of the email server to connect to
      * 
      * @return The user-supplied password data or null if the user canceled the operation.
      */
-    private static PasswordData promptForEmailPassword(Shell shell, String serverNickname) {
-        log.trace("promptForEmailPassword({},{})", shell, serverNickname);
+    public static PasswordData promptForEmailPassword(String serverNickname) {
+        log.trace("promptForEmailPassword({})", serverNickname);
 
-        if (shell == null)
-            return null;
+        // We need to use syncExec to get at the shell to prompt the user.
+        // Thus this reference to passwordData needs to be thread-safe.
+        // syncExec should block, regardless, but this works.
+        final AtomicReference<PasswordData> passwordData = new AtomicReference<PasswordData>();
 
-        PasswordInputDialog dlg = new PasswordInputDialog(
-            shell,
-            "Email Server Password Required",
-            String.format("Enter your password for '%s'", serverNickname),
-            "",
-            null);
-        int result = dlg.open();
-        if (result == Window.OK)
-            return dlg.getPasswordData();
-        return null;
+        Display.getDefault().syncExec(new Runnable() {
+            @Override
+            public void run() {
+                PasswordInputDialog dlg = new PasswordInputDialog(
+                    Display.getDefault().getActiveShell(),
+                    "Email Server Password Required",
+                    String.format("Enter your password for '%s'", serverNickname),
+                    "",
+                    null);
+                int result = dlg.open();
+                if (result == Window.OK)
+                    passwordData.set(dlg.getPasswordData());
+                else
+                    passwordData.set(null);
+            }
+        });
+        return passwordData.get();
     }
 
     /**

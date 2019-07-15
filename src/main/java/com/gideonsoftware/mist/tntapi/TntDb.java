@@ -39,7 +39,6 @@ import javax.money.MonetaryAmount;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.javamoney.moneta.FastMoney;
 
 import com.gideonsoftware.mist.EmailMessageToHistoryConverter;
@@ -734,16 +733,12 @@ public class TntDb {
 
     /**
      * Starts the TntConnect import service.
-     * 
-     * @param shell
-     *            the shell for notifying the user of the connection taking place; if null, no notification will take
-     *            place
      */
-    public static void startImportService(Shell shell) {
-        log.trace("startImportService({})", shell);
+    public static void startImportService() {
+        log.trace("startImportService()");
 
         stopImporting = false;
-        Util.connectToTntDatabase(shell);
+        Util.connectToTntDatabase();
 
         Thread importThread = new Thread() {
 

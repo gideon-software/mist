@@ -27,7 +27,6 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.swt.widgets.Shell;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.data.EmailServer;
@@ -243,17 +242,13 @@ public class EmailModel {
 
     /**
      * Starts the master email import service.
-     * 
-     * @param shell
-     *            the shell for notifying the user of the connection taking place; if null, no notification will take
-     *            place
      */
-    public static void startImportService(Shell shell) {
-        log.trace("startImportService({})", shell);
+    public static void startImportService() {
+        log.trace("startImportService()");
         setImporting(true);
         for (EmailServer emailServer : emailServers)
             if (emailServer.isEnabled())
-                emailServer.startImportService(shell);
+                emailServer.startImportService();
     }
 
     public static void stopImportService() {

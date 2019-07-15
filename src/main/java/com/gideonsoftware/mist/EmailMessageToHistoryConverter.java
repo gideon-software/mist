@@ -59,7 +59,7 @@ public class EmailMessageToHistoryConverter {
         try {
             int numMatches = ContactManager.getContactsByEmailCount(history.getContactInfo().getInfo());
             if (numMatches == 0) {
-                log.info(
+                log.debug(
                     "Contact not found in Tnt for '{}'. Skipping message for this contact.",
                     history.getContactInfo().getInfo());
                 if (history.getStatus() == History.STATUS_NONE)
@@ -89,10 +89,10 @@ public class EmailMessageToHistoryConverter {
 
         // Is the email from someone on the ignore lists?
         if (EmailModel.isEmailInIgnoreList(msg.getFromId())) {
-            log.info("Sender is in the global ignore list ({}); skipping.", msg.getFromId());
+            log.debug("Sender is in the global ignore list ({}); skipping.", msg.getFromId());
             return null;
         } else if (EmailModel.getEmailServer(msg.getSourceId()).isEmailInIgnoreList(msg.getFromId())) {
-            log.info(
+            log.debug(
                 "Sender is in the server ignore list ({} on '{}'); skipping.",
                 msg.getFromId(),
                 msg.getSourceName());

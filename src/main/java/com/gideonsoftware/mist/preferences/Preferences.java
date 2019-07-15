@@ -170,7 +170,7 @@ public class Preferences extends PreferenceStore {
             java.util.prefs.Preferences oldPrefs = java.util.prefs.Preferences.userRoot().node(
                 "MIST" + (MIST.isDevel() ? "-devel" : ""));
             if (oldPrefs.nodeExists("TntMPD")) {
-                log.info("Loading preferences from 4.x...");
+                log.debug("Loading preferences from 4.x...");
 
                 setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
 
@@ -213,7 +213,7 @@ public class Preferences extends PreferenceStore {
                 server.setMyAddresses(myAddresses.toArray(new String[0]));
                 EmailModel.addEmailServer(server);
 
-                log.info("4.x preferences successfully loaded.");
+                log.debug("4.x preferences successfully loaded.");
                 return true;
             }
         } catch (BackingStoreException e) {

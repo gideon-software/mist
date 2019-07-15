@@ -234,8 +234,8 @@ public class MIST {
         if (TntDb.isConnected())
             TntDb.disconnect();
 
-        if (Display.getCurrent() != null && Display.getCurrent().isDisposed())
-            Display.getCurrent().dispose();
+        if (Display.getDefault() != null && Display.getDefault().isDisposed())
+            Display.getDefault().dispose();
     }
 
     public static void parseOptions(String[] opts) {
@@ -245,7 +245,7 @@ public class MIST {
     }
 
     public static void setLogfileLogLevel(String levelName) {
-        log.info("Setting logfile log level to '{}'", levelName);
+        log.debug("Setting logfile log level to '{}'", levelName);
         Level level = Level.toLevel(levelName, Level.OFF);
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();

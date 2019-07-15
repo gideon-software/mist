@@ -29,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
@@ -117,7 +116,7 @@ public abstract class EmailServer implements Cloneable {
         MIST.getPrefs().setToDefaultIfContains(getPrefName("")); // Will clear all prefs matching this emailserver
     }
 
-    public abstract void connect(boolean selectFolder) throws EmailServerException;
+    public abstract void connect() throws EmailServerException;
 
     public void disconnect() {
         log.trace("{{}} disconnect()", getNickname());
@@ -278,6 +277,10 @@ public abstract class EmailServer implements Cloneable {
         return importComplete;
     }
 
+    public abstract void loadMessageList() throws EmailServerException;
+
+    public abstract void openFolder() throws EmailServerException;
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -345,13 +348,9 @@ public abstract class EmailServer implements Cloneable {
 
     /**
      * Starts the email import service for this server.
-     * 
-     * @param shell
-     *            the shell for notifying the user of the connection taking place; if null, no notification will take
-     *            place
      */
-    public void startImportService(Shell shell) {
-        log.trace("{{}} startImportService({})", getNickname(), shell);
+    public void startImportService() {
+        log.trace("{{}} startImportService()", getNickname());
 
         if (!isEnabled()) {
             log.warn("{{}} Cannot start import - server is disabled!");
@@ -359,18 +358,23 @@ public abstract class EmailServer implements Cloneable {
             return;
         }
 
+        log.trace("=== Email Server '{}' Import Service Started ===", nickname);
+
         // Make sure we're in the proper state
         stopImporting = false;
         importComplete = false;
 
-        // Connect!
-        Util.connectToEmailServer(shell, this, true);
-
         Thread importThread = new Thread() {
             @Override
             public void run() {
-                log.trace("=== Email Server '{}' Import Service Started ===", nickname);
-                log.info("{{}} Folder '{}' contains {} messages", nickname, folderName, totalMessages);
+                Util.connectToEmailServer(EmailServer.this, true, true);
+                if (!isConnected()) {
+                    // We didn't connect, so our import is done
+                    setImportComplete(true);
+                    return;
+                }
+
+                log.debug("{{}} Folder '{}' contains {} messages", nickname, folderName, totalMessages);
 
                 while (hasNextMessage() && !stopImporting) {
                     log.debug(
@@ -407,7 +411,7 @@ public abstract class EmailServer implements Cloneable {
                 // If we're done because there were no messages, tell the user.
                 if (totalMessages == 0) {
                     String msg = String.format("'%s' had no messages to import.", nickname);
-                    log.info(msg);
+                    log.debug(msg);
                     Display.getDefault().syncExec(new Runnable() {
                         @Override
                         public void run() {
@@ -418,13 +422,8 @@ public abstract class EmailServer implements Cloneable {
 
             } // run()
         };
-        if (isConnected()) {
-            importThread.setName(String.format("ESImport%s", id));
-            importThread.start();
-        } else {
-            // We didn't connect, so our import is done
-            setImportComplete(true);
-        }
+        importThread.setName(String.format("ESImport%s", id));
+        importThread.start();
     }
 
     public void stopImportService() {
