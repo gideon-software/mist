@@ -28,6 +28,8 @@ import java.beans.PropertyChangeListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -44,7 +46,15 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
     public ImportButtonView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("ImportButtonView({})", parent);
+
         EmailModel.addPropertyChangeListener(this);
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("ImportButtonView.widgetDisposed()");
+                EmailModel.removePropertyChangeListener(ImportButtonView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
 
@@ -54,6 +64,8 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
     }
 
     public void configureImportButton(boolean importing) {
+        if (importButton.isDisposed())
+            return;
 
         // Initial enabling depends on whether MIST is configured
         importButton.setEnabled(MIST.getPrefs().isConfigured());
@@ -77,6 +89,8 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
 
         if (EmailModel.PROP_IMPORTING.equals(event.getPropertyName())
             || EmailModel.PROP_EMAILSERVERS_INIT.equals(event.getPropertyName())) {
+            if (Display.getDefault().isDisposed())
+                return;
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {

@@ -27,6 +27,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.util.Util;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TaskBar;
@@ -50,6 +52,13 @@ public class TaskItemView implements PropertyChangeListener {
             return;
 
         MessageModel.addPropertyChangeListener(this);
+        shell.addDisposeListener(new DisposeListener() { // Need to attach to shell
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("TaskItemView.widgetDisposed()");
+                MessageModel.removePropertyChangeListener(TaskItemView.this);
+            }
+        });
 
         TaskBar bar = shell.getDisplay().getSystemTaskBar();
         if (bar == null)
@@ -74,10 +83,12 @@ public class TaskItemView implements PropertyChangeListener {
 
         if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
             || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
+            if (Display.getDefault().isDisposed())
+                return;
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
-                    if (taskItem != null) {
+                    if (taskItem != null && !taskItem.isDisposed()) {
                         int total = EmailModel.getMessageCountTotal();
                         int current = EmailModel.getCurrentMessageNumberTotal();
                         if (current < total) {

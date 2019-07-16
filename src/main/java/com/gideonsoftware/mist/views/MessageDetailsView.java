@@ -30,11 +30,14 @@ import java.beans.PropertyChangeSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -66,9 +69,19 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
     public MessageDetailsView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("MessageDetailsView({})", parent);
+
         MIST.getView().getContactsView().addPropertyChangeListener(this);
         MIST.getView().getMessagesView().addPropertyChangeListener(this);
         HistoryModel.addPropertyChangeListener(this);
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("MessageDetailsView.widgetDisposed()");
+                MIST.getView().getContactsView().removePropertyChangeListener(MessageDetailsView.this);
+                MIST.getView().getMessagesView().removePropertyChangeListener(MessageDetailsView.this);
+                HistoryModel.removePropertyChangeListener(MessageDetailsView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
 
@@ -122,6 +135,7 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
     }
 
@@ -164,6 +178,9 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
     @Override
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
+
+        if (Display.getDefault().isDisposed() || infoComp.isDisposed())
+            return;
 
         if (ContactsView.PROP_CONTACT_SELECTED.equals(event.getPropertyName())
             || HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {

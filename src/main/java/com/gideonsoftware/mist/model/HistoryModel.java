@@ -60,6 +60,7 @@ public class HistoryModel {
     }
 
     public static void addPropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
     }
 
@@ -132,6 +133,7 @@ public class HistoryModel {
     }
 
     public static void removePropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("removePropertyChangeListener({})", listener);
         pcs.removePropertyChangeListener(listener);
     }
 }

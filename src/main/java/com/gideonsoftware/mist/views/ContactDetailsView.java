@@ -31,8 +31,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 
@@ -69,8 +72,17 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
     public ContactDetailsView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("ContactDetailsView({})", parent);
+
         MIST.getView().getContactsView().addPropertyChangeListener(this);
         HistoryModel.addPropertyChangeListener(this);
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("ContactDetailsView.widgetDisposed()");
+                MIST.getView().getContactsView().removePropertyChangeListener(ContactDetailsView.this);
+                HistoryModel.removePropertyChangeListener(ContactDetailsView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
 
@@ -145,6 +157,9 @@ public class ContactDetailsView extends Composite implements PropertyChangeListe
 
     @Override
     public void propertyChange(PropertyChangeEvent event) {
+
+        if (Display.getDefault().isDisposed() || contactDetailsGroup.isDisposed())
+            return;
 
         if (ContactsView.PROP_CONTACT_SELECTED.equals(event.getPropertyName())) {
             // A new contact has been selected

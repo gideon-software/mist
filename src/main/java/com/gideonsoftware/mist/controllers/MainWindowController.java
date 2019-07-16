@@ -20,20 +20,14 @@
 
 package com.gideonsoftware.mist.controllers;
 
-import java.io.IOException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
 
 import com.gideonsoftware.mist.MIST;
-import com.gideonsoftware.mist.model.EmailModel;
-import com.gideonsoftware.mist.tntapi.TntDb;
-import com.gideonsoftware.mist.util.Util;
 import com.gideonsoftware.mist.views.MainWindowView;
 
 public class MainWindowController {
@@ -77,42 +71,9 @@ public class MainWindowController {
     public boolean closeView() {
         log.trace("closeView()");
 
-        if (EmailModel.isImporting()) {
-
-            // We're importing - verify that the user wants to close
-            int style = SWT.APPLICATION_MODAL | SWT.ICON_QUESTION | SWT.YES | SWT.NO;
-            MessageBox msgBox = new MessageBox(new Shell(), style);
-            msgBox.setText("Stop import?");
-            msgBox.setMessage(
-                "MIST is still importing. Are you sure you want to quit?\n"
-                    + "(Don't worry; MIST can finish later if you like!)");
-            if (msgBox.open() != SWT.YES)
-                return false;
-
-            // Stop the email import and wait
-            EmailModel.stopImportService();
-            while (EmailModel.isImporting()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    // No worries!
-                }
-            }
-        }
-
         // Save any modified history text from the MessageDetailsView
         messageDetailsController.commitMessageToTntDb();
         messageDetailsController.commitSubjectToTntDb();
-
-        // Shut down Tnt import service
-        TntDb.stopImportService();
-
-        // Save preferences
-        try {
-            MIST.getPrefs().save();
-        } catch (IOException e) {
-            Util.reportError("Error", "Could not save preferences.", e);
-        }
 
         return view.close();
     }

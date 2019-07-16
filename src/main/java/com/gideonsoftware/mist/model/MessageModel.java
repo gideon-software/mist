@@ -38,7 +38,6 @@ public class MessageModel {
     public final static String PROP_MESSAGE_ADD = "messagemodel.message.add";
     public final static String PROP_MESSAGE_INIT = "messagemodel.message.init";
 
-    // TODO: volatile needed?
     private static volatile Queue<MessageSource> messageQueue = new LinkedList<MessageSource>();
 
     /**
@@ -57,6 +56,7 @@ public class MessageModel {
     }
 
     public static void addPropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
     }
 
@@ -79,6 +79,7 @@ public class MessageModel {
     }
 
     public static void removePropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("removePropertyChangeListener({})", listener);
         pcs.removePropertyChangeListener(listener);
     }
 }

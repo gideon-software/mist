@@ -21,6 +21,7 @@
 package com.gideonsoftware.mist;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 import org.apache.logging.log4j.Level;
@@ -227,15 +228,8 @@ public class MIST {
         MainWindowController controller = new MainWindowController(view);
         controller.openView();
 
-        //
         // Shut down
-        //
-
-        if (TntDb.isConnected())
-            TntDb.disconnect();
-
-        if (Display.getDefault() != null && Display.getDefault().isDisposed())
-            Display.getDefault().dispose();
+        shutdown();
     }
 
     public static void parseOptions(String[] opts) {
@@ -254,5 +248,57 @@ public class MIST {
         rootLoggerConfig.removeAppender("logfile");
         rootLoggerConfig.addAppender(config.getAppender("logfile"), level, null);
         ctx.updateLoggers();
+    }
+
+    /**
+     * 
+     */
+    private static void shutdown() {
+        log.trace("shutdown()");
+
+        // Save preferences
+        log.trace("shutdown: Saving preferences...");
+        try {
+            MIST.getPrefs().save();
+        } catch (IOException e) {
+            log.error("Could not save preferences.", e);
+        }
+
+        Thread shutdownThread = new Thread() {
+            @Override
+            public void run() {
+                // Shut down Email import server
+                if (EmailModel.isImporting()) {
+                    log.trace("shutdown: Shutting down email import service...");
+                    EmailModel.stopImportService();
+                    while (EmailModel.isImporting()) {
+                        try {
+                            sleep(100);
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                }
+
+                // Shut down Tnt import service
+                if (TntDb.isImporting()) {
+                    log.trace("shutdown: Shutting down TntConnect import service...");
+                    TntDb.stopImportService();
+                    while (TntDb.isImporting()) {
+                        try {
+                            sleep(100);
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                    TntDb.disconnect();
+                }
+            }
+        };
+        shutdownThread.setName("Shutdown");
+        shutdownThread.start();
+
+        if (Display.getDefault() != null && !Display.getDefault().isDisposed()) {
+            log.trace("shutdown: Disposing display...");
+            Display.getDefault().dispose();
+        }
     }
 }

@@ -37,6 +37,8 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
@@ -85,10 +87,19 @@ public class MessagesView extends Composite implements PropertyChangeListener {
     public MessagesView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("MessagesView({})", parent);
+
         MIST.getView().getContactsView().addPropertyChangeListener(this);
         HistoryModel.addPropertyChangeListener(this);
         // This must also listen for MessageDetailsView, but that's not instantiated yet
         // It is added later in MainWindowView:createContents(Composite)
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("MessagesView.widgetDisposed()");
+                MIST.getView().getContactsView().removePropertyChangeListener(MessagesView.this);
+                HistoryModel.removePropertyChangeListener(MessagesView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
 
@@ -202,6 +213,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
     }
 
@@ -268,7 +280,8 @@ public class MessagesView extends Composite implements PropertyChangeListener {
                     public void run() {
                         addTableItem(his);
                         // Scroll to the bottom of the table as items are entered
-                        messagesTable.setTopIndex(messagesTable.getItemCount() - 1);
+                        if (!messagesTable.isDisposed())
+                            messagesTable.setTopIndex(messagesTable.getItemCount() - 1);
                     }
                 });
             }

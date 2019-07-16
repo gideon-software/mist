@@ -29,6 +29,8 @@ import java.beans.PropertyChangeListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.ProgressBar;
@@ -44,7 +46,15 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
     public ProgressBarView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("ProgressBarView({})", parent);
+
         MessageModel.addPropertyChangeListener(this);
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("ProgressBarView.widgetDisposed()");
+                MessageModel.removePropertyChangeListener(ProgressBarView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
         applyGridData(this).withHorizontalFill();
@@ -66,13 +76,17 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
 
         if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
             || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
+            if (Display.getDefault().isDisposed())
+                return;
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
                     int total = EmailModel.getMessageCountTotal();
                     int current = EmailModel.getCurrentMessageNumberTotal();
-                    progressBar.setMaximum(total);
-                    progressBar.setSelection(current);
+                    if (!progressBar.isDisposed()) {
+                        progressBar.setMaximum(total);
+                        progressBar.setSelection(current);
+                    }
                 }
             });
         }

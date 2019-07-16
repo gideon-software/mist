@@ -30,6 +30,8 @@ import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.ShellAdapter;
@@ -166,7 +168,15 @@ public class MainWindowView extends ApplicationWindow {
         applyGridData(messagesView).withFill();
         messageDetailsView = new MessageDetailsView(rightVerticalSash);
         applyGridData(messageDetailsView).withFill();
+
         messageDetailsView.addPropertyChangeListener(messagesView); // Needs to be added after instantiation
+        messagesView.addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("MessagesView.widgetDisposed()");
+                messageDetailsView.removePropertyChangeListener(messagesView);
+            }
+        });
 
         setSashFormWeightPrefData(leftRightSash, PREF_SASH_LEFTRIGHT_WEIGHTS, new int[] { 1, 3 });
         setSashFormWeightPrefData(rightVerticalSash, PREF_SASH_RIGHTVERT_WEIGHTS, new int[] { 2, 3 });

@@ -405,8 +405,8 @@ public abstract class EmailServer implements Cloneable {
                 // We're done
                 disconnect();
                 // Import is complete
-                setImportComplete(true);
                 log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
+                setImportComplete(true);
 
                 // If we're done because there were no messages, tell the user.
                 if (totalMessages == 0) {
@@ -427,6 +427,7 @@ public abstract class EmailServer implements Cloneable {
     }
 
     public void stopImportService() {
+        log.trace("{{}} stopImportService()", getNickname());
         stopImporting = true;
     }
 

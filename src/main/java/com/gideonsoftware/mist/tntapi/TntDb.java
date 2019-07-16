@@ -83,6 +83,7 @@ public class TntDb {
 
     // Import controls
     private static boolean stopImporting = false;
+    private static boolean importing = false;
 
     // Other objects
     private static String dbPath = MIST.getPrefs().getString(PREF_TNT_DBPATH);
@@ -625,6 +626,10 @@ public class TntDb {
         return conn != null;
     }
 
+    public static boolean isImporting() {
+        return importing;
+    }
+
     /**
      * Returns whether to commit transactions after add/update/delete methods.
      *
@@ -737,6 +742,9 @@ public class TntDb {
     public static void startImportService() {
         log.trace("startImportService()");
 
+        if (importing)
+            return;
+
         stopImporting = false;
         Util.connectToTntDatabase();
 
@@ -776,7 +784,8 @@ public class TntDb {
             @Override
             public void run() {
                 log.trace("=== TntDb Import Service Started ===");
-                pcs.firePropertyChange(PROP_IMPORTSTATUS_IMPORTING, null, stopImporting);
+                importing = true;
+                pcs.firePropertyChange(PROP_IMPORTSTATUS_IMPORTING, null, importing);
                 while (!stopImporting) {
                     while (MessageModel.hasMessages() && !stopImporting) {
                         try {
@@ -794,8 +803,9 @@ public class TntDb {
                         }
                     }
                 }
-                pcs.firePropertyChange(PROP_IMPORTSTATUS_STOPPED, null, stopImporting);
                 log.trace("=== TntDb Import Service Stopped ===");
+                importing = false;
+                pcs.firePropertyChange(PROP_IMPORTSTATUS_STOPPED, null, importing);
             }
         };
         importThread.setName("TntImport");
@@ -803,6 +813,7 @@ public class TntDb {
     }
 
     public static void stopImportService() {
+        log.trace("stopImportService()");
         stopImporting = true;
     }
 

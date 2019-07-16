@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
@@ -65,7 +67,15 @@ public class ContactsView extends Composite implements PropertyChangeListener {
     public ContactsView(Composite parent) {
         super(parent, SWT.NONE);
         log.trace("ContactsView({})", parent);
+
         HistoryModel.addPropertyChangeListener(this);
+        addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                log.trace("ContactsView.widgetDisposed()");
+                HistoryModel.removePropertyChangeListener(ContactsView.this);
+            }
+        });
 
         applyGridLayout(this).numColumns(1);
 
@@ -98,12 +108,16 @@ public class ContactsView extends Composite implements PropertyChangeListener {
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
+        log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
+
+        if (Display.getDefault().isDisposed() || contactList.isDisposed())
+            return;
 
         if (HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
             Display.getDefault().syncExec(new Runnable() {
