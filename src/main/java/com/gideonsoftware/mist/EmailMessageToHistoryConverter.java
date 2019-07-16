@@ -44,6 +44,16 @@ import com.gideonsoftware.mist.tntapi.entities.TaskType;
 public class EmailMessageToHistoryConverter {
     private static Logger log = LogManager.getLogger();
 
+    private static boolean useAutoThank;
+    private static String[] autoThankSubjectArr;
+
+    // Class initializer
+    static {
+        // Preferences should have been loaded by the time this class is used
+        useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
+        autoThankSubjectArr = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
+    }
+
     /**
      * Try to add in contact info from Tnt. Report errors and change status if there are no associated contacts or
      * multiple contacts.
@@ -216,13 +226,8 @@ public class EmailMessageToHistoryConverter {
             }
 
             // If autoThank is enabled, check for thank here
-            // TODO: Initialize these values earlier
-            boolean useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
-            if (useAutoThank) {
-                String[] thankYouList = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
-                if (EmailModel.doesSubjectStartWithPhraseInList(msg.getSubject(), thankYouList))
-                    history.setThank(true);
-            }
+            if (useAutoThank && EmailModel.doesSubjectStartWithPhraseInList(msg.getSubject(), autoThankSubjectArr))
+                history.setThank(true);
 
             historyList.add(history);
 
