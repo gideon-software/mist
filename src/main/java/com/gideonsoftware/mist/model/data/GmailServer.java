@@ -22,24 +22,12 @@ package com.gideonsoftware.mist.model.data;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.TreeSet;
 
 import javax.mail.Folder;
@@ -50,7 +38,6 @@ import javax.mail.Session;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jface.util.Util;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
@@ -158,43 +145,7 @@ public class GmailServer extends EmailServer {
 
         List<String> scopes = Arrays.asList("https://mail.google.com/"); // Needed for IMAP access
 
-        // Create secure file store
-        Path secureStoreDir = Paths.get(getSecureFilePath());
-
-        if (Files.notExists(secureStoreDir)) {
-            Files.createDirectory(secureStoreDir);
-
-            // Set permissions so that only the current user can read the file
-            if (Util.isMac() || Util.isLinux()) {
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rw-------");
-                Files.setPosixFilePermissions(secureStoreDir, permissions);
-
-            } else { // Windows; see https://stackoverflow.com/a/13892920/1307022
-                AclFileAttributeView aclAttr = Files.getFileAttributeView(secureStoreDir, AclFileAttributeView.class);
-                UserPrincipalLookupService upls = secureStoreDir.getFileSystem().getUserPrincipalLookupService();
-                UserPrincipal user = upls.lookupPrincipalByName(System.getProperty("user.name"));
-                AclEntry.Builder builder = AclEntry.newBuilder();
-                builder.setPermissions(
-                    EnumSet.of(
-                        AclEntryPermission.APPEND_DATA,
-                        AclEntryPermission.DELETE,
-                        AclEntryPermission.DELETE_CHILD,
-                        AclEntryPermission.EXECUTE,
-                        AclEntryPermission.READ_ACL,
-                        AclEntryPermission.READ_ATTRIBUTES,
-                        AclEntryPermission.READ_DATA,
-                        AclEntryPermission.READ_NAMED_ATTRS,
-                        AclEntryPermission.SYNCHRONIZE,
-                        AclEntryPermission.WRITE_ACL,
-                        AclEntryPermission.WRITE_ATTRIBUTES,
-                        AclEntryPermission.WRITE_DATA,
-                        AclEntryPermission.WRITE_NAMED_ATTRS,
-                        AclEntryPermission.WRITE_OWNER));
-                builder.setPrincipal(user);
-                builder.setType(AclEntryType.ALLOW);
-                aclAttr.setAcl(Collections.singletonList(builder.build()));
-            }
-        }
+        Path secureStoreDir = Paths.get(MIST.getAppConfDir());
         FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(secureStoreDir.toFile());
 
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
@@ -209,10 +160,6 @@ public class GmailServer extends EmailServer {
         // Get the access token
         credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
         return credential.getAccessToken();
-    }
-
-    private String getSecureFilePath() {
-        return MIST.getUserDataDir() + ".secure";
     }
 
     @Override

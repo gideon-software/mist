@@ -101,12 +101,7 @@ public class Preferences extends PreferenceStore {
      */
     protected String getPreferencesPath() {
         log.trace("getPreferencesPath()");
-        return MIST.getUserDataDir()
-            + "conf"
-            + File.separator
-            + MIST.APP_NAME.toLowerCase()
-            + MIST.getProfileExt()
-            + ".properties";
+        return MIST.getAppConfDir() + MIST.APP_NAME.toLowerCase() + MIST.getProfileExt() + ".properties";
     }
 
     public Rectangle getRectangle(String name) {

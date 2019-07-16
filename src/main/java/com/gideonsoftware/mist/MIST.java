@@ -23,6 +23,20 @@ package com.gideonsoftware.mist;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -70,7 +84,8 @@ public class MIST {
     public final static String PREF_LOGFILE_LOGLEVEL = "mist.logfile.loglevel";
 
     private static String profileExt = "";
-    private static String userDataDir = "";
+    private static String appDataDir = "";
+    private static String appConfDir = "";
     private static String logfilePath = "";
 
     public static String configureLogging(@SuppressWarnings("rawtypes") Class clazz) {
@@ -98,11 +113,11 @@ public class MIST {
             // Linux
             // TODO: Test Linux installation to verify if this works
             logConfPath = String.format("conf/%s", logConfFileName);
-            logPath = getUserDataDir() + "logs/" + logFilename;
+            logPath = getAppDataDir() + "logs/" + logFilename;
         } else {
             // Windows
             logConfPath = String.format("conf\\%s", logConfFileName);
-            logPath = getUserDataDir() + "logs\\" + logFilename;
+            logPath = getAppDataDir() + "logs\\" + logFilename;
         }
         System.setProperty("log.path", logPath);
         System.setProperty("log4j.configurationFile", logConfPath);
@@ -132,16 +147,66 @@ public class MIST {
         else
             profileExt = "";
 
-        // Set user data dir
-        userDataDir = "";
+        // Set app data dir
+        appDataDir = "";
         if (Util.isWindows())
-            userDataDir = String.format("%s\\%s\\", System.getenv("APPDATA"), APP_NAME.toLowerCase());
+            appDataDir = String.format("%s\\%s\\", System.getenv("APPDATA"), APP_NAME.toLowerCase());
         else if (Util.isLinux())
-            userDataDir = String.format("%s/.%s/", System.getProperty("user.home"), APP_NAME.toLowerCase());
+            appDataDir = String.format("%s/.%s/", System.getProperty("user.home"), APP_NAME.toLowerCase());
         else { // Mac
-            userDataDir = ""; // TODO! Also use in configureLogging()
+            appDataDir = ""; // TODO! Also use in configureLogging()
         }
 
+        // Set conf data dir
+        appConfDir = appDataDir + "conf" + File.separator;
+
+        try {
+            // Verify that the directory exists
+            Path dataDirPath = Paths.get(appConfDir);
+
+            if (Files.notExists(dataDirPath))
+                Files.createDirectory(dataDirPath);
+
+            // Verify that the directory is secure; set permissions so that only the current user can read the file
+            if (Util.isMac() || Util.isLinux()) {
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rw-------");
+                Files.setPosixFilePermissions(dataDirPath, permissions);
+            } else { // Windows; see https://stackoverflow.com/a/13892920/1307022
+                AclFileAttributeView aclAttr = Files.getFileAttributeView(dataDirPath, AclFileAttributeView.class);
+                UserPrincipalLookupService upls = dataDirPath.getFileSystem().getUserPrincipalLookupService();
+                UserPrincipal user = upls.lookupPrincipalByName(System.getProperty("user.name"));
+                AclEntry.Builder builder = AclEntry.newBuilder();
+                builder.setPermissions(
+                    EnumSet.of(
+                        AclEntryPermission.APPEND_DATA,
+                        AclEntryPermission.DELETE,
+                        AclEntryPermission.DELETE_CHILD,
+                        AclEntryPermission.EXECUTE,
+                        AclEntryPermission.READ_ACL,
+                        AclEntryPermission.READ_ATTRIBUTES,
+                        AclEntryPermission.READ_DATA,
+                        AclEntryPermission.READ_NAMED_ATTRS,
+                        AclEntryPermission.SYNCHRONIZE,
+                        AclEntryPermission.WRITE_ACL,
+                        AclEntryPermission.WRITE_ATTRIBUTES,
+                        AclEntryPermission.WRITE_DATA,
+                        AclEntryPermission.WRITE_NAMED_ATTRS,
+                        AclEntryPermission.WRITE_OWNER));
+                builder.setPrincipal(user);
+                builder.setType(AclEntryType.ALLOW);
+                aclAttr.setAcl(Collections.singletonList(builder.build()));
+            }
+        } catch (IOException e) {
+            log.error(e);
+        }
+    }
+
+    public static String getAppConfDir() {
+        return appConfDir;
+    }
+
+    public static String getAppDataDir() {
+        return appDataDir;
     }
 
     public static String getAppVersion() {
@@ -169,10 +234,6 @@ public class MIST {
 
     public static String getProfileExt() {
         return profileExt;
-    }
-
-    public static String getUserDataDir() {
-        return userDataDir;
     }
 
     public static MainWindowView getView() {
