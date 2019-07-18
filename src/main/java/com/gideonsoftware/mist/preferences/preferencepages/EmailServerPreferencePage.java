@@ -70,6 +70,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private ForgettablePasswordFieldEditor passwordEditor;
     private ButtonFieldEditor connectButton;
     private SmartComboFieldEditor<String> folderEditor;
+    private BooleanFieldEditor removeLabelEditor;
     private SmartComboFieldEditor<Integer> tntUserEditor;
     private BooleanFieldEditor useSslEditor;
     private AddEditRemoveListFieldEditor myEmailAddressesEditor;
@@ -93,6 +94,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     }
 
     protected boolean connectToServer() {
+        log.trace("connectToServer()");
         savePageSettings();
 
         Util.connectToEmailServer(server, true, false);
@@ -113,7 +115,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                 if (emailFolder.canHoldMessages())
                     folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
 
-            folderEditor.setSelection(oldKey != null ? oldKey : server.getFolder());
+            folderEditor.setSelection(oldKey != null ? oldKey : server.getFolderName());
 
             // All done with the server for now
             server.disconnect();
@@ -223,17 +225,18 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         // Folder
         folderEditor = new SmartComboFieldEditor<String>(
             server.getPrefName(EmailServer.PREF_FOLDER),
-            "&Folder:",
+            String.format("&%s:", server.getFolderWord()),
             getFieldEditorParent(),
             true);
         folderEditor.setEmptySelectionAllowed(false);
-        if (!server.getFolder().isEmpty()) {
+        if (!server.getFolderName().isEmpty()) {
             // We're not connected to the email server, but we know the folder from previous preferences
-            folderEditor.add(server.getFolder(), server.getFolder());
-            folderEditor.setSelection(server.getFolder());
+            folderEditor.add(server.getFolderName(), server.getFolderName());
+            folderEditor.setSelection(server.getFolderName());
         }
         folderEditor.setEnabled(false, getFieldEditorParent());
-        folderEditor.setErrorMessage("An email folder must be selected.");
+        folderEditor.setErrorMessage(
+            String.format("An email %s must be selected.", server.getFolderWord().toLowerCase()));
         Button folderEditorButton = folderEditor.getButtonControl(getFieldEditorParent());
         folderEditorButton.setImage(Images.getImage(Images.ICON_RELOAD));
         folderEditorButton.addSelectionListener(new SelectionAdapter() {
@@ -242,12 +245,21 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                 log.trace("folderEditorButton.widgetSelected({})", event);
                 if (connectToServer()) {
                     MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-                    msgBox.setMessage("Folders reloaded from email server.");
+                    msgBox.setMessage(String.format("%ss reloaded from email server.", server.getFolderWord()));
                     msgBox.open();
                 }
             }
         });
         addField(folderEditor);
+
+        if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
+            // Remove label from imported history
+            removeLabelEditor = new BooleanFieldEditor(
+                server.getPrefName(GmailServer.PREF_LABEL_REMOVE_AFTER_IMPORT),
+                "Remove label from successfully-imported history and ignored messages",
+                getFieldEditorParent());
+            addField(removeLabelEditor);
+        }
 
         // Tnt User ID (and username)
         // Note: Tnt Username must be treated specially, since fieldEditor doesn't know about it directly
@@ -350,6 +362,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
 
     @Override
     public boolean performOk() {
+        log.trace("performOk()");
         boolean ok = super.performOk();
         if (ok) {
             // Save the Tnt username; the tntUserEditor doesn't know to do this!
@@ -362,6 +375,7 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
     }
 
     private void savePageSettings() {
+        log.trace("savePageSettings()");
         server.setEnabled(enabledEditor.getBooleanValue());
         server.setNickname(nicknameEditor.getStringValue());
         server.setUsername(usernameEditor.getStringValue());
@@ -377,11 +391,14 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             ((ImapServer) server).setPassword(passwordEditor.getPassword());
             ((ImapServer) server).setPasswordPrompt(passwordEditor.isPrompt());
             ((ImapServer) server).setUseSsl(useSslEditor.getBooleanValue());
+        } else if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
+            ((GmailServer) server).setLabelRemoveAfterImport(removeLabelEditor.getBooleanValue());
         }
     }
 
     @Override
     public void setVisible(boolean visible) {
+        log.trace("setVisible({})", visible);
         super.setVisible(visible);
         if (visible) {
             nicknameEditor.setFocus();

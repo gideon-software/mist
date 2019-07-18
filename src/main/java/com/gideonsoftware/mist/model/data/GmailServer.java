@@ -20,6 +20,8 @@
 
 package com.gideonsoftware.mist.model.data;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -41,6 +43,10 @@ import org.apache.logging.log4j.Logger;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
+import com.gideonsoftware.mist.model.HistoryModel;
+import com.gideonsoftware.mist.preferences.Preferences;
+import com.gideonsoftware.mist.tntapi.TntDb;
+import com.gideonsoftware.mist.tntapi.entities.History;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -59,14 +65,47 @@ import com.sun.mail.gimap.GmailThrIdTerm;
 /**
  * 
  */
-public class GmailServer extends EmailServer {
+public class GmailServer extends EmailServer implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
 
+    // Preferences
+    public final static String PREF_LABEL_REMOVE_AFTER_IMPORT = "label.removeafterimport";
+
     private Long[] messageIds;
-    Folder allMailFolder;
+    private Folder allMailFolder;
+
+    private boolean labelRemoveAfterImport = true;
 
     public GmailServer(int id) {
         super(id, EmailServer.TYPE_GMAIL);
+        allMailFolder = null;
+        messageIds = new Long[0];
+
+        //
+        // Load values from preferences & set defaults
+        //
+
+        Preferences prefs = MIST.getPrefs();
+
+        // Set default label-remove-after-import
+        prefs.setDefault(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT), true);
+        labelRemoveAfterImport = prefs.getBoolean(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT));
+    }
+
+    @Override
+    public void closeFolders() {
+        log.trace("{{}} closeFolders()", getNickname());
+        super.closeFolders();
+        if (store != null) {
+            try {
+                if (allMailFolder != null && allMailFolder.isOpen())
+                    allMailFolder.close();
+            } catch (MessagingException e) {
+                log.warn("{{}} Unable to close folder '{}'", getNickname(), allMailFolder.getName(), e);
+            } finally {
+                allMailFolder = null;
+            }
+        }
     }
 
     /**
@@ -75,6 +114,12 @@ public class GmailServer extends EmailServer {
     @Override
     public void connect() throws EmailServerException {
         log.trace("{{}} connect()", getNickname());
+
+        if (isConnected()) {
+            log.trace("{{}} Already connected", getNickname());
+            return;
+        }
+
         log.debug("{{}} Connecting to Gmail...", getNickname());
 
         store = null;
@@ -110,12 +155,18 @@ public class GmailServer extends EmailServer {
             store = null;
             throw new EmailServerException(e);
         }
+
+        // Add property change listeners
+        TntDb.addPropertyChangeListener(this);
+        HistoryModel.addPropertyChangeListener(this);
     }
 
     @Override
     public void disconnect() {
+        log.trace("{{}} disconnect()", getNickname());
         super.disconnect();
-        allMailFolder = null;
+        TntDb.removePropertyChangeListener(this);
+        HistoryModel.removePropertyChangeListener(this);
     }
 
     @Override
@@ -130,7 +181,7 @@ public class GmailServer extends EmailServer {
     }
 
     private String getOAuth2AccessToken() throws IOException, GeneralSecurityException {
-        log.trace("getOAuth2AccessToken()");
+        log.trace("{{}} getOAuth2AccessToken()", getNickname());
 
         //
         // Set up authorization code flow
@@ -162,16 +213,13 @@ public class GmailServer extends EmailServer {
         return credential.getAccessToken();
     }
 
-    @Override
-    public void init() {
-        super.init();
-        allMailFolder = null;
-        messageIds = new Long[0];
+    public boolean isLabelRemoveAfterImport() {
+        return labelRemoveAfterImport;
     }
 
     @Override
     public void loadMessageList() throws EmailServerException {
-        log.trace("loadMessageList()");
+        log.trace("{{}} loadMessageList()", getNickname());
         try {
             // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
             // labeled, but not subsequent messages (even though it looks like it in the Gmail interface.
@@ -187,8 +235,7 @@ public class GmailServer extends EmailServer {
 
             // Now, go back through the thread IDs and get all the messages
             // First open the All Mail Folder
-            allMailFolder = store.getFolder("[Gmail]/All Mail");
-            allMailFolder.open(Folder.READ_ONLY);
+            openAllMailFolder();
 
             TreeSet<Long> msgIdSet = new TreeSet<Long>();
             // For each thread ID
@@ -208,25 +255,86 @@ public class GmailServer extends EmailServer {
             }
             messageIds = msgIdSet.toArray(new Long[0]);
             totalMessages = messageIds.length;
+            currentMessageNumber = 0;
         } catch (MessagingException e) {
-            folder = null;
+            throw new EmailServerException(e);
+        }
+    }
+
+    public void openAllMailFolder() throws EmailServerException {
+        log.trace("{{}} openAllMailFolder()", getNickname());
+
+        if (store == null || !store.isConnected()) {
+            throw new EmailServerException(String.format("{%s} Store not available", getNickname()));
+        }
+
+        if (allMailFolder != null && allMailFolder.isOpen()) {
+            log.trace("{{}} Folder 'All Mail' already open", getNickname());
+            return;
+        }
+
+        try {
+            allMailFolder = store.getFolder("[Gmail]/All Mail");
+            // We eeed to be able to "write" to remove labels;
+            // Note that for GmailServer, all email messages are loaded from allMailFolder, not folder.
+            // So folder can be READ_ONLY, but allMailFolder must be READ_WRITE.
+            allMailFolder.open(Folder.READ_WRITE);
+        } catch (MessagingException e) {
             allMailFolder = null;
-            disconnect();
             throw new EmailServerException(e);
         }
     }
 
     @Override
-    public void openFolder() throws EmailServerException {
-        log.trace("openFolder()");
-        try {
-            folder = store.getFolder(getFolder());
-            folder.open(Folder.READ_ONLY);
-        } catch (MessagingException e) {
-            folder = null;
-            disconnect();
-            throw new EmailServerException(e);
+    public void propertyChange(PropertyChangeEvent event) {
+        log.trace("{{}} propertyChange({})", getNickname(), event);
+
+        if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
+            // History has been processed
+
+            // If we're to remove labels after import
+            if (isLabelRemoveAfterImport()) {
+                History history = (History) event.getNewValue();
+                // And this is the history's source server
+                // And the history is added/exists
+                if (getId() == history.getMessageSource().getSourceId()
+                    && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
+                    // Remove the label
+                    removeLabel(history.getMessageSource());
+                }
+            }
+
+        } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
+            // A message has been ignored
+
+            // If we're to remove labels after import (and also when messages are ignored, btw!)
+            if (isLabelRemoveAfterImport()) {
+                MessageSource msg = (MessageSource) event.getNewValue();
+                // And this is the history's source server
+                if (getId() == msg.getSourceId()) {
+                    // Remove the label
+                    removeLabel(msg);
+                }
+            }
         }
+
+    }
+
+    public void removeLabel(MessageSource messageSource) {
+        log.trace("{{}} removeLabel()", getNickname());
+        Message msg = ((EmailMessage) messageSource).getMessage();
+        GmailMessage gMsg = (GmailMessage) msg;
+        String[] labels = { folderName };
+        try {
+            gMsg.setLabels(labels, false);
+        } catch (MessagingException e) {
+            log.error("Unable to remove label '{}' from message '{}'", folderName, messageSource, e);
+        }
+    }
+
+    public void setLabelRemoveAfterImport(boolean labelRemoveAfterImport) {
+        this.labelRemoveAfterImport = labelRemoveAfterImport;
+        MIST.getPrefs().setValue(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT), labelRemoveAfterImport);
     }
 
 }

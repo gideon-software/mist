@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.mail.Address;
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
@@ -44,14 +45,18 @@ import net.htmlparser.jericho.Source;
 public class EmailMessage extends MessageSource {
     private static Logger log = LogManager.getLogger();
 
+    private Message message;
+
     public EmailMessage(EmailMessage emailMessage) {
         super(emailMessage);
-        // No additional fields from MessageSource
-        // But we need this for property inheritance & copy constructor functionality
+        message = emailMessage.message;
+        // We need this for property inheritance & copy constructor functionality
     }
 
-    public EmailMessage(EmailServer emailServer, javax.mail.Message msg) {
+    public EmailMessage(EmailServer emailServer, Message msg) {
         log.trace("EmailMessage({},{})", emailServer, msg);
+
+        message = msg;
 
         // Server info
         setSourceId(emailServer.getId());
@@ -212,6 +217,10 @@ public class EmailMessage extends MessageSource {
 
     public String getFromFormatted() throws EmailMessageException {
         return getAddrFormatted(getFromName(), getFromId());
+    }
+
+    public Message getMessage() {
+        return message;
     }
 
     public String guessFromName() {

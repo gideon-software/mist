@@ -242,10 +242,10 @@ public class MIST {
 
     public static void initModel() {
         log.trace("initModel()");
-        EmailModel.init();
+        TntDb.init();
         HistoryModel.init();
         MessageModel.init();
-        TntDb.init();
+        EmailModel.init();
     }
 
     public static boolean isDevel() {
@@ -325,6 +325,11 @@ public class MIST {
             log.error("Could not save preferences.", e);
         }
 
+        if (Display.getDefault() != null && !Display.getDefault().isDisposed()) {
+            log.trace("shutdown: Disposing display...");
+            Display.getDefault().dispose();
+        }
+
         Thread shutdownThread = new Thread() {
             @Override
             public void run() {
@@ -352,14 +357,17 @@ public class MIST {
                     }
                     TntDb.disconnect();
                 }
+
+                // Disconnect all email servers
+                // This must happen last because the TntImport may need to execute commands on the server
+                // (e.g. removing labels, etc.)
+                log.trace("shutdown: Disconnecting email servers...");
+                EmailModel.disconnectServers();
+
+                log.trace("=== shutdown complete ===");
             }
         };
         shutdownThread.setName("Shutdown");
         shutdownThread.start();
-
-        if (Display.getDefault() != null && !Display.getDefault().isDisposed()) {
-            log.trace("shutdown: Disposing display...");
-            Display.getDefault().dispose();
-        }
     }
 }

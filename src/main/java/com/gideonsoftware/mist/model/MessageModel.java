@@ -74,7 +74,7 @@ public class MessageModel {
 
     public static void init() {
         log.trace("init()");
-        messageQueue = new LinkedList<MessageSource>();
+        messageQueue.clear();
         pcs.firePropertyChange(PROP_MESSAGE_INIT, false, true); // Newly-initialized message list!
     }
 

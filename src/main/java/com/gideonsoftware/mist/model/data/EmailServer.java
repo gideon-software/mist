@@ -92,7 +92,38 @@ public abstract class EmailServer implements Cloneable {
         log.trace("EmailServer({})", id);
         setId(id);
         setType(type);
-        init();
+
+        // Non-preference initialization
+        folder = null;
+        store = null;
+        currentMessageNumber = 0;
+        totalMessages = 0;
+
+        stopImporting = false;
+        importComplete = false;
+
+        //
+        // Load values from preferences & set defaults
+        //
+
+        Preferences prefs = MIST.getPrefs();
+        enabled = prefs.getBoolean(getPrefName(PREF_ENABLED));
+        folderName = prefs.getString(getPrefName(PREF_FOLDER));
+        username = prefs.getString(getPrefName(PREF_USERNAME));
+        nickname = prefs.getString(getPrefName(PREF_NICKNAME));
+        tntUserId = prefs.getInt(getPrefName(PREF_TNT_USERID));
+        tntUsername = prefs.getString(getPrefName(PREF_TNT_USERNAME));
+        ignoreAddresses = prefs.getStrings(getPrefName(PREF_ADDRESSES_IGNORE));
+        myAddresses = prefs.getStrings(getPrefName(PREF_ADDRESSES_MY));
+
+        String prefType = prefs.getString(getPrefName(PREF_TYPE));
+        if (!type.equals(prefType)) {
+            log.warn(
+                "{{}} Configuration error: email server initialized to type '{}' but preferences are for type '{}'",
+                getNickname(),
+                type,
+                prefType);
+        }
     }
 
     public static String getPrefName(String name, int serverId) {
@@ -112,26 +143,43 @@ public abstract class EmailServer implements Cloneable {
     }
 
     public void clearPreferences() {
-        log.trace("clearPreferences()");
+        log.trace("{{}} clearPreferences()", getNickname());
         MIST.getPrefs().setToDefaultIfContains(getPrefName("")); // Will clear all prefs matching this emailserver
+    }
+
+    public void closeFolders() {
+        log.trace("{{}} closeFolders()", getNickname());
+        if (store != null) {
+            try {
+                if (folder != null && folder.isOpen())
+                    folder.close();
+            } catch (MessagingException e) {
+                log.warn("{{}} Unable to close folder '{}'", getNickname(), folder.getName(), e);
+            } finally {
+                folder = null;
+            }
+        }
+    }
+
+    public void closeStore() {
+        log.trace("{{}} closeStore()", getNickname());
+        if (store != null) {
+            try {
+                store.close();
+            } catch (MessagingException e) {
+                log.warn("{{}} Unable to close store", getNickname(), e);
+            } finally {
+                store = null;
+            }
+        }
     }
 
     public abstract void connect() throws EmailServerException;
 
     public void disconnect() {
         log.trace("{{}} disconnect()", getNickname());
-        if (store != null) {
-            try {
-                if (folder != null && folder.isOpen())
-                    folder.close();
-                store.close();
-            } catch (MessagingException e) {
-                log.warn("{{}} Unable to disconnect from message store", getNickname(), e);
-            } finally {
-                folder = null;
-                store = null;
-            }
-        }
+        closeFolders();
+        closeStore();
     }
 
     @Override
@@ -167,8 +215,14 @@ public abstract class EmailServer implements Cloneable {
         return currentMessageNumber;
     }
 
-    public String getFolder() {
+    public String getFolderName() {
         return folderName;
+    }
+
+    public String getFolderWord() {
+        if (TYPE_GMAIL.equals(type))
+            return "Label";
+        return "Folder";
     }
 
     public int getId() {
@@ -227,38 +281,6 @@ public abstract class EmailServer implements Cloneable {
         return currentMessageNumber < totalMessages;
     }
 
-    public void init() {
-        log.trace("{{}} init()", getNickname());
-
-        // Close any old connections
-        if (isConnected())
-            disconnect();
-
-        //
-        // Load settings from preferences, providing reasonable defaults
-        //
-
-        Preferences prefs = MIST.getPrefs();
-        setEnabled(prefs.getBoolean(getPrefName(PREF_ENABLED)));
-        setFolderName(prefs.getString(getPrefName(PREF_FOLDER)));
-        setUsername(prefs.getString(getPrefName(PREF_USERNAME)));
-        setNickname(prefs.getString(getPrefName(PREF_NICKNAME)));
-        setTntUserId(prefs.getInt(getPrefName(PREF_TNT_USERID)));
-        setTntUsername(prefs.getString(getPrefName(PREF_TNT_USERNAME)));
-        setIgnoreAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_IGNORE)));
-        setMyAddresses(prefs.getStrings(getPrefName(PREF_ADDRESSES_MY)));
-        setType(prefs.getString(getPrefName(PREF_TYPE)));
-
-        // Initialize non-preference data
-        folder = null;
-        store = null;
-        currentMessageNumber = 0;
-        totalMessages = 0;
-
-        stopImporting = false;
-        importComplete = false;
-    }
-
     public boolean isConnected() {
         return store != null;
     }
@@ -279,7 +301,31 @@ public abstract class EmailServer implements Cloneable {
 
     public abstract void loadMessageList() throws EmailServerException;
 
-    public abstract void openFolder() throws EmailServerException;
+    public void openFolder() throws EmailServerException {
+        log.trace("openFolder()");
+
+        if (store == null || !store.isConnected()) {
+            throw new EmailServerException(String.format("{%s} Store not available", getNickname()));
+        }
+
+        if (folder != null && folder.isOpen()) {
+            // Close & reopen the folder (to make sure messages are property expunged
+            log.trace("{{}} Folder '{}' already open; closing & reopening...", getNickname(), folder.getName());
+            try {
+                folder.close();
+            } catch (MessagingException e) {
+                throw new EmailServerException(e);
+            }
+        }
+
+        try {
+            folder = store.getFolder(getFolderName());
+            folder.open(Folder.READ_ONLY);
+        } catch (MessagingException e) {
+            folder = null;
+            throw new EmailServerException(e);
+        }
+    }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
@@ -358,7 +404,7 @@ public abstract class EmailServer implements Cloneable {
             return;
         }
 
-        log.trace("=== Email Server '{}' Import Service Started ===", nickname);
+        log.trace("{{}} === Email Server Import Service Started ===", nickname);
 
         // Make sure we're in the proper state
         stopImporting = false;
@@ -402,10 +448,11 @@ public abstract class EmailServer implements Cloneable {
                     }
                 }
 
-                // We're done
-                disconnect();
+                // We're done with this server for now, but don't disconnect yet in case we want to make changes
+                // to folders/labels, etc.
+
                 // Import is complete
-                log.trace("=== Email Server '{}' Import Service Stopped ===", nickname);
+                log.trace("{{}} === Email Server Import Service Stopped ===", nickname);
                 setImportComplete(true);
 
                 // If we're done because there were no messages, tell the user.

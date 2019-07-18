@@ -41,7 +41,6 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.widgets.Display;
 import org.javamoney.moneta.FastMoney;
 
-import com.gideonsoftware.mist.EmailMessageToHistoryConverter;
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.model.HistoryModel;
@@ -79,7 +78,7 @@ public class TntDb {
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(TntDb.class);
     public final static String PROP_IMPORTSTATUS_IMPORTING = "tntdb.importstatus.importing";
     public final static String PROP_IMPORTSTATUS_STOPPED = "tntdb.importstatus.stopped";
-    public final static String PROP_IMPORTSTATUS_MESSAGE_PROCESSED = "tntdb.importstatus.message.processed";
+    public final static String PROP_HISTORY_PROCESSED = "tntdb.history.processed";
 
     // Import controls
     private static boolean stopImporting = false;
@@ -308,10 +307,12 @@ public class TntDb {
     }
 
     /**
-     * TODO
+     * Return the specified integer in the format that TntConnect uses.
      * 
      * @param integer
+     *            the integer value to convert
      * @return
+     *         the specified integer in the format that TntConnect uses
      */
     public static String formatDbInt(Integer integer) {
         if (integer == null)
@@ -754,7 +755,7 @@ public class TntDb {
                 log.trace("importMessage({})", messageSource);
 
                 // Converts message into one or more history objects
-                History[] historyArr = EmailMessageToHistoryConverter.getHistory((EmailMessage) messageSource);
+                History[] historyArr = HistoryModel.getHistory((EmailMessage) messageSource);
 
                 if (historyArr == null) // No history to add
                     return;
@@ -777,8 +778,9 @@ public class TntDb {
                         // Add the resulting history into our model
                         HistoryModel.addHistory(history);
                     }
+
+                    pcs.firePropertyChange(PROP_HISTORY_PROCESSED, null, history);
                 }
-                pcs.firePropertyChange(PROP_IMPORTSTATUS_MESSAGE_PROCESSED, null, messageSource);
             }
 
             @Override

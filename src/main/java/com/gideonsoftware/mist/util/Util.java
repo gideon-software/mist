@@ -71,7 +71,10 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
         try {
             server.connect();
             if (server.isConnected() && openFolder) {
-                monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
+                if (EmailServer.TYPE_GMAIL.equals(server.getType()))
+                    monitor.setTaskName(String.format("%s: Loading label...", server.getNickname()));
+                else
+                    monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
                 server.openFolder();
                 if (loadMessageList) {
                     monitor.setTaskName(String.format("%s: Loading message list...", server.getNickname()));
@@ -121,7 +124,7 @@ public class Util {
     public static void connectToEmailServer(EmailServer emailServer, boolean openFolder, boolean loadMessageList) {
         log.trace("connectToEmailServer({},{},{})", emailServer, openFolder, loadMessageList);
 
-        if (emailServer == null || emailServer.isConnected())
+        if (emailServer == null)
             return;
 
         Display.getDefault().syncExec(new Runnable() {

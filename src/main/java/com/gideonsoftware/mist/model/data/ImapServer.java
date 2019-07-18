@@ -22,7 +22,6 @@ package com.gideonsoftware.mist.model.data;
 
 import java.util.Properties;
 
-import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.NoSuchProviderException;
@@ -59,11 +58,36 @@ public class ImapServer extends EmailServer {
 
     public ImapServer(int id) {
         super(id, EmailServer.TYPE_IMAP);
+
+        //
+        // Load preferences, providing reasonable defaults
+        //
+
+        Preferences prefs = MIST.getPrefs();
+        host = prefs.getString(getPrefName(PREF_HOST));
+
+        // Set default password prompt
+        prefs.setDefault(getPrefName(PREF_PASSWORD_PROMPT), true);
+        passwordPrompt = prefs.getBoolean(getPrefName(PREF_PASSWORD_PROMPT));
+        password = passwordPrompt ? "" : prefs.getString(getPrefName(PREF_PASSWORD));
+
+        // Set default SSL use
+        prefs.setDefault(getPrefName(PREF_USESSL), true);
+        useSsl = prefs.getBoolean(getPrefName(PREF_USESSL));
+
+        // Set default port
+        prefs.setDefault(getPrefName(PREF_PORT), useSsl ? DEFAULT_PORT_IMAPS : DEFAULT_PORT_IMAP);
+        port = prefs.getString(getPrefName(PREF_PORT));
     }
 
     @Override
     public void connect() throws EmailServerException {
         log.trace("{{}} connect()", getNickname());
+
+        if (isConnected()) {
+            log.trace("{{}} Already connected", getNickname());
+            return;
+        }
 
         // Initialize values
         store = null;
@@ -158,34 +182,8 @@ public class ImapServer extends EmailServer {
         return port;
     }
 
-    @Override
-    public void init() {
-        log.trace("{{}} init()", getNickname());
-        super.init();
-
-        //
-        // Load settings from preferences, providing reasonable defaults
-        //
-
-        Preferences prefs = MIST.getPrefs();
-        setHost(prefs.getString(getPrefName(PREF_HOST)));
-
-        // Set default password prompt
-        prefs.setDefault(getPrefName(PREF_PASSWORD_PROMPT), true);
-        setPasswordPrompt(prefs.getBoolean(getPrefName(PREF_PASSWORD_PROMPT)));
-        setPassword(passwordPrompt ? "" : prefs.getString(getPrefName(PREF_PASSWORD)));
-
-        // Set default SSL use
-        prefs.setDefault(PREF_USESSL, true);
-        setUseSsl(prefs.getBoolean(PREF_USESSL));
-
-        // Set default port
-        prefs.setDefault(getPrefName(PREF_PORT), useSsl ? DEFAULT_PORT_IMAPS : DEFAULT_PORT_IMAP);
-        setPort(prefs.getString(getPrefName(PREF_PORT)));
-    }
-
     public boolean isPasswordNeeded() {
-        log.trace("isPasswordNeeded()");
+        log.trace("{{}} isPasswordNeeded()", getNickname());
         // If there is no email password prompt (and the password isn't empty), no password is needed
         if (!isPasswordPrompt() && !password.isEmpty())
             return false;
@@ -209,25 +207,11 @@ public class ImapServer extends EmailServer {
 
     @Override
     public void loadMessageList() throws EmailServerException {
-        log.trace("loadMessageList()");
+        log.trace("{{}} loadMessageList()", getNickname());
         try {
             totalMessages = folder.getMessageCount();
+            currentMessageNumber = 0;
         } catch (MessagingException e) {
-            folder = null;
-            disconnect();
-            throw new EmailServerException(e);
-        }
-    }
-
-    @Override
-    public void openFolder() throws EmailServerException {
-        log.trace("openFolder()");
-        try {
-            folder = store.getFolder(getFolder());
-            folder.open(Folder.READ_ONLY);
-        } catch (MessagingException e) {
-            folder = null;
-            disconnect();
             throw new EmailServerException(e);
         }
     }

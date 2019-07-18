@@ -58,6 +58,13 @@ public class EmailModel {
 
     private static boolean importing = false;
 
+    static {
+        // Set default preferences
+        MIST.getPrefs().setDefault(PREF_AUTOTHANK_ENABLED, DEFAULT_AUTOTHANK_ENABLED);
+        MIST.getPrefs().setDefault(PREF_AUTOTHANK_SUBJECTS, DEFAULT_AUTOTHANK_SUBJECTS);
+        MIST.getPrefs().setDefault(PREF_ADDRESSES_IGNORE, DEFAULT_ADDRESSES_IGNORE);
+    }
+
     /**
      * No instantiation allowed!
      */
@@ -72,6 +79,7 @@ public class EmailModel {
      * 
      */
     public static void addEmailServer(EmailServer server) {
+        log.trace("addEmailServer({})", server);
         emailServers.add(server);
         MIST.getPrefs().setValue(PREF_EMAILSERVERS_COUNT, emailServers.size());
         pcs.firePropertyChange(PROP_EMAILSERVER_ADDED, null, server);
@@ -80,6 +88,14 @@ public class EmailModel {
     public static void addPropertyChangeListener(PropertyChangeListener listener) {
         log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
+    }
+
+    public static void disconnectServers() {
+        log.trace("disconnectServers()");
+        for (EmailServer emailServer : emailServers) {
+            if (emailServer.isConnected())
+                emailServer.disconnect();
+        }
     }
 
     public static boolean doesSubjectStartWithPhraseInList(String subject, String[] list) {
@@ -133,13 +149,6 @@ public class EmailModel {
 
     public static void init() {
         log.trace("init()");
-        importing = false;
-
-        // Set default preferences
-        MIST.getPrefs().setDefault(PREF_AUTOTHANK_ENABLED, DEFAULT_AUTOTHANK_ENABLED);
-        MIST.getPrefs().setDefault(PREF_AUTOTHANK_SUBJECTS, DEFAULT_AUTOTHANK_SUBJECTS);
-        MIST.getPrefs().setDefault(PREF_ADDRESSES_IGNORE, DEFAULT_ADDRESSES_IGNORE);
-
         // Load email servers
         loadEmailServers();
     }
@@ -172,7 +181,14 @@ public class EmailModel {
 
     private static void loadEmailServers() {
         log.trace("loadEmailServers()");
-        emailServers = new ArrayList<EmailServer>();
+
+        // First disconnect any existing servers
+        for (EmailServer emailServer : emailServers) {
+            emailServer.disconnect();
+            emailServer = null;
+        }
+        emailServers.clear(); // Clear the list
+
         MIST.getPrefs().setDefault(PREF_EMAILSERVERS_COUNT, 0);
         int emailServerCount = MIST.getPrefs().getInt(PREF_EMAILSERVERS_COUNT);
         for (int i = 0; i < emailServerCount; i++) {
@@ -196,12 +212,15 @@ public class EmailModel {
      * 
      */
     public static void removeEmailServer(EmailServer server) {
+        log.trace("removeEmailServer({})", server);
         int id = server.getId();
+        server.disconnect();
         emailServers.remove(server);
         MIST.getPrefs().setValue(PREF_EMAILSERVERS_COUNT, emailServers.size());
 
         server.clearPreferences(); // So the server is no longer stored in preferences
         pcs.firePropertyChange(PROP_EMAILSERVER_REMOVED, null, id);
+        server = null; // Needed?
 
         // Because server IDs have contiguous IDs (0, 1, 2, etc.), we must reassign IDs
         // The easiest way to do this is to work directly on the preferences, then reload the servers
