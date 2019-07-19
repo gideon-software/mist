@@ -28,9 +28,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import javax.mail.Folder;
 import javax.mail.Message;
@@ -47,12 +49,20 @@ import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.tntapi.entities.History;
+import com.gideonsoftware.mist.util.Util;
+import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.CredentialRefreshListener;
+import com.google.api.client.auth.oauth2.TokenErrorResponse;
+import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -70,11 +80,57 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
     // Preferences
     public final static String PREF_LABEL_REMOVE_AFTER_IMPORT = "label.removeafterimport";
+    public final static String PREF_UNIQUE_ID = "uniqueid";
+
+    // Google authorization data
+    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final String CREDENTIALS_FILE_PATH = "google/client_secrets.json";
+    private static final List<String> SCOPES = Arrays.asList(
+        "https://mail.google.com/", // Needed for IMAP access
+        "openid", // Needed to get id_token for user
+        "https://www.googleapis.com/auth/userinfo.email"); // Needed to get user's email
+    private static final HttpTransport HTTP_TRANSPORT;
+    private static final GoogleClientSecrets CLIENT_SECRETS;
+    private static final FileDataStoreFactory DATA_STORE_FACTORY;
+    private static final GoogleIdTokenVerifier TOKEN_VERIFIER;
+
+    static {
+        HttpTransport transport = null;
+        try {
+            transport = GoogleNetHttpTransport.newTrustedTransport();
+        } catch (IOException | GeneralSecurityException e) {
+            Util.reportError("Gmail Server Error", "Error created Google HTTP transport", e);
+        }
+        HTTP_TRANSPORT = transport;
+
+        GoogleClientSecrets secrets = null;
+        try {
+            secrets = GoogleClientSecrets.load(
+                JSON_FACTORY,
+                new InputStreamReader(GmailServer.class.getResourceAsStream(CREDENTIALS_FILE_PATH)));
+        } catch (IOException e) {
+            Util.reportError("Gmail Server Error", "Error loading Google client secrets", e);
+        }
+        CLIENT_SECRETS = secrets;
+
+        FileDataStoreFactory dataStoreFactory = null;
+        try {
+            Path secureStoreDir = Paths.get(MIST.getAppConfDir());
+            dataStoreFactory = new FileDataStoreFactory(secureStoreDir.toFile());
+        } catch (IOException e) {
+            Util.reportError("Gmail Server Error", "Error loading data store factory", e);
+        }
+        DATA_STORE_FACTORY = dataStoreFactory;
+
+        TOKEN_VERIFIER = new GoogleIdTokenVerifier.Builder(HTTP_TRANSPORT, JSON_FACTORY).setAudience(
+            Collections.singletonList(CLIENT_SECRETS.getDetails().getClientId())).build();
+    }
 
     private Long[] messageIds;
     private Folder allMailFolder;
 
     private boolean labelRemoveAfterImport = true;
+    private String uniqueId = "";
 
     public GmailServer(int id) {
         super(id, EmailServer.TYPE_GMAIL);
@@ -90,6 +146,57 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         // Set default label-remove-after-import
         prefs.setDefault(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT), true);
         labelRemoveAfterImport = prefs.getBoolean(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT));
+
+        // Get unique, non-changing server ID (for credential storage)
+        uniqueId = prefs.getString(getPrefName(PREF_UNIQUE_ID));
+        if (uniqueId.isEmpty()) {
+            // Generate a new unique ID (note: max len seems to be 30 for DataStoreFactory)
+            String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 30);
+            // Could be improved by verifying uniqueness among other servers
+            setUniqueId(uuid);
+        }
+    }
+
+    // @see https://stackoverflow.com/questions/49354891/how-do-i-get-the-user-id-token-from-a-credential-object
+    private Credential authorize() throws IOException {
+        log.trace("{{}} authorize()", getNickname());
+
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+            HTTP_TRANSPORT,
+            JSON_FACTORY,
+            CLIENT_SECRETS,
+            SCOPES).setDataStoreFactory(DATA_STORE_FACTORY).setAccessType("offline")
+                // We also want to get the id_token response to get the username
+                // id_token is an OpenID Connect ID, which is a JSON Web Token (JWT)
+                // See https://stackoverflow.com/a/13016081/1307022
+                .setCredentialCreatedListener(new AuthorizationCodeFlow.CredentialCreatedListener() {
+                    @Override
+                    public void onCredentialCreated(
+                        Credential credential,
+                        TokenResponse tokenResponse) throws IOException {
+                        storeIdTokenValues(credential, tokenResponse);
+                    }
+                }).addRefreshListener(new CredentialRefreshListener() {
+                    @Override
+                    public void onTokenErrorResponse(
+                        Credential credential,
+                        TokenErrorResponse tokenErrorResponse) throws IOException {
+                        credential = null; // Something's wrong here! Maybe need to handle this better...?
+                        log.error(tokenErrorResponse);
+                    }
+
+                    @Override
+                    public void onTokenResponse(Credential credential, TokenResponse tokenResponse) throws IOException {
+                        storeIdTokenValues(credential, tokenResponse);
+                    }
+                }).build();
+
+        // Authorize
+        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(uniqueId);
+
+        // Get the access token
+        // credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
+        return credential;
     }
 
     @Override
@@ -138,21 +245,21 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             throw new EmailServerException(e);
         }
 
-        String accessToken = null;
+        Credential credential = null;
         try {
-            accessToken = getOAuth2AccessToken();
+            credential = authorize();
         } catch (TokenResponseException e) {
-            store = null;
+            closeStore();
             throw new EmailServerException(e.getDetails().getErrorDescription(), e);
-        } catch (IOException | GeneralSecurityException e) {
-            store = null;
+        } catch (IOException e) {
+            closeStore();
             throw new EmailServerException(e);
         }
 
         try {
-            store.connect("imap.gmail.com", getUsername(), accessToken);
+            store.connect("imap.gmail.com", username, credential.getAccessToken());
         } catch (MessagingException e) {
-            store = null;
+            closeStore();
             throw new EmailServerException(e);
         }
 
@@ -180,37 +287,8 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         }
     }
 
-    private String getOAuth2AccessToken() throws IOException, GeneralSecurityException {
-        log.trace("{{}} getOAuth2AccessToken()", getNickname());
-
-        //
-        // Set up authorization code flow
-        //
-
-        HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
-            jsonFactory,
-            new InputStreamReader(EmailServer.class.getResourceAsStream("resources/google_client_secrets.json")));
-
-        List<String> scopes = Arrays.asList("https://mail.google.com/"); // Needed for IMAP access
-
-        Path secureStoreDir = Paths.get(MIST.getAppConfDir());
-        FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(secureStoreDir.toFile());
-
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-            httpTransport,
-            jsonFactory,
-            clientSecrets,
-            scopes).setDataStoreFactory(dataStoreFactory).build();
-
-        // Authorize
-        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(username);
-
-        // Get the access token
-        credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
-        return credential.getAccessToken();
+    public String getUniqueId() {
+        return uniqueId;
     }
 
     public boolean isLabelRemoveAfterImport() {
@@ -335,6 +413,27 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public void setLabelRemoveAfterImport(boolean labelRemoveAfterImport) {
         this.labelRemoveAfterImport = labelRemoveAfterImport;
         MIST.getPrefs().setValue(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT), labelRemoveAfterImport);
+    }
+
+    public void setUniqueId(String uniqueId) {
+        this.uniqueId = uniqueId;
+        if (uniqueId != null && !uniqueId.isEmpty())
+            MIST.getPrefs().setValue(getPrefName(PREF_UNIQUE_ID), uniqueId);
+    }
+
+    private void storeIdTokenValues(Credential credential, TokenResponse tokenResponse) throws IOException {
+        GoogleTokenResponse googleTokenResponse = (GoogleTokenResponse) tokenResponse;
+        GoogleIdToken idToken = googleTokenResponse.parseIdToken();
+        // https://developers.google.com/identity/sign-in/web/backend-auth
+        // https://developers.google.com/api-client-library/java/google-api-java-client/reference/1.20.0/jdiff/Google_API_Client_Library_for_Java_1.20.0/com/google/api/client/googleapis/auth/oauth2/GoogleTokenResponse
+        try {
+            if (!TOKEN_VERIFIER.verify(idToken))
+                throw new EmailServerException("Google security token not verified: " + idToken.toString());
+        } catch (EmailServerException | GeneralSecurityException e) {
+            credential = null; // Don't allow further use
+            Util.reportError("Security error", "Invalid Google token!", e);
+        }
+        setUsername(idToken.getPayload().getEmail());
     }
 
 }

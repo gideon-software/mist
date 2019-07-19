@@ -180,18 +180,16 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             portEditor.setEmptyStringAllowed(false);
             portEditor.setErrorMessage("Port must be a number.");
             addField(portEditor);
-        }
 
-        // Username
-        usernameEditor = new StringFieldEditor(
-            server.getPrefName(EmailServer.PREF_USERNAME),
-            "&Username:",
-            getFieldEditorParent());
-        usernameEditor.setEmptyStringAllowed(false);
-        usernameEditor.setErrorMessage("Username may not be empty.");
-        addField(usernameEditor);
+            // Username (for IMAP) - editable
+            usernameEditor = new StringFieldEditor(
+                server.getPrefName(EmailServer.PREF_USERNAME),
+                "&Username:",
+                getFieldEditorParent());
+            usernameEditor.setEmptyStringAllowed(false);
+            usernameEditor.setErrorMessage("Username may not be empty.");
+            addField(usernameEditor);
 
-        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
             // Password
             passwordEditor = new ForgettablePasswordFieldEditor(
                 server.getPrefName(ImapServer.PREF_PASSWORD),
@@ -202,7 +200,11 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         }
 
         // Connect button
-        connectButton = new ButtonFieldEditor("Test &Connection", getFieldEditorParent());
+        String connectPhrase = "Test &Connection";
+        if (EmailServer.TYPE_GMAIL.equals(server.getType()))
+            connectPhrase = "Sign in with &Google";
+
+        connectButton = new ButtonFieldEditor(connectPhrase, getFieldEditorParent());
         connectButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -212,12 +214,29 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
                     MessageBox msgBox = new MessageBox(
                         ((Button) event.getSource()).getShell(),
                         SWT.ICON_INFORMATION | SWT.OK);
-                    msgBox.setMessage("Connection successful!");
+                    String successPhrase = "Connection successful!";
+                    if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
+                        successPhrase = "Sign-in successful!";
+                        // Also reload the username field
+                        usernameEditor.load();
+                    }
+                    msgBox.setMessage(successPhrase);
                     msgBox.open();
                 }
             }
         });
         addField(connectButton);
+
+        if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
+            // Username (for Gmail) -- not editable
+            usernameEditor = new StringFieldEditor(
+                server.getPrefName(EmailServer.PREF_USERNAME),
+                "&Username:",
+                getFieldEditorParent());
+            usernameEditor.getTextControl(getFieldEditorParent()).setEditable(false);
+            usernameEditor.setErrorMessage("Please sign in with your Google account.");
+            addField(usernameEditor);
+        }
 
         // Spacer
         addField(new SpacerFieldEditor(getFieldEditorParent()));
