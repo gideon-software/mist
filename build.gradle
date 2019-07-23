@@ -1,15 +1,18 @@
 apply plugin: 'java'
 apply plugin: 'eclipse' 
 sourceCompatibility = 11
-
+targetCompatibility = 11
+version = '5.0'
+    
 repositories {
     mavenCentral()
 }
 
 jar {
-    version = '5.0'
     manifest {
-        attributes 'Main-Class': 'com.gideonsoftware.mist.MIST'
+        attributes('Main-Class': 'com.gideonsoftware.mist.MIST',
+                   'Implementation-Title': project.name,
+                   'Implementation-Version': project.version)
     }
 }
 
@@ -66,7 +69,7 @@ eclipse {
     }
 }
 
-// TODO
 //task wrapper(type: Wrapper) {
-//    gradleVersion = '1.9'
+//    gradleVersion = '5.5.1'
+//    distributionType = Wrapper.DistributionType.ALL
 //}
