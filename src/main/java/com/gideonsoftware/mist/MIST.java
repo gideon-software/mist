@@ -22,7 +22,6 @@ package com.gideonsoftware.mist;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,27 +95,32 @@ public class MIST {
         String logFilename = String.format("mist%s.log", getProfileExt());
 
         if (isDevel()) {
-            logConfPath = String.format("devel/conf/%s", logConfFileName);
+            logConfPath = String.format("devel/%s", logConfFileName);
             logPath = String.format("devel/logs/%s", logFilename);
         } else if (Util.isMac()) {
             // Mac OS X: From inside an application bundle
-            URL mistJarURL = MIST.class.getProtectionDomain().getCodeSource().getLocation();
-            File mistJarFile = new File(mistJarURL.getPath());
-            String logXMLPath = String.format(
-                "%s/conf/%s",
-                mistJarFile.getParentFile().getParentFile().getPath(),
-                logConfFileName);
-            File logXMLFile = new File(logXMLPath);
-            logConfPath = logXMLFile.getAbsolutePath();
+            // TODO: Text Mac installation to verify if this works
+//            URL mistJarURL = MIST.class.getProtectionDomain().getCodeSource().getLocation();
+//            File mistJarFile = new File(mistJarURL.getPath());
+//            String logXMLPath = String.format(
+//                "%s/conf/%s",
+//                mistJarFile.getParentFile().getParentFile().getPath(),
+//                logConfFileName);
+//            File logXMLFile = new File(logXMLPath);
+//            logConfPath = logXMLFile.getAbsolutePath();
+            logConfPath = logConfFileName;
             logPath = String.format("%s/Library/Logs/%s/%s", System.getProperty("user.home"), APP_NAME, logFilename);
         } else if (Util.isLinux()) {
             // Linux
             // TODO: Test Linux installation to verify if this works
-            logConfPath = String.format("conf/%s", logConfFileName);
+            // logConfPath = String.format("conf/%s", logConfFileName);
+            logConfPath = logConfFileName;
             logPath = getAppDataDir() + "logs/" + logFilename;
         } else {
             // Windows
-            logConfPath = String.format("conf\\%s", logConfFileName);
+            // TODO: Test Windows installation to verify if this works
+            // logConfPath = String.format("conf\\%s", logConfFileName);
+            logConfPath = logConfFileName;
             logPath = getAppDataDir() + "logs\\" + logFilename;
         }
         System.setProperty("log.path", logPath);
@@ -249,8 +253,8 @@ public class MIST {
     }
 
     public static boolean isDevel() {
-        String ver = MIST.class.getPackage().getImplementationVersion();
-        return ver == null;
+        // Check for existence of devel folder
+        return Files.exists(Path.of("devel"));
     }
 
     public static void main(String[] args) {

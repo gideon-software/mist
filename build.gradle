@@ -1,9 +1,59 @@
-apply plugin: 'java'
-apply plugin: 'eclipse' 
+plugins {
+    id 'java'
+    id 'eclipse'
+    
+    // https://imperceptiblethoughts.com/shadow/
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
+} 
+
 sourceCompatibility = 11
 targetCompatibility = 11
-version = '5.0'
+
+version = appVersion
+wrapper.gradleVersion = '5.5.1'
+
+import org.gradle.internal.os.OperatingSystem
+
+ext {
+    operatingSystem = OperatingSystem.current()
     
+    // Determine which SWT libary we need
+    if (operatingSystem.isWindows()) {
+        swtOs = 'win64'
+    } else if (operatingSystem.isMacOsX()) {
+        swtOs = 'macosx'
+    } else if (operatingSystem.isLinux()) {
+        swtOs = 'linux'
+    }
+    
+    // Configure packaging    
+    mistLibraryPath = file("${buildDir}/libs")
+    jdepsReportPath = file("${buildDir}/reports/jdeps.txt")
+    javaRuntimePath = file("${buildDir}/java-runtime")
+    bundlePath      = file("${buildDir}/bundle")
+    
+    if (operatingSystem.isWindows()) {
+        // packageType (installer) will be manually done via InnoSetup
+        bundlerScript = file('package/bin/build-package.bat')
+        appIcon = file('package/icons/mist.ico')
+        extraBundlerArguments = []
+        appInfoTxtPath = file("${bundlePath}/appinfo.txt")
+        innoSetupCompiler = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
+        innoSetupInstallPath = file("package/os/windows/mist.iss")
+    } else if (operatingSystem.isMacOsX()) {
+        packageType = 'dmg'
+        bundlerScript = file('package/bin/build-package.sh')
+        appIcon = file('package/icons/mist.icns')
+        extraBundlerArguments = ['--mac-sign']
+    } else if (operatingSystem.isLinux()) {
+        packageType = 'deb'
+        bundlerScript = file('package/bin/build-package.sh')
+        appIcon = file('package/icons/mist-180x180.png')
+        extraBundlerArguments = []
+    }
+    
+}
+
 repositories {
     mavenCentral()
 }
@@ -12,50 +62,57 @@ jar {
     manifest {
         attributes('Main-Class': 'com.gideonsoftware.mist.MIST',
                    'Implementation-Title': project.name,
-                   'Implementation-Version': project.version)
+                   'Implementation-Version': project.version,
+                   'Multi-Release' : 'true') // See https://stackoverflow.com/questions/53049346/is-log4j2-compatible-with-java-11
+                   //'Implementation-Vendor': apppublisher // Add this (from build.xml)
     }
 }
 
+shadowJar {
+    classifier = 'fat'
+}
+
 dependencies {
-    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.0'
+    // Logging
     // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.0'
 
-    // https://mvnrepository.com/artifact/commons-io/commons-io
-    compile group: 'commons-io', name: 'commons-io', version: '2.6'
-
-    // https://mvnrepository.com/artifact/com.sun.mail/javax.mail
-    compile group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2'
-    // https://mvnrepository.com/artifact/com.sun.mail/gimap
-    compile group: 'com.sun.mail', name: 'gimap', version: '1.6.3'    
-    // https://mvnrepository.com/artifact/com.github.knightliao.test/jutf
-    compile group: 'com.github.knightliao.test', name: 'jutf', version: '1.0.3'
-    
-    // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
-    compile group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.4'
-
+    // Command line option processing
     // https://mvnrepository.com/artifact/net.sf.jopt-simple/jopt-simple
-    compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.5'
+    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.5'
 
-    // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
-    compile group: 'org.javamoney.moneta', name: 'moneta-core', version: '1.3'
+    // Email server access
+    // https://mvnrepository.com/artifact/com.sun.mail/javax.mail
+    implementation group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2' 
+    // https://mvnrepository.com/artifact/com.sun.mail/gimap
+    implementation group: 'com.sun.mail', name: 'gimap', version: '1.6.3'    
 
-    // https://mvnrepository.com/artifact/net.sf.ucanaccess/ucanaccess
-    compile group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '4.0.4'
-    
-    // https://mvnrepository.com/artifact/org.eclipse.platform/org.eclipse.jface
-    compile (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
-        exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
-    }
-    compile files('lib/swt/win64/swt-4.12.jar')
-    
+    // Google (Gmail) authentication    
     // https://developers.google.com/api-client-library/java/apis/oauth2/v1
-    compile group: 'com.google.apis', name: 'google-api-services-oauth2', version: 'v2-rev20190313-1.30.1'
-    compile group: 'com.google.oauth-client', name:'google-oauth-client-java6', version: '1.23.0'
-    compile group: 'com.google.oauth-client', name:'google-oauth-client-jetty', version: '1.23.0'
+    implementation group: 'com.google.apis', name: 'google-api-services-oauth2', version: 'v2-rev20190313-1.30.1'
+    implementation group: 'com.google.oauth-client', name:'google-oauth-client-java6', version: '1.23.0'
+    implementation group: 'com.google.oauth-client', name:'google-oauth-client-jetty', version: '1.23.0'
+    
+    // HTML email parsing
+    // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
+    implementation group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.4'
 
-    testCompile group: 'junit', name: 'junit', version: '4.11'
+    // TntConnect MS Access database
+    // https://mvnrepository.com/artifact/net.sf.ucanaccess/ucanaccess
+    implementation group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '4.0.4'
+
+    // Money type
+    // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
+    implementation group: 'org.javamoney.moneta', name: 'moneta-core', version: '1.3'
+
+    // SWT/JFace UI; note that SWT is platform-specific and is stored locally    
+    // https://mvnrepository.com/artifact/org.eclipse.platform/org.eclipse.jface
+    implementation (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
+        exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
+    } 
+    implementation files("lib/swt/${project.swtOs}/swt-4.12.jar")
+
+    testImplementation group: 'junit', name: 'junit', version: '4.11'
 }
 
 eclipse {
@@ -63,13 +120,162 @@ eclipse {
         file {
             whenMerged { 
                 def swtlib = entries.find { it.path.contains 'swt-4.12.jar' }
-                swtlib.sourcePath = fileReference(file('lib/swt/win64/swt-4.12-sources.zip'))
+                swtlib.sourcePath = fileReference(file("lib/swt/${project.swtOs}/swt-4.12-sources.zip"))
             }
         }
     }
 }
 
-//task wrapper(type: Wrapper) {
-//    gradleVersion = '5.5.1'
-//    distributionType = Wrapper.DistributionType.ALL
-//}
+task jdepsReport() {
+    dependsOn 'shadowJar'
+    group 'packaging'
+    description 'Determine the needed Java modules'
+    inputs.files([shadowJar.outputs.files.singleFile]);
+//    outputs.file(jdepsReportPath)
+    
+    doLast {
+        // TODO: Create reports folder
+        def stdOut = new FileOutputStream(jdepsReportPath)
+        exec {
+            workingDir "${buildDir}"
+            
+            // jdeps --multi-release 11 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
+            executable = 'jdeps'
+            args = [
+                '--multi-release', '11',
+                '--ignore-missing-deps',
+                '--print-module-deps',
+                "-cp", "${mistLibraryPath}", 
+                shadowJar.outputs.files.singleFile]
+          
+            standardOutput = stdOut
+        }
+    
+        println "jdeps report path: ${jdepsReportPath}"
+        println "contents: " + new FileInputStream(jdepsReportPath).text
+    }
+}
+
+task javaRuntime() {
+    dependsOn 'jdepsReport'
+    group 'packaging'
+    description 'Create a custom Java Runtime'
+    
+    doLast {
+        exec {
+            workingDir "${buildDir}"
+            
+            def moduleList = new FileInputStream(jdepsReportPath).text.trim();  // Need trim() else error (EOL?)
+            
+            // jlink --output <runtime loc> --no-header-files --no-man-pages --compress=2 --strip-debug --add-modules <modules>
+            executable = 'jlink'
+            args = [
+                '--output', "${javaRuntimePath}",
+                '--no-header-files',
+                '--no-man-pages',
+                '--compress=2',
+                '--strip-debug',
+                '--add-modules', moduleList]
+        }
+    
+        println "Java runtime location: ${javaRuntimePath}"
+    }
+}
+
+
+
+task createBundle() {
+    dependsOn 'javaRuntime'
+    group 'packaging'
+    description 'Build the installable bundle'
+
+    doLast {
+        exec {
+            workingDir "${buildDir}"
+            
+            // Need to use a backport of jpackager for JDK 11
+            // See https://mail.openjdk.java.net/pipermail/openjfx-dev/2018-September/022500.html?source=post_page---------------------------
+            // - Move jpackager.exe -> %JAVA_HOME%\bin
+            // - Move jdk.packager.jar -> %JAVA_HOME%\jmods            
+            
+            // Due to JDK BUG 8217793 (https://bugs.openjdk.java.net/browse/JDK-8217793), 
+            // jpackager throws an exception claiming that “Modules are not allowed in srcfiles”
+            // This is throw in regard to jlink, so if we call jlink (to create a java runtime) 
+            // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
+            
+            // Also, jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
+            // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
+            
+            // See https://openjdk.java.net/jeps/343 for Java Packaging Tool options                
+            if (operatingSystem.isWindows()) {
+                commandLine 'cmd', '/c',
+                    bundlerScript,                      // The build script itself
+                    appName,                            // app name
+                    mistLibraryPath,                    // input
+                    bundlePath,                         // output
+                    javaRuntimePath,                    // custom java runtime
+                    "mist-5.0-fat.jar", //shadowJar.outputs.files.singleFile, // jar
+                    version,                            // version
+                    appIcon                             // app icon
+            }
+        //    else {
+        //        commandLine = ['sh',
+        //            bundlerScript,
+        //           "${-> file("${javaPackagerPath}/jpackager")}",
+        //            packageType,
+        //           "${-> file("${javafxJmodsPath}")}",
+        //            santulatorLibraryPath,
+        //            bundlePath,
+        //            mainJar,
+        //            publishedVersion,
+        //            fileAssociations,
+        //            appIcon,
+        //            *extraBundlerArguments]
+        }
+    }    
+}
+
+// Additional processing for completing Windows bundle with InnoSetup
+if (operatingSystem.isWindows()) {
+
+    task appInfoTxt() {
+        group 'packaging'
+        description 'Create the appInfo.txt file needed by InnoSetup'
+        
+        doLast {
+            // First create the appInfo.txt file with needed properties
+            appInfoTxtPath.text = """; Auto-generated by MIST build script
+#define AppId "${appId}"
+#define AppName "${appName}"
+#define AppComment "${appLongname}"
+#define AppVersionShort "${appVersion}"
+#define AppVersionLong "${appVersion}"
+#define AppURL "${appUrl}"
+#define AppCopyright "${appCopyright}"
+#define AppPublisher "${appPublisher}"
+#define AppExeName "${appName}.exe"
+#define AppDist "win64"
+"""
+        }
+    }
+
+    task innoSetup() {
+        dependsOn 'appInfoTxt'
+        group 'packaging'
+        description 'Run InnoSetup to generate the Windows installer'
+        
+        doLast {
+            exec {
+                workingDir "${buildDir}"
+                
+                // <innoSetup compiler> <install file path>
+                executable = "${innoSetupCompiler}"
+                args = ["${innoSetupInstallPath}"]
+            }
+    
+        println "Inno Setup file: ${bundlePath}"
+        }
+    }
+
+    createBundle.finalizedBy innoSetup
+}

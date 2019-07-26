@@ -1,11 +1,11 @@
 ; Inno Setup installer for MIST
 
-#include "..\..\..\pack\appinfo.txt"
+#include "..\..\..\build\bundle\appInfo.txt"
 
 [Setup]
 AppId={{#AppId}
 AppName={#AppName}
-ArchitecturesAllowed={#AppArch}
+ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 AppVersion={#AppVersionLong}
 VersionInfoVersion={#AppVersionLong}
@@ -17,7 +17,7 @@ AppPublisher={#AppPublisher}
 DefaultDirName={pf}\{#AppName}
 DefaultGroupName={#AppName}
 SourceDir=..\..\..
-OutputDir=dist
+OutputDir=build\bundle
 OutputBaseFilename={#AppName}-{#AppVersionLong}-{#AppDist}-setup
 AllowNoIcons=no
 
@@ -26,14 +26,7 @@ Name: "desktopicon"; Description: "On your &desktop"; GroupDescription: Addition
 Name: "tntmenu"; Description: "In the &TntConnect ""Tools"" menu"; GroupDescription: Additional shortcuts: 
 
 [Registry]
-#define TntExternalToolsKey32 "SOFTWARE\TntWare\TntConnect\ExternalTools\MIST: Email Importer"
 #define TntExternalToolsKey64 "SOFTWARE\Wow6432Node\TntWare\TntConnect\ExternalTools\MIST: Email Importer"
-; 32-bit
-Root: HKLM; Subkey: "{#TntExternalToolsKey32}"; Flags: uninsdeletekey; Tasks: tntmenu; Check: not IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey32}"; ValueType: string; ValueName: "Category"; ValueData: "Add-Ons"; Tasks: tntmenu; Check: not IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey32}"; ValueType: string; ValueName: "Target"; ValueData: "{app}\{#AppExeName}"; Tasks: tntmenu; Check: not IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey32}"; ValueType: string; ValueName: "IconTarget"; ValueData: "{app}\mist.ico"; Tasks: tntmenu; Check: not IsWin64
-; 64-bit
 Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; Flags: uninsdeletekey; Tasks: tntmenu; Check: IsWin64
 Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Category"; ValueData: "Add-Ons"; Tasks: tntmenu; Check: IsWin64
 Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Target"; ValueData: "{app}\{#AppExeName}"; Tasks: tntmenu; Check: IsWin64
@@ -43,7 +36,7 @@ Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "I
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "pack\*"; Excludes: "appinfo.txt"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\bundle\{#AppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "{#AppComment}"; IconFilename: "{app}\mist.ico";
