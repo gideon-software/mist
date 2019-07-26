@@ -15,24 +15,18 @@ wrapper.gradleVersion = '5.5.1'
 import org.gradle.internal.os.OperatingSystem
 
 ext {
-    operatingSystem = OperatingSystem.current()
-    
-    // Determine which SWT libary we need
-    if (operatingSystem.isWindows()) {
-        swtOs = 'win64'
-    } else if (operatingSystem.isMacOsX()) {
-        swtOs = 'macosx'
-    } else if (operatingSystem.isLinux()) {
-        swtOs = 'linux'
-    }
-    
-    // Configure packaging    
+    mainClass = 'com.gideonsoftware.mist.MIST';
+    swtVersion = "4.12"
+
     mistLibraryPath = file("${buildDir}/libs")
     jdepsReportPath = file("${buildDir}/reports/jdeps.txt")
     javaRuntimePath = file("${buildDir}/java-runtime")
     bundlePath      = file("${buildDir}/bundle")
-    
+
+    operatingSystem = OperatingSystem.current()
     if (operatingSystem.isWindows()) {
+        swtOs = 'win64'
+        appDist = 'win64'
         // packageType (installer) will be manually done via InnoSetup
         bundlerScript = file('package/bin/build-package.bat')
         appIcon = file('package/icons/mist.ico')
@@ -40,18 +34,22 @@ ext {
         appInfoTxtPath = file("${bundlePath}/appinfo.txt")
         innoSetupCompiler = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
         innoSetupInstallPath = file("package/os/windows/mist.iss")
+        installerPath = "$bundlePath\\$appName-$appVersion-$appDist-setup.exe"
     } else if (operatingSystem.isMacOsX()) {
+        swtOs = 'macosx'
         packageType = 'dmg'
         bundlerScript = file('package/bin/build-package.sh')
         appIcon = file('package/icons/mist.icns')
+        installerPath = "" // TODO
         extraBundlerArguments = ['--mac-sign']
     } else if (operatingSystem.isLinux()) {
+        swtOs = 'linux'
         packageType = 'deb'
         bundlerScript = file('package/bin/build-package.sh')
         appIcon = file('package/icons/mist-180x180.png')
+        installerPath = "" // TODO
         extraBundlerArguments = []
     }
-    
 }
 
 repositories {
@@ -60,11 +58,11 @@ repositories {
 
 jar {
     manifest {
-        attributes('Main-Class': 'com.gideonsoftware.mist.MIST',
-                   'Implementation-Title': project.name,
-                   'Implementation-Version': project.version,
+        attributes('Main-Class': mainClass,
+                   'Implementation-Title': appName,
+                   'Implementation-Version': appVersion,
+                   'Implementation-Vendor': appPublisher,
                    'Multi-Release' : 'true') // See https://stackoverflow.com/questions/53049346/is-log4j2-compatible-with-java-11
-                   //'Implementation-Vendor': apppublisher // Add this (from build.xml)
     }
 }
 
@@ -110,7 +108,7 @@ dependencies {
     implementation (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
         exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
     } 
-    implementation files("lib/swt/${project.swtOs}/swt-4.12.jar")
+    implementation files("lib/swt/${swtOs}/swt-${swtVersion}.jar")
 
     testImplementation group: 'junit', name: 'junit', version: '4.11'
 }
@@ -118,9 +116,9 @@ dependencies {
 eclipse {
     classpath {
         file {
-            whenMerged { 
-                def swtlib = entries.find { it.path.contains 'swt-4.12.jar' }
-                swtlib.sourcePath = fileReference(file("lib/swt/${project.swtOs}/swt-4.12-sources.zip"))
+            whenMerged {
+                def swtlib = entries.find { it.path.contains "swt-${swtVersion}.jar" }
+                swtlib.sourcePath = fileReference(file("lib/swt/${swtOs}/swt-${swtVersion}-sources.zip"))
             }
         }
     }
@@ -130,11 +128,15 @@ task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'
     description 'Determine the needed Java modules'
-    inputs.files([shadowJar.outputs.files.singleFile]);
-//    outputs.file(jdepsReportPath)
+    inputs.file shadowJar.outputs.files.singleFile
+    outputs.file jdepsReportPath
     
     doLast {
-        // TODO: Create reports folder
+        // Create parent directories if needed
+        if (jdepsReportPath.getParentFile() != null) {
+            jdepsReportPath.getParentFile().mkdirs();
+        }    
+        
         def stdOut = new FileOutputStream(jdepsReportPath)
         exec {
             workingDir "${buildDir}"
@@ -160,8 +162,15 @@ task javaRuntime() {
     dependsOn 'jdepsReport'
     group 'packaging'
     description 'Create a custom Java Runtime'
+    inputs.file jdepsReportPath
+    outputs.dir javaRuntimePath
     
     doLast {
+        // outputs.dir creates the directory if it doesn't exist, but jlink will fail if the directory exists
+        if (javaRuntimePath.exists()) {
+            javaRuntimePath.deleteDir()
+        }
+        
         exec {
             workingDir "${buildDir}"
             
@@ -177,7 +186,6 @@ task javaRuntime() {
                 '--strip-debug',
                 '--add-modules', moduleList]
         }
-    
         println "Java runtime location: ${javaRuntimePath}"
     }
 }
@@ -188,6 +196,9 @@ task createBundle() {
     dependsOn 'javaRuntime'
     group 'packaging'
     description 'Build the installable bundle'
+    inputs.file shadowJar.outputs.files.singleFile 
+    inputs.dir javaRuntimePath
+    outputs.dir bundlePath
 
     doLast {
         exec {
@@ -241,6 +252,7 @@ if (operatingSystem.isWindows()) {
     task appInfoTxt() {
         group 'packaging'
         description 'Create the appInfo.txt file needed by InnoSetup'
+        outputs.file appInfoTxtPath
         
         doLast {
             // First create the appInfo.txt file with needed properties
@@ -254,7 +266,7 @@ if (operatingSystem.isWindows()) {
 #define AppCopyright "${appCopyright}"
 #define AppPublisher "${appPublisher}"
 #define AppExeName "${appName}.exe"
-#define AppDist "win64"
+#define AppDist "${appDist}"
 """
         }
     }
@@ -263,6 +275,9 @@ if (operatingSystem.isWindows()) {
         dependsOn 'appInfoTxt'
         group 'packaging'
         description 'Run InnoSetup to generate the Windows installer'
+        inputs.dir "$bundlePath/$appName"
+        inputs.file appInfoTxtPath
+        outputs.file installerPath
         
         doLast {
             exec {
@@ -270,10 +285,12 @@ if (operatingSystem.isWindows()) {
                 
                 // <innoSetup compiler> <install file path>
                 executable = "${innoSetupCompiler}"
-                args = ["${innoSetupInstallPath}"]
+                args = [
+//                    '/Qp',
+                    "${innoSetupInstallPath}"]
             }
     
-        println "Inno Setup file: ${bundlePath}"
+        println "Inno Setup file: ${installerPath}"
         }
     }
 
