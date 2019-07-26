@@ -105,6 +105,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         GoogleClientSecrets secrets = null;
         try {
+            //
             secrets = GoogleClientSecrets.load(
                 JSON_FACTORY,
                 new InputStreamReader(GmailServer.class.getResourceAsStream(CREDENTIALS_FILE_PATH)));
@@ -112,6 +113,12 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             Util.reportError("Gmail Server Error", "Error loading Google client secrets", e);
         }
         CLIENT_SECRETS = secrets;
+
+        // Disable unhelpful warning (on Windows) while loading data store factory
+        // https://stackoverflow.com/questions/30634827/warning-unable-to-change-permissions-for-everybody#comment57411339_34823324
+        final java.util.logging.Logger buggyLogger = java.util.logging.Logger.getLogger(
+            FileDataStoreFactory.class.getName());
+        buggyLogger.setLevel(java.util.logging.Level.SEVERE);
 
         FileDataStoreFactory dataStoreFactory = null;
         try {
