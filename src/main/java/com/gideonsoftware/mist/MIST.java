@@ -112,14 +112,10 @@ public class MIST {
             logPath = String.format("%s/Library/Logs/%s/%s", System.getProperty("user.home"), APP_NAME, logFilename);
         } else if (Util.isLinux()) {
             // Linux
-            // TODO: Test Linux installation to verify if this works
-            // logConfPath = String.format("conf/%s", logConfFileName);
             logConfPath = logConfFileName;
             logPath = getAppDataDir() + "logs/" + logFilename;
         } else {
             // Windows
-            // TODO: Test Windows installation to verify if this works
-            // logConfPath = String.format("conf\\%s", logConfFileName);
             logConfPath = logConfFileName;
             logPath = getAppDataDir() + "logs\\" + logFilename;
         }
@@ -142,7 +138,7 @@ public class MIST {
     }
 
     private static void configureUserSettings() {
-        // Set global profile extenson, which can be configured via options or on account of being in Devel mode
+        // Set global profile extension, which can be configured via options or on account of being in Devel mode
         String profileOptionStr = getOption(OPTION_PROFILE);
         if (profileOptionStr != null)
             profileExt = "-" + profileOptionStr;
@@ -173,7 +169,7 @@ public class MIST {
 
             // Verify that the directory is secure; set permissions so that only the current user can read the file
             if (Util.isMac() || Util.isLinux()) {
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rw-------");
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
                 Files.setPosixFilePermissions(dataDirPath, permissions);
             } else { // Windows; see https://stackoverflow.com/a/13892920/1307022
                 AclFileAttributeView aclAttr = Files.getFileAttributeView(dataDirPath, AclFileAttributeView.class);

@@ -1,10 +1,10 @@
 plugins {
     id 'java'
     id 'eclipse'
-    
+
     // https://imperceptiblethoughts.com/shadow/
     id 'com.github.johnrengelman.shadow' version '5.1.0'
-} 
+}
 
 sourceCompatibility = 11
 targetCompatibility = 11
@@ -30,9 +30,10 @@ ext {
         // packageType (installer) will be manually done via InnoSetup
         bundlerScript = file('package/bin/build-package.bat')
         appIcon = file('package/icons/mist.ico')
+        extraJdepsArguments = ['--ignore-missing-deps']
         extraBundlerArguments = []
         appInfoTxtPath = file("${bundlePath}/appinfo.txt")
-        innoSetupCompiler = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
+        innoSetupCompilerPath = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
         innoSetupInstallPath = file("package/os/windows/mist.iss")
         installerPath = "$bundlePath\\$appName-$appVersion-$appDist-setup.exe"
     } else if (operatingSystem.isMacOsX()) {
@@ -41,13 +42,15 @@ ext {
         bundlerScript = file('package/bin/build-package.sh')
         appIcon = file('package/icons/mist.icns')
         installerPath = "" // TODO
+        extraJdepsArguments = []
         extraBundlerArguments = ['--mac-sign']
     } else if (operatingSystem.isLinux()) {
         swtOs = 'linux'
         packageType = 'deb'
+        jpackagerPath = file("/opt/jpackager/jpackager")
         bundlerScript = file('package/bin/build-package.sh')
         appIcon = file('package/icons/mist-180x180.png')
-        installerPath = "" // TODO
+        extraJdepsArguments = []
         extraBundlerArguments = []
     }
 }
@@ -68,6 +71,7 @@ jar {
 
 shadowJar {
     classifier = 'fat'
+//    minimize()
 }
 
 dependencies {
@@ -107,7 +111,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.eclipse.platform/org.eclipse.jface
     implementation (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.16.0') {
         exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
-    } 
+    }
     implementation files("lib/swt/${swtOs}/swt-${swtVersion}.jar")
 
     testImplementation group: 'junit', name: 'junit', version: '4.11'
@@ -141,20 +145,17 @@ task jdepsReport() {
         exec {
             workingDir "${buildDir}"
             
-            // jdeps --multi-release 11 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
+            // jdeps --multi-release 11 [--ignore-missing-deps] --print-module-deps -cp libs <fat MIST jar>
             executable = 'jdeps'
             args = [
                 '--multi-release', '11',
-                '--ignore-missing-deps',
+                *extraJdepsArguments, // Needed on Windows but not on Linux (Mac?)
                 '--print-module-deps',
                 "-cp", "${mistLibraryPath}", 
                 shadowJar.outputs.files.singleFile]
           
             standardOutput = stdOut
         }
-    
-        println "jdeps report path: ${jdepsReportPath}"
-        println "contents: " + new FileInputStream(jdepsReportPath).text
     }
 }
 
@@ -174,7 +175,7 @@ task javaRuntime() {
         exec {
             workingDir "${buildDir}"
             
-            def moduleList = new FileInputStream(jdepsReportPath).text.trim();  // Need trim() else error (EOL?)
+            def moduleList = jdepsReportPath.text.trim();  // Need trim() else error (EOL?)
             
             // jlink --output <runtime loc> --no-header-files --no-man-pages --compress=2 --strip-debug --add-modules <modules>
             executable = 'jlink'
@@ -186,7 +187,6 @@ task javaRuntime() {
                 '--strip-debug',
                 '--add-modules', moduleList]
         }
-        println "Java runtime location: ${javaRuntimePath}"
     }
 }
 
@@ -206,19 +206,20 @@ task createBundle() {
             
             // Need to use a backport of jpackager for JDK 11
             // See https://mail.openjdk.java.net/pipermail/openjfx-dev/2018-September/022500.html?source=post_page---------------------------
+            // For Windows:
             // - Move jpackager.exe -> %JAVA_HOME%\bin
             // - Move jdk.packager.jar -> %JAVA_HOME%\jmods            
             
             // Due to JDK BUG 8217793 (https://bugs.openjdk.java.net/browse/JDK-8217793), 
-            // jpackager throws an exception claiming that “Modules are not allowed in srcfiles”
+            // jpackager throws an exception claiming that "Modules are not allowed in srcfiles"
             // This is throw in regard to jlink, so if we call jlink (to create a java runtime) 
             // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
-            
-            // Also, jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
-            // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
-            
-            // See https://openjdk.java.net/jeps/343 for Java Packaging Tool options                
+
             if (operatingSystem.isWindows()) {
+
+                // jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
+                // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
+
                 commandLine 'cmd', '/c',
                     bundlerScript,                      // The build script itself
                     appName,                            // app name
@@ -228,20 +229,20 @@ task createBundle() {
                     "mist-5.0-fat.jar", //shadowJar.outputs.files.singleFile, // jar
                     version,                            // version
                     appIcon                             // app icon
+            } else {
+                commandLine = ['sh',
+                    bundlerScript,                      // The build script itself
+                    jpackagerPath,                      // jpackager path
+                    packageType,                        // Installer type (e.g. dmg, deb)
+                    appName.toLowerCase(),              // app name
+                    mistLibraryPath,                    // input
+                    bundlePath,                         // output
+                    javaRuntimePath,                    // custom java runtime
+                    "mist-5.0-fat.jar", //shadowJar.outputs.files.singleFile, // jar
+                    version,                            // version
+                    appIcon,                            // app icon
+                    *extraBundlerArguments]
             }
-        //    else {
-        //        commandLine = ['sh',
-        //            bundlerScript,
-        //           "${-> file("${javaPackagerPath}/jpackager")}",
-        //            packageType,
-        //           "${-> file("${javafxJmodsPath}")}",
-        //            santulatorLibraryPath,
-        //            bundlePath,
-        //            mainJar,
-        //            publishedVersion,
-        //            fileAssociations,
-        //            appIcon,
-        //            *extraBundlerArguments]
         }
     }    
 }
@@ -284,13 +285,11 @@ if (operatingSystem.isWindows()) {
                 workingDir "${buildDir}"
                 
                 // <innoSetup compiler> <install file path>
-                executable = "${innoSetupCompiler}"
+                executable = "${innoSetupCompilerPath}"
                 args = [
 //                    '/Qp',
                     "${innoSetupInstallPath}"]
             }
-    
-        println "Inno Setup file: ${installerPath}"
         }
     }
 
