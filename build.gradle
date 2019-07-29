@@ -4,6 +4,8 @@ plugins {
 
     // https://imperceptiblethoughts.com/shadow/
     id 'com.github.johnrengelman.shadow' version '5.1.0'
+    
+    id "com.github.spotbugs" version "1.7.1"
 }
 
 sourceCompatibility = 11
@@ -115,6 +117,8 @@ dependencies {
     }
     implementation files("lib/swt/${swtOs}/swt-${swtVersion}.jar")
 
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.7.1'
+
     testImplementation group: 'junit', name: 'junit', version: '4.11'
 }
 
@@ -126,6 +130,13 @@ eclipse {
                 swtlib.sourcePath = fileReference(file("lib/swt/${swtOs}/swt-${swtVersion}-sources.zip"))
             }
         }
+    }
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
     }
 }
 
