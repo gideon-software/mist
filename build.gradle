@@ -133,7 +133,7 @@ task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'
     description 'Determine the needed Java modules'
-    inputs.file shadowJarPath
+//    inputs.file shadowJarPath
     outputs.file jdepsReportPath
     
     doLast {
