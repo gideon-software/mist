@@ -1,3 +1,10 @@
+/*
+Note: Warnings about deprecated features have to do with SpotBugs plugin.
+"Deprecated Gradle features were used in this build, making it incompatible with Gradle 6.0."  
+"Internal API constructor TaskReportContainer(Class<T>, Task) has been deprecated. This is scheduled to be removed in Gradle 6.0."
+According to https://github.com/spotbugs/spotbugs-gradle-plugin/issues/95#issuecomment-492158555, this will
+be fixed in 2.0.0.
+*/
 
 buildscript {
     repositories {
@@ -54,20 +61,13 @@ ext {
         installerPath = "$bundlePath\\$appName-$appVersion-$appDist-setup.exe"
     } else if (operatingSystem.isMacOsX()) {
         swtOs = 'macosx'
-        packageType = 'dmg'
-        bundlerScript = file('package/bin/build-package.sh')
-        appIcon = file('package/icons/mist.icns')
         installerPath = "" // TODO
+        jpackagerPath = file("/opt/jpackager/jpackager")
         extraJdepsArguments = []
-        extraBundlerArguments = ['--mac-sign']
     } else if (operatingSystem.isLinux()) {
         swtOs = 'linux'
-        packageType = 'deb'
         jpackagerPath = file("/opt/jpackager/jpackager")
-        bundlerScript = file('package/bin/build-package.sh')
-        appIcon = file('package/icons/mist-180x180.png')
         extraJdepsArguments = []
-        extraBundlerArguments = []
     }
 }
 
@@ -83,10 +83,6 @@ jar {
                    'Implementation-Vendor': appPublisher,
                    'Multi-Release' : 'true') // See https://stackoverflow.com/questions/53049346/is-log4j2-compatible-with-java-11
     }
-}
-
-shadowJar {
-//    minimize()
 }
 
 dependencies {
@@ -158,18 +154,16 @@ spotbugs {
     effort = "max"
     reportLevel = "low"
 }
-    
+
 task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'
     description 'Determine the needed Java modules'
-//    inputs.file shadowJarPath  // We don't need to rerun jdeps, so skip this unless clean build
-    outputs.file jdepsReportPath
-    
+
     doLast {
         // Create parent directories if needed
         if (jdepsReportPath.getParentFile() != null) {
-            jdepsReportPath.getParentFile().mkdirs();
+            jdepsReportPath.getParentFile().mkdirs(); 
         }    
         
         def stdOut = new FileOutputStream(jdepsReportPath)
@@ -180,7 +174,7 @@ task jdepsReport() {
             executable = 'jdeps'
             args = [
                 '--multi-release', '11',
-                *extraJdepsArguments, // Needed on Windows but not on Linux (Mac?)
+                *extraJdepsArguments, // Needed on Windows but not on Linux (TODO: Mac?)
                 '--print-module-deps',
                 "-cp", "${mistLibraryPath}", 
                 shadowJarPath]
@@ -189,20 +183,14 @@ task jdepsReport() {
         }
     }
 }
+jdepsReport.onlyIf { !jdepsReportPath.exists() }
 
 task javaRuntime() {
     dependsOn 'jdepsReport'
     group 'packaging'
     description 'Create a custom Java Runtime'
-    inputs.file jdepsReportPath
-    outputs.dir javaRuntimePath
     
     doLast {
-        // outputs.dir creates the directory if it doesn't exist, but jlink will fail if the directory exists
-        if (javaRuntimePath.exists()) {
-            javaRuntimePath.deleteDir()
-        }
-        
         exec {
             workingDir "${buildDir}"
             
@@ -220,6 +208,7 @@ task javaRuntime() {
         }
     }
 }
+javaRuntime.onlyIf { !javaRuntimePath.exists() }
 
 task createBundle() {
     dependsOn 'javaRuntime'
@@ -258,19 +247,40 @@ task createBundle() {
                     shadowJar.archiveFileName.get(),    // jar
                     version,                            // version
                     appIcon                             // app icon
+                    
             } else {
-                commandLine = ['sh',
-                    bundlerScript,                      // The build script itself
-                    jpackagerPath,                      // jpackager path
-                    packageType,                        // Installer type (e.g. dmg, deb)
-                    appName.toLowerCase(),              // app name
-                    mistLibraryPath,                    // input
-                    bundlePath,                         // output
-                    javaRuntimePath,                    // custom java runtime
-                    shadowJar.archiveFileName.get(),    // jar
-                    version,                            // version
-                    appIcon,                            // app icon
-                    *extraBundlerArguments]
+                // Mac & Linux
+                def sharedArgs = [
+                    '--verbose',
+                    '--echo-mode',
+                    '--name', appName.toLowerCase(),
+                    '--main-jar', shadowJar.archiveFileName.get(),
+                    '--version', version,
+                    '--input', mistLibraryPath,
+                    '--output', bundlePath,
+                    '--runtime-image', javaRuntimePath,
+                    '--copyright', appCopyright
+                ]
+            
+                if (operatingSystem.isMacOsX()) {
+                    // TODO: Test
+                    executable = jpackagerPath
+                    args = [
+                        'create-installer', 'dmg',
+                        *sharedArgs,
+                        '--icon', file('package/icons/mist.icns'),
+                        '--mac-sign'
+                    ]
+                        
+                } else if (operatingSystem.isLinux()) {
+                    executable = jpackagerPath
+                    args = [
+                        'create-installer', 'deb',
+                        *sharedArgs,
+                        '--icon', file('package/icons/mist-180x180.png'),
+                        '--linux-deb-maintainer', appDebMaintainer
+                    ]
+                }
             }
         }
     }    
