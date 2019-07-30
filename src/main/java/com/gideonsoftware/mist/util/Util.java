@@ -137,7 +137,7 @@ public class Util {
                     dialog.run(true, false, new EmailConnectionRunnable(emailServer, openFolder, loadMessageList));
                 } catch (InvocationTargetException e) {
                     String msg = String.format(
-                        "Unable to connect to email server '%s'.\nPlease check your settings and try again.",
+                        "Unable to connect to email server '%s'.%nPlease check your settings and try again.",
                         emailServer.getNickname());
                     reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
                 } catch (InterruptedException e) {

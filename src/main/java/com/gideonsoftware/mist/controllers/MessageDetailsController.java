@@ -59,18 +59,22 @@ public class MessageDetailsController {
         view.getSubjectText().addModifyListener(new ModifyListener() {
             @Override
             public void modifyText(ModifyEvent event) {
-                subjectStr = view.getSubjectText().getText();
-                if (view != null && !view.isDisposed() && view.getHistory() != null)
-                    historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+                if (view != null && !view.isDisposed()) {
+                    subjectStr = view.getSubjectText().getText();
+                    if (view.getHistory() != null)
+                        historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+                }
             }
         });
 
         view.getMessageText().addModifyListener(new ModifyListener() {
             @Override
             public void modifyText(ModifyEvent event) {
-                msgStr = view.getMessageText().getText();
-                if (view != null && !view.isDisposed() && view.getHistory() != null)
-                    historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+                if (view != null && !view.isDisposed()) {
+                    msgStr = view.getMessageText().getText();
+                    if (view.getHistory() != null)
+                        historyId = view.getHistory().getHistoryId(); // Keep our cached copy in case view gets disposed
+                }
             }
         });
 

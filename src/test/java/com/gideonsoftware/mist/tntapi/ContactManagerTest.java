@@ -35,9 +35,6 @@ import org.junit.runners.JUnit4;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
-import com.gideonsoftware.mist.tntapi.ContactManager;
-import com.gideonsoftware.mist.tntapi.HistoryManager;
-import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 
@@ -148,7 +145,7 @@ public class ContactManagerTest {
         int count = ContactManager.getContactsByEmailCount("dduck@disney.org");
         assertEquals(1, count);
         Integer id = ContactManager.getContactIdByEmail("dduck@disney.org");
-        assertEquals(Integer.valueOf(DONALDDUCK_CONTACTID), id);
+        assertEquals(DONALDDUCK_CONTACTID, id);
     }
 
     /**
@@ -161,11 +158,11 @@ public class ContactManagerTest {
         int count = ContactManager.getContactsByEmailCount("parrb@metroinsurance.com");
         assertEquals(1, count);
         Integer id = ContactManager.getContactIdByEmail("parrb@metroinsurance.com");
-        assertEquals(Integer.valueOf(MRINCREDIBLE_CONTACTID), id);
+        assertEquals(MRINCREDIBLE_CONTACTID, id);
     }
 
     /**
-     * T* Tests ounting and returning contacts given an existing, unique email address using underscores.
+     * Tests counting and returning contacts given an existing, unique email address using underscores.
      */
     @Test
     public void getContactIdByEmailFoundWithUnderscores() throws TntDbException, SQLException {
@@ -175,7 +172,7 @@ public class ContactManagerTest {
         int count = ContactManager.getContactsByEmailCount("parr_b@metroinsurance.com");
         assertEquals(1, count);
         Integer id = ContactManager.getContactIdByEmail("parr_b@metroinsurance.com");
-        assertEquals(Integer.valueOf(MRINCREDIBLE_CONTACTID), id);
+        assertEquals(MRINCREDIBLE_CONTACTID, id);
     }
 
     /**

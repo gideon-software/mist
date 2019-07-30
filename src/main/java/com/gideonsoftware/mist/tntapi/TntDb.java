@@ -51,6 +51,8 @@ import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.util.ResultSetFormatter;
 import com.gideonsoftware.mist.util.Util;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * The TntConnect database.
  */
@@ -158,6 +160,7 @@ public class TntDb {
      *             if the UCanAccess JDBC driver cannot be loaded,
      *             if there is a database access problem
      */
+    @SuppressFBWarnings(value = "DMI_CONSTANT_DB_PASSWORD", justification = "Tnt DB password is always the same")
     public static void connect(boolean force, String databasePath) throws TntDbException {
         log.trace("connect({},{})", force, databasePath);
 

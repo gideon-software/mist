@@ -1223,23 +1223,23 @@ public class ContactManager {
      */
     protected static void recalculateLastXDate(int contactId, String lastType) throws SQLException {
         log.trace("recalculateLastXDate({},{})", contactId, lastType);
-        if (lastType == LASTTYPE_ACTIVITY)
+        if (LASTTYPE_ACTIVITY.equals(lastType))
             recalculateLastActivityDate(contactId);
-        else if (lastType == LASTTYPE_APPOINTMENT)
+        else if (LASTTYPE_APPOINTMENT.equals(lastType))
             recalculateLastAppointmentDate(contactId);
-        else if (lastType == LASTTYPE_CALL)
+        else if (LASTTYPE_CALL.equals(lastType))
             recalculateLastCallDate(contactId);
-        else if (lastType == LASTTYPE_CHALLENGE)
+        else if (LASTTYPE_CHALLENGE.equals(lastType))
             recalculateLastChallengeDate(contactId);
-        else if (lastType == LASTTYPE_GIFT)
+        else if (LASTTYPE_GIFT.equals(lastType))
             ; // Not implemented
-        else if (lastType == LASTTYPE_LETTER)
+        else if (LASTTYPE_LETTER.equals(lastType))
             recalculateLastLetterDate(contactId);
-        else if (lastType == LASTTYPE_PRECALL)
+        else if (LASTTYPE_PRECALL.equals(lastType))
             recalculateLastPreCallDate(contactId);
-        else if (lastType == LASTTYPE_THANK)
+        else if (LASTTYPE_THANK.equals(lastType))
             recalculateLastThankDate(contactId);
-        else if (lastType == LASTTYPE_VISIT)
+        else if (LASTTYPE_VISIT.equals(lastType))
             recalculateLastVisitDate(contactId);
     }
 

@@ -76,11 +76,6 @@ public class SelectContactPage extends WizardPage {
             Util.reportError("Database connection error", "Could not load contact list", e);
         }
 
-        // Get contact names
-        String[] contactNames = new String[contactList.length];
-        for (int i = 0; i < contactList.length; i++)
-            contactNames[i] = contactList[i].getName();
-
         contactCombo = new SmartCombo<Integer>(comp, SWT.DROP_DOWN);
         for (ContactInfo ci : contactList)
             contactCombo.add(ci.getId(), ci.getName());

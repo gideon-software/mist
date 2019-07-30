@@ -40,6 +40,8 @@ import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.tntapi.TntDb;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class Preferences extends PreferenceStore {
     private static Logger log = LogManager.getLogger();
 
@@ -254,6 +256,7 @@ public class Preferences extends PreferenceStore {
     /**
      * Save preferences
      */
+    @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE", justification = "createNewFile return value is irrelevant")
     public void savePreferences() {
         log.trace("savePreferences()");
 

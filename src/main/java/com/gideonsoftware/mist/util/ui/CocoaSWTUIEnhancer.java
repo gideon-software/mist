@@ -54,24 +54,6 @@ import org.eclipse.swt.widgets.Listener;
  * @author Tom Hallman
  */
 public class CocoaSWTUIEnhancer {
-    // Logger
-    private static final Logger log = LogManager.getLogger();
-
-    private static final long kAboutMenuItem = 0;
-    private static final long kPreferencesMenuItem = 2;
-    // private static final long kServicesMenuItem = 4;
-    private static final long kHideApplicationMenuItem = 6;
-    private static final long kQuitMenuItem = 10;
-
-    static long sel_toolbarButtonClicked_;
-    static long sel_preferencesMenuItemSelected_;
-    static long sel_aboutMenuItemSelected_;
-    static long sel_hideApplicationMenuItemSelected_;
-
-    static Callback proc3Args;
-
-    final private String appName;
-
     /**
      * Class invoked via the Callback object to run the about and preferences actions.
      */
@@ -122,6 +104,23 @@ public class CocoaSWTUIEnhancer {
         }
     }
 
+    // Logger
+    private static final Logger log = LogManager.getLogger();
+    private static final long kAboutMenuItem = 0;
+    private static final long kPreferencesMenuItem = 2;
+    // private static final long kServicesMenuItem = 4;
+    private static final long kHideApplicationMenuItem = 6;
+
+    private static final long kQuitMenuItem = 10;
+    static long sel_toolbarButtonClicked_;
+    static long sel_preferencesMenuItemSelected_;
+
+    static long sel_aboutMenuItemSelected_;
+
+    static Callback proc3Args;
+
+    final private String appName;
+
     /**
      * Construct a new CocoaUIEnhancer.
      * 
@@ -131,6 +130,68 @@ public class CocoaSWTUIEnhancer {
      */
     public CocoaSWTUIEnhancer(final String appName) {
         this.appName = appName;
+    }
+
+    private static Object invoke(
+        final Class<?> clazz,
+        final Object target,
+        final String methodName,
+        final Object[] args) {
+        try {
+            final Class<?>[] signature = new Class<?>[args.length];
+            for (int i = 0; i < args.length; i++) {
+                final Class<?> thisClass = args[i].getClass();
+                if (thisClass == Integer.class) {
+                    signature[i] = int.class;
+                } else if (thisClass == Long.class) {
+                    signature[i] = long.class;
+                } else if (thisClass == Byte.class) {
+                    signature[i] = byte.class;
+                } else if (thisClass == Boolean.class) {
+                    signature[i] = boolean.class;
+                } else {
+                    signature[i] = thisClass;
+                }
+            }
+            final Method method = clazz.getMethod(methodName, signature);
+            return method.invoke(target, args);
+        } catch (final Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static Object invoke(final Class<?> clazz, final String methodName, final Object[] args) {
+        return invoke(clazz, null, methodName, args);
+    }
+
+    private static Object wrapPointer(final long value) {
+        final Class<?> PTR_CLASS = C.PTR_SIZEOF == 8 ? long.class : int.class;
+        if (PTR_CLASS == long.class) {
+            return Long.valueOf(value);
+        } else {
+            return Integer.valueOf((int) value);
+        }
+    }
+
+    private Class<?> classForName(final String classname) {
+        try {
+            final Class<?> cls = Class.forName(classname);
+            return cls;
+        } catch (final ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private long convertToLong(final Object object) {
+        if (object instanceof Integer) {
+            final Integer i = (Integer) object;
+            return i.longValue();
+        }
+        if (object instanceof Long) {
+            final Long l = (Long) object;
+            return l.longValue();
+        }
+        return 0;
     }
 
     /**
@@ -169,6 +230,7 @@ public class CocoaSWTUIEnhancer {
 
         // Schedule disposal of callback object
         display.disposeExec(new Runnable() {
+            @Override
             public void run() {
                 CocoaSWTUIEnhancer.this.invoke(proc3Args, "dispose");
             }
@@ -282,75 +344,6 @@ public class CocoaSWTUIEnhancer {
         invoke(nsmenuitemCls, aboutMenuItem, "setAction", new Object[] { wrapPointer(sel_aboutMenuItemSelected_) });
     }
 
-    private long registerName(
-        final Class<?> osCls,
-        final String name) throws IllegalArgumentException, SecurityException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        final Object object = invoke(osCls, "sel_registerName", new Object[] { name });
-        return this.convertToLong(object);
-    }
-
-    private long convertToLong(final Object object) {
-        if (object instanceof Integer) {
-            final Integer i = (Integer) object;
-            return i.longValue();
-        }
-        if (object instanceof Long) {
-            final Long l = (Long) object;
-            return l.longValue();
-        }
-        return 0;
-    }
-
-    private static Object wrapPointer(final long value) {
-        final Class<?> PTR_CLASS = C.PTR_SIZEOF == 8 ? long.class : int.class;
-        if (PTR_CLASS == long.class) {
-            return Long.valueOf(value);
-        } else {
-            return Integer.valueOf((int) value);
-        }
-    }
-
-    private static Object invoke(final Class<?> clazz, final String methodName, final Object[] args) {
-        return invoke(clazz, null, methodName, args);
-    }
-
-    private static Object invoke(
-        final Class<?> clazz,
-        final Object target,
-        final String methodName,
-        final Object[] args) {
-        try {
-            final Class<?>[] signature = new Class<?>[args.length];
-            for (int i = 0; i < args.length; i++) {
-                final Class<?> thisClass = args[i].getClass();
-                if (thisClass == Integer.class) {
-                    signature[i] = int.class;
-                } else if (thisClass == Long.class) {
-                    signature[i] = long.class;
-                } else if (thisClass == Byte.class) {
-                    signature[i] = byte.class;
-                } else if (thisClass == Boolean.class) {
-                    signature[i] = boolean.class;
-                } else {
-                    signature[i] = thisClass;
-                }
-            }
-            final Method method = clazz.getMethod(methodName, signature);
-            return method.invoke(target, args);
-        } catch (final Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private Class<?> classForName(final String classname) {
-        try {
-            final Class<?> cls = Class.forName(classname);
-            return cls;
-        } catch (final ClassNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     private Object invoke(final Class<?> cls, final String methodName) {
         return this.invoke(cls, methodName, (Class<?>[]) null, (Object[]) null);
     }
@@ -383,5 +376,12 @@ public class CocoaSWTUIEnhancer {
         } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private long registerName(
+        final Class<?> osCls,
+        final String name) throws IllegalArgumentException, SecurityException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        final Object object = invoke(osCls, "sel_registerName", new Object[] { name });
+        return this.convertToLong(object);
     }
 }
