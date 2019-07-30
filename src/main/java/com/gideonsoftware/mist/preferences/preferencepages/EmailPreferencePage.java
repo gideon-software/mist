@@ -27,17 +27,21 @@ import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.window.Window;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.data.EmailServer;
+import com.gideonsoftware.mist.model.data.GmailServer;
 import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SpacerFieldEditor;
 import com.gideonsoftware.mist.util.ui.Images;
+import com.gideonsoftware.mist.wizards.newemailserver.NewEmailServerWizard;
 
 /**
  *
@@ -68,14 +72,21 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 log.trace("addServerButton.widgetSelected({})", e);
-                // TODO: Use a wizard here instead!!
 
-                EmailServer server = new ImapServer(EmailModel.getEmailServerCount());
-                server.setNickname(EmailServer.NEW_NICKNAME);
-                EmailModel.addEmailServer(server);
+                NewEmailServerWizard wizard = new NewEmailServerWizard();
+                WizardDialog dlg = new WizardDialog(getShell(), wizard);
+                if (dlg.open() == Window.OK) {
+                    EmailServer server = null;
+                    if (NewEmailServerWizard.TYPE_IMAP.equals(wizard.getType()))
+                        server = new ImapServer(EmailModel.getEmailServerCount());
+                    else
+                        server = new GmailServer(EmailModel.getEmailServerCount());
+                    server.setNickname(EmailServer.NEW_NICKNAME);
+                    EmailModel.addEmailServer(server);
 
-                // This refreshes the PreferenceDialog so the new server shows up
-                MIST.getPreferenceManager().addEmailServerNode(server.getId(), true);
+                    // This refreshes the PreferenceDialog so the new server shows up
+                    MIST.getPreferenceManager().addEmailServerNode(server.getId(), true);
+                }
             }
         });
         addField(addServerButton);
