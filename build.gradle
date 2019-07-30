@@ -50,9 +50,6 @@ ext {
     if (operatingSystem.isWindows()) {
         swtOs = 'win64'
         appDist = 'win64'
-        // packageType (installer) will be manually done via InnoSetup
-        bundlerScript = file('package/bin/build-package.bat')
-        appIcon = file('package/icons/mist.ico')
         extraJdepsArguments = ['--ignore-missing-deps']
         extraBundlerArguments = []
         appInfoTxtPath = file("${bundlePath}/appinfo.txt")
@@ -233,50 +230,55 @@ task createBundle() {
             // This is throw in regard to jlink, so if we call jlink (to create a java runtime) 
             // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
 
+            def sharedArgs = [
+                '--verbose',
+                '--echo-mode',
+                '--main-jar', shadowJar.archiveFileName.get(),
+                '--version', version,
+                '--input', mistLibraryPath,
+                '--output', bundlePath,
+                '--runtime-image', javaRuntimePath,
+                '--copyright', appCopyright
+            ]
+
             if (operatingSystem.isWindows()) {
 
                 // jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
                 // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
 
-                commandLine 'cmd', '/c',
-                    bundlerScript,                      // The build script itself
-                    appName,                            // app name
-                    mistLibraryPath,                    // input
-                    bundlePath,                         // output
-                    javaRuntimePath,                    // custom java runtime
-                    shadowJar.archiveFileName.get(),    // jar
-                    version,                            // version
-                    appIcon                             // app icon
+                executable = '%JAVA_HOME%\\bin\\java.exe'
+                args = [
+                    '-Xmx512M',
+                    '--module-path', '%JAVA_HOME%\\jmods',
+                    '--add-opens', 'jdk.jlink/jdk.tools.jlink.internal.packager=jdk.packager',
+                    '-m', 'jdk.packager/jdk.packager.Main',
+                    'create-image',
+                    *sharedArgs,
+                    '--name', appName,
+                    '--icon', file('package/icons/mist.ico')
+                ]
                     
             } else {
                 // Mac & Linux
-                def sharedArgs = [
-                    '--verbose',
-                    '--echo-mode',
+                executable = jpackagerPath
+                def macLinuxSharedArgs = [
                     '--name', appName.toLowerCase(),
-                    '--main-jar', shadowJar.archiveFileName.get(),
-                    '--version', version,
-                    '--input', mistLibraryPath,
-                    '--output', bundlePath,
-                    '--runtime-image', javaRuntimePath,
-                    '--copyright', appCopyright
                 ]
             
                 if (operatingSystem.isMacOsX()) {
                     // TODO: Test
-                    executable = jpackagerPath
                     args = [
                         'create-installer', 'dmg',
                         *sharedArgs,
+                        *macLinuxSharedArgs,
                         '--icon', file('package/icons/mist.icns'),
                         '--mac-sign'
                     ]
-                        
                 } else if (operatingSystem.isLinux()) {
-                    executable = jpackagerPath
                     args = [
                         'create-installer', 'deb',
                         *sharedArgs,
+                        *macLinuxSharedArgs,
                         '--icon', file('package/icons/mist-180x180.png'),
                         '--linux-deb-maintainer', appDebMaintainer
                     ]
