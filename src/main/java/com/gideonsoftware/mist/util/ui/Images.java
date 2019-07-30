@@ -87,6 +87,8 @@ public class Images {
             case History.STATUS_MULTIPLE_CONTACTS_FOUND:
                 image = getImage(ICON_STATUS_MULTIPLE_CONTACTS_FOUND);
                 break;
+            default:
+                log.error("Unknown status image type: " + status);
         }
         return image;
     }

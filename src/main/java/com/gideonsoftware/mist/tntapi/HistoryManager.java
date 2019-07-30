@@ -144,6 +144,8 @@ public class HistoryManager {
                 case TaskType.FACEBOOK:
                 case TaskType.TEXT_SMS:
                     ContactManager.updateLastLetterDate(history.getContactInfo().getId(), historyDate);
+                default:
+                    log.error("Unknown task type: " + history.getTaskTypeId());
             }
 
             if (history.isChallenge())

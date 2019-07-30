@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.prefs.BackingStoreException;
 
 import org.apache.commons.lang.StringUtils;
@@ -240,8 +241,8 @@ public class Preferences extends PreferenceStore {
         setToDefaultIfContains(oldPrefName);
 
         // Add new preferences
-        for (String key : newPrefs.keySet())
-            setValue(key, newPrefs.get(key));
+        for (Entry<String, String> entry : newPrefs.entrySet())
+            setValue(entry.getKey(), entry.getValue());
     }
 
     /**
@@ -256,7 +257,7 @@ public class Preferences extends PreferenceStore {
     /**
      * Save preferences
      */
-    @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE", justification = "createNewFile return value is irrelevant")
+    @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE", justification = "file ops return values are irrelevant")
     public void savePreferences() {
         log.trace("savePreferences()");
 

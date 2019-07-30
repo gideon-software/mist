@@ -153,6 +153,12 @@ tasks.withType(com.github.spotbugs.SpotBugsTask) {
     }
 }
 
+spotbugs {
+    ignoreFailures = true
+    effort = "max"
+    reportLevel = "low"
+}
+    
 task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'

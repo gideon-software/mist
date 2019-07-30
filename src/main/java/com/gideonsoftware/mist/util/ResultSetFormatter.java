@@ -367,6 +367,7 @@ public class ResultSetFormatter {
                             break;
 
                         case CATEGORY_STRING:
+                        default:
 
                             // Left justify the text columns
                             c.justifyLeft();
@@ -419,7 +420,7 @@ public class ResultSetFormatter {
                 String name = c.getLabel();
                 int diff = width - name.length();
 
-                if ((diff % 2) == 1) {
+                if ((diff % 2) != 0) {
                     // diff is not divisible by 2, add 1 to width (and diff)
                     // so that we can have equal padding to the left and right
                     // of the column label.

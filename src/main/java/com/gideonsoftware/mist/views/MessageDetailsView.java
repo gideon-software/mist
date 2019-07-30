@@ -216,6 +216,9 @@ public class MessageDetailsView extends Composite implements PropertyChangeListe
                     infoTextStr = "There was an unknown problem importing this message. The error message is below.";
                     setEditable(false);
                     break;
+                default:
+                    infoTextStr = "Unknown history status: " + history.getStatus();
+                    setEditable(false);
             }
 
             // Set infoLabel stuff
