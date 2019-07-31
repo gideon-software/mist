@@ -110,6 +110,8 @@ public class MistPreferenceManager extends PreferenceManager {
     }
 
     public void postEmailServerRemoved() {
+        log.trace("postEmailServerRemoved()");
+
         // Ready the current page for exit by bypassing dialog error checking
         MIST.getPreferenceManager().getPreferenceDialog().clearCurrentPage();
 
