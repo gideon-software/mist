@@ -107,6 +107,8 @@ public abstract class EmailServer implements Cloneable {
         //
 
         Preferences prefs = MIST.getPrefs();
+        prefs.setDefault(getPrefName(PREF_ENABLED), true);
+
         enabled = prefs.getBoolean(getPrefName(PREF_ENABLED));
         folderName = prefs.getString(getPrefName(PREF_FOLDER));
         username = prefs.getString(getPrefName(PREF_USERNAME));
