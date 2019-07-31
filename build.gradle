@@ -176,8 +176,11 @@ task jdepsReport() {
                 '--print-module-deps',
                 "-cp", "${mistLibraryPath}", 
                 shadowJarPath]
-          
+
             standardOutput = stdOut
+            
+            // jdk.crypto.ec is not picked up by jdeps but is necessary for GmailServer connection
+            stdOut << "jdk.crypto.ec,"
         }
     }
 }
@@ -231,8 +234,8 @@ task createBundle() {
             // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
 
             def sharedArgs = [
-                '--verbose',
-                '--echo-mode',
+                //'--verbose',
+                //'--echo-mode',
                 '--main-jar', shadowJar.archiveFileName.get(),
                 '--version', version,
                 '--input', mistLibraryPath,
