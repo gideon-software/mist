@@ -14,7 +14,7 @@ AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 AppCopyright={#AppCopyright}
 AppPublisher={#AppPublisher}
-DefaultDirName={pf}\{#AppName}
+DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 SourceDir=..\..\..
 OutputDir=build\bundle
@@ -27,10 +27,10 @@ Name: "tntmenu"; Description: "In the &TntConnect ""Tools"" menu"; GroupDescript
 
 [Registry]
 #define TntExternalToolsKey64 "SOFTWARE\Wow6432Node\TntWare\TntConnect\ExternalTools\MIST: Email Importer"
-Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; Flags: uninsdeletekey; Tasks: tntmenu; Check: IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Category"; ValueData: "Add-Ons"; Tasks: tntmenu; Check: IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Target"; ValueData: "{app}\{#AppExeName}"; Tasks: tntmenu; Check: IsWin64
-Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "IconTarget"; ValueData: "{app}\mist.ico"; Tasks: tntmenu; Check: IsWin64
+Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; Flags: uninsdeletekey; Tasks: tntmenu;
+Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Category"; ValueData: "Add-Ons"; Tasks: tntmenu;
+Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "Target"; ValueData: "{app}\{#AppExeName}"; Tasks: tntmenu;
+Root: HKLM; Subkey: "{#TntExternalToolsKey64}"; ValueType: string; ValueName: "IconTarget"; ValueData: "{app}\mist.ico"; Tasks: tntmenu;
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -42,7 +42,7 @@ Source: "build\bundle\{#AppName}\*"; DestDir: "{app}"; Flags: ignoreversion recu
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "{#AppComment}"; IconFilename: "{app}\mist.ico";
 Name: "{group}\{#AppName} Homepage"; Filename: "{#AppURL}"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-Name: "{userdesktop}\MIST"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Comment: "{#AppComment}"; IconFilename: "{app}\mist.ico"; Tasks: desktopicon;
+Name: "{autodesktop}\MIST"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Comment: "{#AppComment}"; IconFilename: "{app}\mist.ico"; Tasks: desktopicon;
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

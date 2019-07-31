@@ -156,7 +156,8 @@ task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'
     description 'Determine the needed Java modules'
-
+    onlyIf { !jdepsReportPath.exists() }
+    
     doLast {
         // Create parent directories if needed
         if (jdepsReportPath.getParentFile() != null) {
@@ -180,12 +181,12 @@ task jdepsReport() {
         }
     }
 }
-jdepsReport.onlyIf { !jdepsReportPath.exists() }
 
 task javaRuntime() {
     dependsOn 'jdepsReport'
     group 'packaging'
     description 'Create a custom Java Runtime'
+    onlyIf { !javaRuntimePath.exists() }
     
     doLast {
         exec {
@@ -205,7 +206,6 @@ task javaRuntime() {
         }
     }
 }
-javaRuntime.onlyIf { !javaRuntimePath.exists() }
 
 task createBundle() {
     dependsOn 'javaRuntime'
@@ -245,11 +245,11 @@ task createBundle() {
 
                 // jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
                 // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
-
-                executable = '%JAVA_HOME%\\bin\\java.exe'
+                def javaHome = System.properties.'java.home'
+                executable = "$javaHome\\bin\\java.exe"
                 args = [
                     '-Xmx512M',
-                    '--module-path', '%JAVA_HOME%\\jmods',
+                    '--module-path', "$javaHome\\jmods",
                     '--add-opens', 'jdk.jlink/jdk.tools.jlink.internal.packager=jdk.packager',
                     '-m', 'jdk.packager/jdk.packager.Main',
                     'create-image',
@@ -294,7 +294,7 @@ if (operatingSystem.isWindows()) {
     task appInfoTxt() {
         group 'packaging'
         description 'Create the appInfo.txt file needed by InnoSetup'
-        outputs.file appInfoTxtPath
+        onlyIf { !appInfoTxtPath.exists() }
         
         doLast {
             // First create the appInfo.txt file with needed properties
@@ -319,6 +319,7 @@ if (operatingSystem.isWindows()) {
         description 'Run InnoSetup to generate the Windows installer'
         inputs.dir "$bundlePath/$appName"
         inputs.file appInfoTxtPath
+        inputs.file innoSetupInstallPath
         outputs.file installerPath
         
         doLast {
@@ -328,7 +329,7 @@ if (operatingSystem.isWindows()) {
                 // <innoSetup compiler> <install file path>
                 executable = "${innoSetupCompilerPath}"
                 args = [
-//                    '/Qp',
+                    '/Qp',
                     "${innoSetupInstallPath}"]
             }
         }
