@@ -182,6 +182,7 @@ public class Preferences extends PreferenceStore {
                 server.setPasswordPrompt(oldPrefs.node("Mail").getBoolean("PasswordPrompt", true));
                 server.setPort(oldPrefs.node("Mail").get("Port", ""));
                 server.setUsername(oldPrefs.node("Mail").get("User", ""));
+                server.setUseSsl(true);
                 // We no longer use the "MyName" feature
 
                 // Tnt User ID: Pre-5.0 associated the Tnt User Id with "TntMPD" rather than "Mail"

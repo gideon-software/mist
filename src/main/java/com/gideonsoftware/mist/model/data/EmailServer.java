@@ -329,6 +329,7 @@ public abstract class EmailServer implements Cloneable {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        MIST.getPrefs().setValue(getPrefName(PREF_ENABLED), enabled);
     }
 
     public void setFolderName(String folderName) {
