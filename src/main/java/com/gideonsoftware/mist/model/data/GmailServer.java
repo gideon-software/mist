@@ -62,7 +62,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -165,6 +164,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     }
 
     // @see https://stackoverflow.com/questions/49354891/how-do-i-get-the-user-id-token-from-a-credential-object
+    // @see https://stackoverflow.com/a/13016081/1307022
     private Credential authorize() throws IOException {
         log.trace("{{}} authorize()", getNickname());
 
@@ -175,12 +175,16 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             SCOPES).setDataStoreFactory(DATA_STORE_FACTORY).setAccessType("offline")
                 // We also want to get the id_token response to get the username
                 // id_token is an OpenID Connect ID, which is a JSON Web Token (JWT)
-                // See https://stackoverflow.com/a/13016081/1307022
                 .setCredentialCreatedListener(new AuthorizationCodeFlow.CredentialCreatedListener() {
                     @Override
                     public void onCredentialCreated(
                         Credential credential,
                         TokenResponse tokenResponse) throws IOException {
+                        log.trace(
+                            "{{}} CredentialCreatedListener.onCredentialCreated({},{})",
+                            getNickname(),
+                            credential,
+                            tokenResponse);
                         storeIdTokenValues(credential, tokenResponse);
                     }
                 }).addRefreshListener(new CredentialRefreshListener() {
@@ -188,12 +192,21 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
                     public void onTokenErrorResponse(
                         Credential credential,
                         TokenErrorResponse tokenErrorResponse) throws IOException {
-                        credential = null; // Something's wrong here! Maybe need to handle this better...?
-                        log.error(tokenErrorResponse);
+                        log.trace(
+                            "{{}} CredentialRefreshListener.onTokenErrorResponse({},{})",
+                            getNickname(),
+                            credential,
+                            tokenErrorResponse);
+                        // credential = null; // TODO: Something's wrong here! Handle this better!
                     }
 
                     @Override
                     public void onTokenResponse(Credential credential, TokenResponse tokenResponse) throws IOException {
+                        log.trace(
+                            "{{}} CredentialRefreshListener.onTokenResponse({},{})",
+                            getNickname(),
+                            credential,
+                            tokenResponse);
                         storeIdTokenValues(credential, tokenResponse);
                     }
                 }).build();
@@ -202,7 +215,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(uniqueId);
 
         // Get the access token
-        // credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
+        credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
         return credential;
     }
 
@@ -429,15 +442,17 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     }
 
     private void storeIdTokenValues(Credential credential, TokenResponse tokenResponse) throws IOException {
-        GoogleTokenResponse googleTokenResponse = (GoogleTokenResponse) tokenResponse;
-        GoogleIdToken idToken = googleTokenResponse.parseIdToken();
-        // https://developers.google.com/identity/sign-in/web/backend-auth
-        // https://developers.google.com/api-client-library/java/google-api-java-client/reference/1.20.0/jdiff/Google_API_Client_Library_for_Java_1.20.0/com/google/api/client/googleapis/auth/oauth2/GoogleTokenResponse
+        log.trace("{{}} storeIdTokenValues({},{})", getNickname(), credential, tokenResponse);
+
+        // Note: can't cast TokenResponse to GoogleTokenResponse here
+        String idTokenString = (String) tokenResponse.get("id_token");
+        GoogleIdToken idToken = GoogleIdToken.parse(JSON_FACTORY, idTokenString);
+
         try {
             if (!TOKEN_VERIFIER.verify(idToken))
                 throw new EmailServerException("Google security token not verified: " + idToken.toString());
         } catch (EmailServerException | GeneralSecurityException e) {
-            credential = null; // Don't allow further use
+            // credential = null; // TODO
             Util.reportError("Security error", "Invalid Google token!", e);
         }
         setUsername(idToken.getPayload().getEmail());
