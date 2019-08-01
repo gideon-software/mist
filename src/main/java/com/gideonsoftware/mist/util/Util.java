@@ -77,7 +77,8 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
                     monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
                 server.openFolder();
                 if (loadMessageList) {
-                    monitor.setTaskName(String.format("%s: Loading message list...", server.getNickname()));
+                    monitor.setTaskName(
+                        String.format("%s: Loading message list... (this may take some time)", server.getNickname()));
                     server.loadMessageList();
                 }
             }
