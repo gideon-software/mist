@@ -52,7 +52,7 @@ public class SelectTypePage extends WizardPage {
         applyGridLayout(comp);
 
         typeImapRadio = new Button(comp, SWT.RADIO);
-        typeImapRadio.setText("IMAP / IMAPS (IMAP over SSL) server");
+        typeImapRadio.setText("IMAP / IMAPS server");
         typeImapRadio.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

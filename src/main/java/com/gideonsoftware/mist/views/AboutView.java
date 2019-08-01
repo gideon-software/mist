@@ -101,12 +101,12 @@ public class AboutView extends Dialog {
         mailingListLink.setText(String.format("Email support: <a>%s</a>", MIST.EMAIL_SUPPORT));
         new Label(rightComp, SWT.NONE);
         (new Label(rightComp, SWT.NONE)).setText(
-            ""
-                + "MIST is not directly affiliated with TntConnect or TntWare,\n"
-                + "but we hope it will be useful to the TntConnect community!\n"
-                + "Please do not seek help for MIST on the TntConnect forums.\n"
-                + "Use the MIST mailing list instead.");
-
+            String.format(
+                ""
+                    + "MIST is not directly affiliated with TntConnect or TntWare,%n"
+                    + "but we hope it will be useful to the TntConnect community!%n"
+                    + "Please do not seek help for MIST on the TntConnect forums.%n"
+                    + "Use the MIST links above instead."));
         return comp;
     }
 
