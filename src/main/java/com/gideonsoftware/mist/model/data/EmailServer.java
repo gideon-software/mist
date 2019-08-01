@@ -218,6 +218,8 @@ public abstract class EmailServer implements Cloneable {
     }
 
     public String getFolderName() {
+        if (folderName == null)
+            return "";
         return folderName;
     }
 
@@ -320,12 +322,16 @@ public abstract class EmailServer implements Cloneable {
             }
         }
 
-        try {
-            folder = store.getFolder(getFolderName());
-            folder.open(Folder.READ_ONLY);
-        } catch (MessagingException e) {
-            folder = null;
-            throw new EmailServerException(e);
+        if (!getFolderName().isEmpty()) {
+            try {
+                folder = store.getFolder(getFolderName());
+                folder.open(Folder.READ_ONLY);
+            } catch (MessagingException e) {
+                folder = null;
+                throw new EmailServerException(e);
+            }
+        } else {
+            log.warn("{{}} Could not open folder because folder name is blank", getNickname());
         }
     }
 

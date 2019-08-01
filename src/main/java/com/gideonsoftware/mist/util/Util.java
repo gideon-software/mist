@@ -70,7 +70,7 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
             IProgressMonitor.UNKNOWN);
         try {
             server.connect();
-            if (server.isConnected() && openFolder) {
+            if (server.isConnected() && openFolder && !server.getFolderName().isEmpty()) {
                 if (EmailServer.TYPE_GMAIL.equals(server.getType()))
                     monitor.setTaskName(String.format("%s: Loading label...", server.getNickname()));
                 else
