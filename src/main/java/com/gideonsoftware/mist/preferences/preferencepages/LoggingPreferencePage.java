@@ -70,7 +70,7 @@ public class LoggingPreferencePage extends FieldEditorPreferencePage {
         levelEditor.add(Level.OFF.name(), "OFF");
         levelEditor.add(Level.FATAL.name(), "FATAL");
         levelEditor.add(Level.ERROR.name(), "ERROR");
-        levelEditor.add(Level.WARN.name(), "WARN");
+        levelEditor.add(Level.WARN.name(), "WARN (default)");
         levelEditor.add(Level.INFO.name(), "INFO");
         levelEditor.add(Level.DEBUG.name(), "DEBUG");
         levelEditor.add(Level.TRACE.name(), "TRACE (may log sensitive data; slower)");

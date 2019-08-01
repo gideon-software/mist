@@ -272,7 +272,7 @@ public class MIST {
         MIST.getPrefs();
 
         // Set user-specified logging level now that preferences are loaded
-        MIST.getPrefs().setDefault(PREF_LOGFILE_LOGLEVEL, Level.WARN.name());
+        MIST.getPrefs().setDefault(PREF_LOGFILE_LOGLEVEL, Level.WARN.name()); // If changed, see LoggingPreferencePage
         setLogfileLogLevel(MIST.getPrefs().getString(PREF_LOGFILE_LOGLEVEL));
 
         // Display & images
