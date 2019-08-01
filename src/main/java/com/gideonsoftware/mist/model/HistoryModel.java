@@ -61,13 +61,6 @@ public class HistoryModel {
     // A list of all history added to Tnt (including errors)
     private static volatile ArrayList<History> historyArr = new ArrayList<History>();
 
-    // Class initializer
-    static {
-        // Preferences should have been loaded by the time this class is used
-        useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
-        autoThankSubjectArr = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
-    }
-
     /**
      * No instantiation allowed!
      */
@@ -309,6 +302,9 @@ public class HistoryModel {
         log.trace("init()");
         historyArr.clear();
         pcs.firePropertyChange(PROP_HISTORY_INIT, false, true); // Newly-initialized history array!
+
+        useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
+        autoThankSubjectArr = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
     }
 
     /**
