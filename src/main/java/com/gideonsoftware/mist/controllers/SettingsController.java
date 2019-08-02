@@ -42,8 +42,13 @@ public class SettingsController {
 
     public int openView() {
         log.trace("openView()");
+
         // Save prefs so we can reset prefs in event of cancel
         MIST.getPrefs().savePreferences();
+
+        // Note TntDB; if it doesn't change, we don't need to re-init later
+        String dbPath = TntDb.getTntDatabasePath();
+
         PreferenceDialog prefDlg = MIST.getPreferenceManager().createPreferenceDialog(shell);
         int ret = prefDlg.open();
         if (ret == Window.OK) {
@@ -51,7 +56,8 @@ public class SettingsController {
             MIST.setLogfileLogLevel(MIST.getPrefs().getString(MIST.PREF_LOGFILE_LOGLEVEL));
         } else {
             MIST.getPrefs().resetPreferences();
-            TntDb.init(); // Forces a reload of the DB settings
+            if (!TntDb.getTntDatabasePath().equals(dbPath))
+                TntDb.init(); // Forces a reload of the DB settings
         }
 
         EmailModel.init(); // Reloads email servers
