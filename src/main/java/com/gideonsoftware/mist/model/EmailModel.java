@@ -224,9 +224,8 @@ public class EmailModel {
 
         // Because server IDs have contiguous IDs (0, 1, 2, etc.), we must reassign IDs
         // The easiest way to do this is to work directly on the preferences, then reload the servers
-        // TODO: Test this
         for (int i = id; i < getEmailServerCount(); i++)
-            MIST.getPrefs().replacePrefNames(EmailServer.getPrefPrefix(i), EmailServer.getPrefPrefix(i + 1));
+            MIST.getPrefs().replacePrefNames(EmailServer.getPrefPrefix(i + 1), EmailServer.getPrefPrefix(i));
         // Clear last one
         MIST.getPrefs().setToDefaultIfContains(EmailServer.getPrefPrefix(getEmailServerCount()));
 

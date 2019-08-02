@@ -236,7 +236,7 @@ public class Preferences extends PreferenceStore {
         Map<String, String> newPrefs = new HashMap<String, String>();
         for (String prefName : preferenceNames())
             if (prefName.contains(oldPrefName))
-                newPrefs.put(prefName.replace(oldPrefName, newPrefName), getString(oldPrefName));
+                newPrefs.put(prefName.replace(oldPrefName, newPrefName), getString(prefName));
 
         // Remove old preferences
         setToDefaultIfContains(oldPrefName);
