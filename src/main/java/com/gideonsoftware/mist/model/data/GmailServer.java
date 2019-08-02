@@ -48,7 +48,6 @@ import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.tntapi.TntDb;
-import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.util.Util;
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
 import com.google.api.client.auth.oauth2.Credential;
@@ -387,35 +386,37 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("{{}} propertyChange({})", getNickname(), event);
 
-        if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
-            // History has been processed
-
-            // If we're to remove labels after import
-            if (isLabelRemoveAfterImport()) {
-                History history = (History) event.getNewValue();
-                // And this is the history's source server
-                // And the history is added/exists
-                if (getId() == history.getMessageSource().getSourceId()
-                    && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
-                    // Remove the label
-                    removeLabel(history.getMessageSource());
-                }
-            }
-
-        } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
-            // A message has been ignored
-
-            // If we're to remove labels after import (and also when messages are ignored, btw!)
-            if (isLabelRemoveAfterImport()) {
-                MessageSource msg = (MessageSource) event.getNewValue();
-                // And this is the history's source server
-                if (getId() == msg.getSourceId()) {
-                    // Remove the label
-                    removeLabel(msg);
-                }
-            }
-        }
-
+        // Disabled in beta until logic is fixed (what if some in thread weren't matched?)
+        /*
+         * if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
+         * // History has been processed
+         * 
+         * // If we're to remove labels after import
+         * if (isLabelRemoveAfterImport()) {
+         * History history = (History) event.getNewValue();
+         * // And this is the history's source server
+         * // And the history is added/exists
+         * if (getId() == history.getMessageSource().getSourceId()
+         * && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
+         * // Remove the label
+         * removeLabel(history.getMessageSource());
+         * }
+         * }
+         * 
+         * } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
+         * // A message has been ignored
+         * 
+         * // If we're to remove labels after import (and also when messages are ignored, btw!)
+         * if (isLabelRemoveAfterImport()) {
+         * MessageSource msg = (MessageSource) event.getNewValue();
+         * // And this is the history's source server
+         * if (getId() == msg.getSourceId()) {
+         * // Remove the label
+         * removeLabel(msg);
+         * }
+         * }
+         * }
+         */
     }
 
     public void removeLabel(MessageSource messageSource) {
