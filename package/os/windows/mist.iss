@@ -7,9 +7,9 @@ AppId={{#AppId}
 AppName={#AppName}
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
-AppVersion={#AppVersionLong}
-VersionInfoVersion={#AppVersionLong}
-AppVerName={#AppName} {#AppVersionShort}
+AppVersion={#AppVersion}
+VersionInfoVersion={#AppVersion4Dot}
+AppVerName={#AppName} {#AppVersion}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 AppCopyright={#AppCopyright}
@@ -18,7 +18,7 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 SourceDir=..\..\..
 OutputDir=build\bundle
-OutputBaseFilename={#AppName}-{#AppVersionLong}-{#AppDist}-setup
+OutputBaseFilename={#AppName}-{#AppVersion}-{#AppDist}-setup
 AllowNoIcons=no
 
 [Tasks]
