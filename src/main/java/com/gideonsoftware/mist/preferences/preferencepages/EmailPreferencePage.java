@@ -67,7 +67,7 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
     @Override
     protected void createFieldEditors() {
         // Add Email Server button
-        addServerButton = new ButtonFieldEditor("&Add Email Server", getFieldEditorParent());
+        addServerButton = new ButtonFieldEditor("&Add Email Server...", getFieldEditorParent());
         addServerButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

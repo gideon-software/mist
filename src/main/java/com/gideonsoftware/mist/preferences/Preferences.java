@@ -179,7 +179,6 @@ public class Preferences extends PreferenceStore {
                 server.setHost(oldPrefs.node("Mail").get("Host", ""));
                 server.setNickname(oldPrefs.node("Mail").get("Host", "")); // There was no nickname; use host name
                 server.setPassword(oldPrefs.node("Mail").get("Password", ""));
-                server.setPasswordPrompt(oldPrefs.node("Mail").getBoolean("PasswordPrompt", true));
                 server.setPort(oldPrefs.node("Mail").get("Port", ""));
                 server.setUsername(oldPrefs.node("Mail").get("User", ""));
                 server.setUseSsl(true);

@@ -1,6 +1,6 @@
 /**
  * MIST: eMail Import System for TntConnect
- * Copyright (C) 2010 Gideon Software
+ * Copyright (C) 2019 Gideon Software
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +26,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.preference.StringFieldEditor;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -41,13 +39,9 @@ import org.eclipse.swt.widgets.Text;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
-import com.gideonsoftware.mist.model.data.EmailFolder;
 import com.gideonsoftware.mist.model.data.EmailServer;
-import com.gideonsoftware.mist.model.data.GmailServer;
-import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.ButtonFieldEditor;
-import com.gideonsoftware.mist.preferences.fieldeditors.ForgettablePasswordFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SmartComboFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SpacerFieldEditor;
 import com.gideonsoftware.mist.tntapi.TntDb;
@@ -57,78 +51,68 @@ import com.gideonsoftware.mist.util.Util;
 import com.gideonsoftware.mist.util.ui.Images;
 
 /**
- *
+ * 
  */
-public class EmailServerPreferencePage extends FieldEditorPreferencePage {
+public abstract class EmailServerPreferencePage extends FieldEditorPreferencePage {
     private static Logger log = LogManager.getLogger();
 
-    private BooleanFieldEditor enabledEditor;
-    private StringFieldEditor nicknameEditor;
-    private StringFieldEditor hostEditor;
-    private IntegerFieldEditor portEditor;
-    private StringFieldEditor usernameEditor;
-    private ForgettablePasswordFieldEditor passwordEditor;
-    private ButtonFieldEditor connectButton;
-    private SmartComboFieldEditor<String> folderEditor;
-    private BooleanFieldEditor removeLabelEditor;
-    private SmartComboFieldEditor<Integer> tntUserEditor;
-    private BooleanFieldEditor useSslEditor;
-    private AddEditRemoveListFieldEditor myEmailAddressesEditor;
-    private AddEditRemoveListFieldEditor ignoreAddressesEditor;
-    private ButtonFieldEditor deleteButton;
+    protected BooleanFieldEditor enabledEditor;
+    protected StringFieldEditor nicknameEditor;
+    protected StringFieldEditor usernameEditor;
+    protected SmartComboFieldEditor<Integer> tntUserEditor;
+    protected AddEditRemoveListFieldEditor myEmailAddressesEditor;
+    protected AddEditRemoveListFieldEditor ignoreAddressesEditor;
+    protected ButtonFieldEditor removeButton;
 
-    private EmailServer server;
+    protected EmailServer server;
 
     public EmailServerPreferencePage(int serverId) {
         super(FieldEditorPreferencePage.GRID);
         log.trace("EmailServerPreferencePage({})", serverId);
-        String type = EmailModel.getEmailServerType(serverId);
-        if (EmailServer.TYPE_IMAP.equals(type))
-            server = new ImapServer(serverId);
-        else if (EmailServer.TYPE_GMAIL.equals(type))
-            server = new GmailServer(serverId);
-        setTitle(server.getNickname());
-        setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL_SERVER)));
-        // setDescription("description here");
         noDefaultAndApplyButton();
     }
 
-    protected boolean connectToServer() {
-        log.trace("connectToServer()");
-        savePageSettings();
-
-        Util.connectToEmailServer(server, true, false);
-        boolean success = server.isConnected();
-        if (success) {
-            if (EmailServer.TYPE_IMAP.equals(server.getType())) {
-                // Save the password
-                passwordEditor.setPassword(((ImapServer) server).getPassword());
-                passwordEditor.setPrompt(((ImapServer) server).isPasswordPrompt());
-            }
-
-            // If there was a previously selected key, use that
-            String oldKey = folderEditor.getSelectionItem();
-
-            // Populate folder list
-            folderEditor.removeAll();
-            for (EmailFolder emailFolder : server.getCompleteFolderList())
-                if (emailFolder.canHoldMessages())
-                    folderEditor.add(emailFolder.getFullFolderName(), emailFolder.getFullFolderName());
-
-            folderEditor.setSelection(oldKey != null ? oldKey : server.getFolderName());
-
-            // All done with the server for now
-            server.disconnect();
-        }
-        folderEditor.setEnabled(success, getFieldEditorParent());
-        return success;
+    protected void addEnabledEditor() {
+        log.trace("addEnabledEditor()");
+        enabledEditor = new BooleanFieldEditor(
+            server.getPrefName(EmailServer.PREF_ENABLED),
+            "&Enabled",
+            getFieldEditorParent());
+        addField(enabledEditor);
     }
 
-    @Override
-    protected void createFieldEditors() {
-        log.trace("createFieldEditors()");
+    protected void addIgnoreEmailAddressesEditor() {
+        log.trace("addIgnoreEmailAddressesEditor()");
+        ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
+            server.getPrefName(EmailServer.PREF_ADDRESSES_IGNORE),
+            "Email addresses to &ignore:",
+            getFieldEditorParent());
+        ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
+        ignoreAddressesEditor.setEditDialogMessage("Edit email address to ignore");
+        ignoreAddressesEditor.setDialogDescription(
+            "Emails to or from these addresses will not be imported;"
+                + System.lineSeparator()
+                + "(Use * for any string and ? for any character)");
+        addField(ignoreAddressesEditor);
+    }
 
-        // Nickname
+    protected void addMyEmailAddressesEditor() {
+        log.trace("addMyEmailAddressesEditor()");
+        myEmailAddressesEditor = new AddEditRemoveListFieldEditor(
+            server.getPrefName(EmailServer.PREF_ADDRESSES_MY),
+            "My email &addresses:",
+            getFieldEditorParent());
+        myEmailAddressesEditor.setAddDialogMessage("Add email address");
+        myEmailAddressesEditor.setAddDialogMessage("Edit email address");
+        myEmailAddressesEditor.setDialogDescription(
+            "These are used to determine whether you wrote to a contact or a contact wrote to you");
+        myEmailAddressesEditor.setMinListSize(1);
+        myEmailAddressesEditor.setErrorMessage("'My email addresses' must contain at least one email address.");
+        addField(myEmailAddressesEditor);
+    }
+
+    protected void addNicknameEditor() {
+        log.trace("addNicknameEditor()");
         nicknameEditor = new StringFieldEditor(
             server.getPrefName(EmailServer.PREF_NICKNAME),
             "&Nickname:",
@@ -147,140 +131,36 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
             }
         });
         addField(nicknameEditor);
+    }
 
-        // Enabled
-        enabledEditor = new BooleanFieldEditor(
-            server.getPrefName(EmailServer.PREF_ENABLED),
-            "Enabled",
-            getFieldEditorParent());
-        addField(enabledEditor);
-
-        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
-            // Host
-            hostEditor = new StringFieldEditor(
-                server.getPrefName(ImapServer.PREF_HOST),
-                "&Host:",
-                getFieldEditorParent());
-            hostEditor.setEmptyStringAllowed(false);
-            hostEditor.setErrorMessage("Host may not be empty.");
-            addField(hostEditor);
-
-            // Use SSL
-            useSslEditor = new BooleanFieldEditor(
-                server.getPrefName(ImapServer.PREF_USESSL),
-                "Use SSL (IMAPS)",
-                getFieldEditorParent());
-            addField(useSslEditor);
-
-            // Port
-            portEditor = new IntegerFieldEditor(
-                server.getPrefName(ImapServer.PREF_PORT),
-                "P&ort:",
-                getFieldEditorParent());
-            portEditor.setEmptyStringAllowed(false);
-            portEditor.setErrorMessage("Port must be a number.");
-            addField(portEditor);
-
-            // Username (for IMAP) - editable
-            usernameEditor = new StringFieldEditor(
-                server.getPrefName(EmailServer.PREF_USERNAME),
-                "&Username:",
-                getFieldEditorParent());
-            usernameEditor.setEmptyStringAllowed(false);
-            usernameEditor.setErrorMessage("Username may not be empty.");
-            addField(usernameEditor);
-
-            // Password
-            passwordEditor = new ForgettablePasswordFieldEditor(
-                server.getPrefName(ImapServer.PREF_PASSWORD),
-                server.getPrefName(ImapServer.PREF_PASSWORD_PROMPT),
-                "&Password:",
-                getFieldEditorParent());
-            addField(passwordEditor);
-        }
-
-        // Connect button
-        String connectPhrase = "Test &Connection";
-        if (EmailServer.TYPE_GMAIL.equals(server.getType()))
-            connectPhrase = "Sign in with &Google";
-
-        connectButton = new ButtonFieldEditor(connectPhrase, getFieldEditorParent());
-        connectButton.getButton().addSelectionListener(new SelectionAdapter() {
+    protected void addRemoveButton() {
+        log.trace("addRemoveButton()");
+        removeButton = new ButtonFieldEditor("&Remove this Email Server...", getFieldEditorParent());
+        removeButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                log.trace("connectButton.widgetSelected({})", event);
-                if (connectToServer()) {
-                    // Notify user that the connection was successful
-                    MessageBox msgBox = new MessageBox(
-                        ((Button) event.getSource()).getShell(),
-                        SWT.ICON_INFORMATION | SWT.OK);
-                    String successPhrase = "Connection successful!";
-                    if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
-                        successPhrase = "Sign-in successful!";
-                        // Also reload the username field
-                        usernameEditor.load();
-                    }
-                    msgBox.setMessage(successPhrase);
-                    msgBox.open();
+                log.trace("removeButton.widgetSelected({})", event);
+
+                // Check with the user
+                MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
+                msgBox.setMessage("Are you sure you want to remove this email server from MIST?");
+                if (msgBox.open() == SWT.YES) {
+                    // Remove server from model
+                    EmailModel.removeEmailServer(server);
+                    MIST.getPreferenceManager().postEmailServerRemoved();
                 }
             }
         });
-        addField(connectButton);
+        addField(removeButton);
+    }
 
-        if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
-            // Username (for Gmail) -- not editable
-            usernameEditor = new StringFieldEditor(
-                server.getPrefName(EmailServer.PREF_USERNAME),
-                "&Username:",
-                getFieldEditorParent());
-            usernameEditor.getTextControl(getFieldEditorParent()).setEditable(false);
-            usernameEditor.setErrorMessage("Please sign in with your Google account.");
-            addField(usernameEditor);
-        }
-
-        // Spacer
+    protected void addSpacer() {
+        log.trace("addSpacer()");
         addField(new SpacerFieldEditor(getFieldEditorParent()));
+    }
 
-        // Folder
-        folderEditor = new SmartComboFieldEditor<String>(
-            server.getPrefName(EmailServer.PREF_FOLDER),
-            String.format("&%s:", server.getFolderWord()),
-            getFieldEditorParent(),
-            true);
-        folderEditor.setEmptySelectionAllowed(false);
-        if (!server.getFolderName().isEmpty()) {
-            // We're not connected to the email server, but we know the folder from previous preferences
-            folderEditor.add(server.getFolderName(), server.getFolderName());
-            folderEditor.setSelection(server.getFolderName());
-        }
-        folderEditor.setEnabled(false, getFieldEditorParent());
-        folderEditor.setErrorMessage(
-            String.format("An email %s must be selected.", server.getFolderWord().toLowerCase()));
-        Button folderEditorButton = folderEditor.getButtonControl(getFieldEditorParent());
-        folderEditorButton.setImage(Images.getImage(Images.ICON_RELOAD));
-        folderEditorButton.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent event) {
-                log.trace("folderEditorButton.widgetSelected({})", event);
-                if (connectToServer()) {
-                    MessageBox msgBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-                    msgBox.setMessage(String.format("%ss reloaded from email server.", server.getFolderWord()));
-                    msgBox.open();
-                }
-            }
-        });
-        addField(folderEditor);
-
-        if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
-            // Remove label from imported history
-            removeLabelEditor = new BooleanFieldEditor(
-                server.getPrefName(GmailServer.PREF_LABEL_REMOVE_AFTER_IMPORT),
-                "Remove label from successfully-imported history and ignored messages",
-                getFieldEditorParent());
-            addField(removeLabelEditor);
-        }
-
-        // Tnt User ID (and username)
+    protected void addTntUserEditor() {
+        log.trace("addTntUserEditor()");
         // Note: Tnt Username must be treated specially, since fieldEditor doesn't know about it directly
         // See performOk
         String tntUserIdPrefName = server.getPrefName(EmailServer.PREF_TNT_USERID);
@@ -329,55 +209,39 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         }
         tntUserEditor.setEnabled(false, getFieldEditorParent());
         addField(tntUserEditor);
-
-        // My email addresses
-        myEmailAddressesEditor = new AddEditRemoveListFieldEditor(
-            server.getPrefName(EmailServer.PREF_ADDRESSES_MY),
-            "My email &addresses:",
-            getFieldEditorParent());
-        myEmailAddressesEditor.setAddDialogMessage("Add email address");
-        myEmailAddressesEditor.setAddDialogMessage("Edit email address");
-        myEmailAddressesEditor.setDialogDescription(
-            "These are used to determine whether you wrote to a contact or a contact wrote to you");
-        myEmailAddressesEditor.setMinListSize(1);
-        myEmailAddressesEditor.setErrorMessage("'My email addresses' must contain at least one email address.");
-        addField(myEmailAddressesEditor);
-
-        // Email addresses to ignore
-        ignoreAddressesEditor = new AddEditRemoveListFieldEditor(
-            server.getPrefName(EmailServer.PREF_ADDRESSES_IGNORE),
-            "Email addresses to &ignore:",
-            getFieldEditorParent());
-        ignoreAddressesEditor.setAddDialogMessage("Add email address to ignore");
-        ignoreAddressesEditor.setEditDialogMessage("Edit email address to ignore");
-        ignoreAddressesEditor.setDialogDescription(
-            "Emails to or from these addresses will not be imported;"
-                + System.lineSeparator()
-                + "(Use * for any string and ? for any character)");
-        addField(ignoreAddressesEditor);
-
-        // Spacer
-        addField(new SpacerFieldEditor(getFieldEditorParent()));
-
-        // Delete button
-        deleteButton = new ButtonFieldEditor("&Delete this Email Server...", getFieldEditorParent());
-        deleteButton.getButton().addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent event) {
-                log.trace("deleteButton.widgetSelected({})", event);
-
-                // Check with the user
-                MessageBox msgBox = new MessageBox(getShell(), SWT.YES | SWT.NO | SWT.ICON_WARNING);
-                msgBox.setMessage("Are you sure you want to DELETE this email server?");
-                if (msgBox.open() == SWT.YES) {
-                    // Remove server from model
-                    EmailModel.removeEmailServer(server);
-                    MIST.getPreferenceManager().postEmailServerRemoved();
-                }
-            }
-        });
-        addField(deleteButton);
     }
+
+    protected void addUsernameEditor() {
+        log.trace("addUsernameEditor()");
+        usernameEditor = new StringFieldEditor(
+            server.getPrefName(EmailServer.PREF_USERNAME),
+            "&Username:",
+            getFieldEditorParent());
+        usernameEditor.setEmptyStringAllowed(false);
+        usernameEditor.setErrorMessage("Username may not be empty.");
+        addField(usernameEditor);
+    }
+
+    protected boolean connectToServer() {
+        log.trace("connectToServer()");
+        savePageSettings();
+
+        Util.connectToEmailServer(server, false);
+        boolean success = server.isConnected();
+        if (success) {
+            // Do custom stuff!
+            onSuccessfulConnection();
+
+            // All done with the server for now
+            server.disconnect();
+        }
+        return success;
+    }
+
+    @Override
+    abstract protected void createFieldEditors();
+
+    abstract protected void onSuccessfulConnection();
 
     @Override
     public boolean performOk() {
@@ -386,33 +250,20 @@ public class EmailServerPreferencePage extends FieldEditorPreferencePage {
         if (ok) {
             // Save the Tnt username; the tntUserEditor doesn't know to do this!
             if (tntUserEditor != null) // We may not have loaded the page!
-                MIST.getPrefs().setValue(
-                    server.getPrefName(EmailServer.PREF_TNT_USERNAME),
-                    tntUserEditor.getSelectionValue());
+                server.setTntUsername(tntUserEditor.getSelectionValue());
         }
         return ok;
     }
 
-    private void savePageSettings() {
+    protected void savePageSettings() {
         log.trace("savePageSettings()");
         server.setEnabled(enabledEditor.getBooleanValue());
         server.setNickname(nicknameEditor.getStringValue());
         server.setUsername(usernameEditor.getStringValue());
-        server.setFolderName(folderEditor.getSelectionItem());
         server.setTntUserId(tntUserEditor.getSelectionItem());
         server.setTntUsername(tntUserEditor.getSelectionValue());
         server.setMyAddresses(myEmailAddressesEditor.getItems());
         server.setIgnoreAddresses(ignoreAddressesEditor.getItems());
-
-        if (EmailServer.TYPE_IMAP.equals(server.getType())) {
-            ((ImapServer) server).setHost(hostEditor.getStringValue());
-            ((ImapServer) server).setPort(portEditor.getStringValue());
-            ((ImapServer) server).setPassword(passwordEditor.getPassword());
-            ((ImapServer) server).setPasswordPrompt(passwordEditor.isPrompt());
-            ((ImapServer) server).setUseSsl(useSslEditor.getBooleanValue());
-        } else if (EmailServer.TYPE_GMAIL.equals(server.getType())) {
-            ((GmailServer) server).setLabelRemoveAfterImport(removeLabelEditor.getBooleanValue());
-        }
     }
 
     @Override

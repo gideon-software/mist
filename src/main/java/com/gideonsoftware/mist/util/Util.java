@@ -25,7 +25,6 @@ import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +36,6 @@ import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
@@ -46,20 +44,17 @@ import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.model.data.EmailServer;
-import com.gideonsoftware.mist.model.data.PasswordData;
+import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.util.ui.MistProgressMonitorDialog;
-import com.gideonsoftware.mist.util.ui.PasswordInputDialog;
 
 class EmailConnectionRunnable implements IRunnableWithProgress {
 
     private EmailServer server;
-    private boolean openFolder;
     private boolean loadMessageList;
 
-    public EmailConnectionRunnable(EmailServer server, boolean openFolder, boolean loadMessageList) {
+    public EmailConnectionRunnable(EmailServer server, boolean loadMessageList) {
         this.server = server;
-        this.openFolder = openFolder;
         this.loadMessageList = loadMessageList;
     }
 
@@ -70,17 +65,16 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
             IProgressMonitor.UNKNOWN);
         try {
             server.connect();
-            if (server.isConnected() && openFolder && !server.getFolderName().isEmpty()) {
-                if (EmailServer.TYPE_GMAIL.equals(server.getType()))
-                    monitor.setTaskName(String.format("%s: Loading label...", server.getNickname()));
-                else
+            if (server.isConnected() && loadMessageList) {
+
+                if (EmailServer.TYPE_IMAP.equals(server.getType())
+                    && !((ImapServer) server).getFolderName().isEmpty()) {
                     monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
-                server.openFolder();
-                if (loadMessageList) {
-                    monitor.setTaskName(
-                        String.format("%s: Loading message list... (this may take some time)", server.getNickname()));
-                    server.loadMessageList();
+                    ((ImapServer) server).openFolder();
                 }
+
+                monitor.setTaskName(String.format("%s: Loading message list...", server.getNickname()));
+                server.loadMessageList();
             }
         } catch (EmailServerException e) {
             throw new InvocationTargetException(e);
@@ -117,13 +111,11 @@ public class Util {
      * 
      * @param emailServer
      *            the email server to connect to
-     * @param openFolder
-     *            true if the email server's folder should be opened; false if not
      * @param loadMessageList
      *            true if we should load the message list; false if not
      */
-    public static void connectToEmailServer(EmailServer emailServer, boolean openFolder, boolean loadMessageList) {
-        log.trace("connectToEmailServer({},{},{})", emailServer, openFolder, loadMessageList);
+    public static void connectToEmailServer(EmailServer emailServer, boolean loadMessageList) {
+        log.trace("connectToEmailServer({},{})", emailServer, loadMessageList);
 
         if (emailServer == null)
             return;
@@ -135,7 +127,7 @@ public class Util {
                     MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(
                         Display.getDefault().getActiveShell());
                     dialog.setTitle("Connecting");
-                    dialog.run(true, false, new EmailConnectionRunnable(emailServer, openFolder, loadMessageList));
+                    dialog.run(true, false, new EmailConnectionRunnable(emailServer, loadMessageList));
                 } catch (InvocationTargetException e) {
                     String msg = String.format(
                         "Unable to connect to email server '%s'.%nPlease check your settings and try again.",
@@ -185,41 +177,6 @@ public class Util {
             log.debug("Connection to TntConnect database canceled.");
             TntDb.disconnect();
         }
-    }
-
-    /**
-     * Prompts the user for their email password
-     * 
-     * @param serverNickname
-     *            Nickname of the email server to connect to
-     * 
-     * @return The user-supplied password data or null if the user canceled the operation.
-     */
-    public static PasswordData promptForEmailPassword(String serverNickname) {
-        log.trace("promptForEmailPassword({})", serverNickname);
-
-        // We need to use syncExec to get at the shell to prompt the user.
-        // Thus this reference to passwordData needs to be thread-safe.
-        // syncExec should block, regardless, but this works.
-        final AtomicReference<PasswordData> passwordData = new AtomicReference<PasswordData>();
-
-        Display.getDefault().syncExec(new Runnable() {
-            @Override
-            public void run() {
-                PasswordInputDialog dlg = new PasswordInputDialog(
-                    Display.getDefault().getActiveShell(),
-                    "Email Server Password Required",
-                    String.format("Enter your password for '%s'", serverNickname),
-                    "",
-                    null);
-                int result = dlg.open();
-                if (result == Window.OK)
-                    passwordData.set(dlg.getPasswordData());
-                else
-                    passwordData.set(null);
-            }
-        });
-        return passwordData.get();
     }
 
     /**

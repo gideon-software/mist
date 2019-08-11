@@ -22,10 +22,11 @@ package com.gideonsoftware.mist.model.data;
 
 import java.util.Properties;
 
-import javax.mail.Message;
+import javax.mail.Folder;
 import javax.mail.MessagingException;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
+import javax.mail.Store;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.preferences.Preferences;
-import com.gideonsoftware.mist.util.Util;
 
 /**
  * 
@@ -41,35 +41,38 @@ import com.gideonsoftware.mist.util.Util;
 public class ImapServer extends EmailServer {
     private static Logger log = LogManager.getLogger();
 
+    public final static String PREF_FOLDER = "folder";
     public final static String PREF_HOST = "host";
     public final static String PREF_PASSWORD = "password";
-    public final static String PREF_PASSWORD_PROMPT = "password.prompt";
     public final static String PREF_PORT = "port";
     public final static String PREF_USESSL = "usessl";
 
     public final static int DEFAULT_PORT_IMAP = 143;
     public final static int DEFAULT_PORT_IMAPS = 993;
 
+    private String folderName;
     private String host;
     private String password;
-    private boolean passwordPrompt;
     private String port;
     private boolean useSsl;
 
+    private Store store;
+    private Folder folder;
+
     public ImapServer(int id) {
         super(id, EmailServer.TYPE_IMAP);
+
+        folder = null;
+        store = null;
 
         //
         // Load preferences, providing reasonable defaults
         //
 
         Preferences prefs = MIST.getPrefs();
+        folderName = prefs.getString(getPrefName(PREF_FOLDER));
         host = prefs.getString(getPrefName(PREF_HOST));
-
-        // Set default password prompt
-        prefs.setDefault(getPrefName(PREF_PASSWORD_PROMPT), true);
-        passwordPrompt = prefs.getBoolean(getPrefName(PREF_PASSWORD_PROMPT));
-        password = passwordPrompt ? "" : prefs.getString(getPrefName(PREF_PASSWORD));
+        password = prefs.getString(getPrefName(PREF_PASSWORD));
 
         // Set default SSL use
         prefs.setDefault(getPrefName(PREF_USESSL), true);
@@ -78,6 +81,33 @@ public class ImapServer extends EmailServer {
         // Set default port
         prefs.setDefault(getPrefName(PREF_PORT), useSsl ? DEFAULT_PORT_IMAPS : DEFAULT_PORT_IMAP);
         port = prefs.getString(getPrefName(PREF_PORT));
+    }
+
+    private void closeFolders() {
+        log.trace("{{}} closeFolders()", getNickname());
+        if (store != null) {
+            try {
+                if (folder != null && folder.isOpen())
+                    folder.close();
+            } catch (MessagingException e) {
+                log.warn("{{}} Unable to close folder '{}'", getNickname(), folder.getName(), e);
+            } finally {
+                folder = null;
+            }
+        }
+    }
+
+    private void closeStore() {
+        log.trace("{{}} closeStore()", getNickname());
+        if (store != null) {
+            try {
+                store.close();
+            } catch (MessagingException e) {
+                log.warn("{{}} Unable to close store", getNickname(), e);
+            } finally {
+                store = null;
+            }
+        }
     }
 
     @Override
@@ -107,12 +137,7 @@ public class ImapServer extends EmailServer {
         props.setProperty("mail.host", getHost());
         props.setProperty("mail.port", getPort());
         props.setProperty("mail.user", getUsername());
-        props.setProperty("mail.password", getPassword()); // Will prompt user if needed
-
-        if (password == null) {
-            log.debug("{{}} User has not provided a password; canceling connection attempt.", getNickname());
-            return;
-        }
+        props.setProperty("mail.password", getPassword());
 
         if (useSsl) {
             // Don't verify server identity. This is required for self-signed
@@ -140,41 +165,48 @@ public class ImapServer extends EmailServer {
 
     }
 
+    @Override
+    public void disconnect() {
+        log.trace("{{}} disconnect()", getNickname());
+        closeFolders();
+        closeStore();
+    }
+
+    public Folder[] getFolderList() {
+        log.trace("{{}} getFolderList()", getNickname());
+        if (!isConnected()) {
+            log.error("{{}} Not connected to email server", getNickname());
+            return new Folder[0];
+        }
+        try {
+            return store.getDefaultFolder().list("*");
+        } catch (MessagingException | IllegalStateException e) {
+            log.error("{{}} Unable to retrieve folder list", getNickname());
+            return new Folder[0];
+        }
+    }
+
+    public String getFolderName() {
+        if (folderName == null)
+            return "";
+        return folderName;
+    }
+
     public String getHost() {
         return host;
     }
 
     @Override
-    public Message getNextMessage() throws EmailServerException {
+    public EmailMessage getNextMessage() throws EmailServerException {
         log.trace("{{}} getNextMessage()", getNickname());
         try {
-            return folder.getMessage(++currentMessageNumber);
+            return new ImapMessage(ImapServer.this, folder.getMessage(++currentMessageNumber));
         } catch (MessagingException e) {
             throw new EmailServerException(e);
         }
     }
 
-    /**
-     * Returns the password for this server connection, prompting the user if necessary.
-     * 
-     * @return the password for this server connection
-     */
     public String getPassword() {
-        log.trace("{{}} getPassword()", getNickname());
-
-        // Get password if prompting is required
-        if (isPasswordNeeded()) {
-            PasswordData passwordData = Util.promptForEmailPassword(getNickname());
-            // If the user canceled, set an empty string password
-            if (passwordData != null) {
-                // Set the password and whether to prompt in the future
-                setPassword(passwordData.getPassword());
-                setPasswordPrompt(!passwordData.isSavePassword());
-            } else {
-                setPassword("");
-            }
-        }
-
         return password;
     }
 
@@ -182,23 +214,9 @@ public class ImapServer extends EmailServer {
         return port;
     }
 
-    public boolean isPasswordNeeded() {
-        log.trace("{{}} isPasswordNeeded()", getNickname());
-        // If there is no email password prompt (and the password isn't empty), no password is needed
-        if (!isPasswordPrompt() && !password.isEmpty())
-            return false;
-
-        // If there is an email password prompt, do we already have the password
-        // from a previous successful connection? (email password is not empty)
-        // Note: A failed prompted connection sets the password to empty as well
-        if (password.isEmpty())
-            return true;
-        else
-            return false;
-    }
-
-    public boolean isPasswordPrompt() {
-        return passwordPrompt;
+    @Override
+    public boolean isConnected() {
+        return store != null;
     }
 
     public boolean isUseSsl() {
@@ -216,6 +234,41 @@ public class ImapServer extends EmailServer {
         }
     }
 
+    public void openFolder() throws EmailServerException {
+        log.trace("openFolder()");
+
+        if (!isConnected())
+            throw new EmailServerException(String.format("{%s} Not connected", getNickname()));
+
+        if (folder != null && folder.isOpen()) {
+            // Close & reopen the folder (to make sure messages are property expunged
+            log.trace("{{}} Folder '{}' already open; closing & reopening...", getNickname(), folder.getName());
+            try {
+                folder.close();
+            } catch (MessagingException e) {
+                throw new EmailServerException(e);
+            }
+        }
+
+        if (!getFolderName().isEmpty()) {
+            try {
+                folder = store.getFolder(getFolderName());
+                folder.open(Folder.READ_ONLY);
+            } catch (MessagingException e) {
+                folder = null;
+                throw new EmailServerException(e);
+            }
+        } else {
+            log.warn("{{}} Could not open folder because folder name is blank", getNickname());
+        }
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
+        if (folderName != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_FOLDER), folderName);
+    }
+
     public void setHost(String host) {
         this.host = host;
         if (host != null)
@@ -226,11 +279,6 @@ public class ImapServer extends EmailServer {
         this.password = password;
         if (password != null)
             MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD), password);
-    }
-
-    public void setPasswordPrompt(boolean prompt) {
-        this.passwordPrompt = prompt;
-        MIST.getPrefs().setValue(getPrefName(PREF_PASSWORD_PROMPT), prompt);
     }
 
     public void setPort(String port) {

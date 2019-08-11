@@ -91,17 +91,17 @@ dependencies {
     // https://mvnrepository.com/artifact/net.sf.jopt-simple/jopt-simple
     implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.5'
 
-    // Email server access
+    // IMAP server access & Gmail server response parsing functions
     // https://mvnrepository.com/artifact/com.sun.mail/javax.mail
     implementation group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2' 
-    // https://mvnrepository.com/artifact/com.sun.mail/gimap
-    implementation group: 'com.sun.mail', name: 'gimap', version: '1.6.3'    
 
     // Google (Gmail) authentication    
-    // https://developers.google.com/api-client-library/java/apis/oauth2/v1
     implementation group: 'com.google.apis', name: 'google-api-services-oauth2', version: 'v2-rev20190313-1.30.1'
     implementation group: 'com.google.oauth-client', name:'google-oauth-client-java6', version: '1.23.0'
     implementation group: 'com.google.oauth-client', name:'google-oauth-client-jetty', version: '1.23.0'
+    
+    // Gmail API Client Library
+    implementation group: 'com.google.apis', name: 'google-api-services-gmail', version: 'v1-rev105-1.25.0'
     
     // HTML email parsing
     // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html

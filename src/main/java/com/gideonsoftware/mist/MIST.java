@@ -209,6 +209,10 @@ public class MIST {
         return appDataDir;
     }
 
+    public static String getAppNameWithVersion() {
+        return String.format("%s %s", APP_NAME, getAppVersion());
+    }
+
     public static String getAppVersion() {
         String ver = MIST.class.getPackage().getImplementationVersion();
         if (ver == null)

@@ -32,7 +32,8 @@ import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.data.EmailServer;
 import com.gideonsoftware.mist.preferences.preferencepages.EmailPreferencePage;
-import com.gideonsoftware.mist.preferences.preferencepages.EmailServerPreferencePage;
+import com.gideonsoftware.mist.preferences.preferencepages.GmailServerPreferencePage;
+import com.gideonsoftware.mist.preferences.preferencepages.ImapServerPreferencePage;
 import com.gideonsoftware.mist.preferences.preferencepages.LoggingPreferencePage;
 import com.gideonsoftware.mist.preferences.preferencepages.TntDbPreferencePage;
 
@@ -72,9 +73,19 @@ public class MistPreferenceManager extends PreferenceManager {
 
     public void addEmailServerNode(int serverId, boolean refreshAndSelect) {
         log.trace("addEmailServerNode({},{})", serverId, refreshAndSelect);
-        PreferenceNode serverNode = new SmartPreferenceNode(
-            EmailServer.getPrefPrefix(serverId),
-            new EmailServerPreferencePage(serverId));
+
+        PreferenceNode serverNode;
+
+        String type = EmailModel.getEmailServerType(serverId);
+        if (EmailServer.TYPE_IMAP.equals(type))
+            serverNode = new SmartPreferenceNode(
+                EmailServer.getPrefPrefix(serverId),
+                new ImapServerPreferencePage(serverId));
+        else // if (EmailServer.TYPE_GMAIL.equals(type))
+            serverNode = new SmartPreferenceNode(
+                EmailServer.getPrefPrefix(serverId),
+                new GmailServerPreferencePage(serverId));
+
         addTo(PREFNODE_EMAIL, serverNode);
         if (refreshAndSelect) {
             refreshPreferenceDialogTree();

@@ -21,6 +21,7 @@
 package com.gideonsoftware.mist.model.data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 /**
  * Base class for message sources.
@@ -57,6 +58,38 @@ public class MessageSource {
         this.subject = messageSource.subject;
         this.body = messageSource.body;
         this.addExistingHistory = messageSource.addExistingHistory;
+    }
+
+    public static String guessFromName(String name) {
+        if (name == null || name.isBlank())
+            return "Contact";
+
+        // Add static-sized array to ArrayList for easier manipulation
+        String[] nameArr = name.trim().split(" ");
+        ArrayList<String> names = new ArrayList<String>();
+        for (int i = 0; i < nameArr.length; i++)
+            names.add(nameArr[i]);
+
+        // Remove unicode characters
+        while (names.size() > 0 && names.get(0).contains("=?UTF"))
+            names.remove(0);
+
+        if (names.size() == 0)
+            return "Contact";
+        else if (names.size() == 1)
+            return name.trim();
+        else {
+            // Check for first initial, like "M. Night Shyamalan"
+            if (names.get(0).length() <= 2) // Likely a first initial
+                return String.format("%s %s", names.get(0), names.get(1));
+
+            // Check for "Last, First"
+            if (',' == names.get(0).charAt(names.get(0).length() - 1))
+                return names.get(1);
+
+            // Assume just a regular first name
+            return names.get(0);
+        }
     }
 
     /**
@@ -99,6 +132,10 @@ public class MessageSource {
 
     public String getSubject() {
         return subject;
+    }
+
+    public String guessFromName() {
+        return guessFromName(getFromName().trim());
     }
 
     public boolean isAddExistingHistory() {

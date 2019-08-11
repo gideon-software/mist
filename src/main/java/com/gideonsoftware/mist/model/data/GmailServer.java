@@ -27,18 +27,11 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
-import java.util.TreeSet;
 import java.util.UUID;
-
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,9 +59,13 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
-import com.sun.mail.gimap.GmailMessage;
-import com.sun.mail.gimap.GmailMsgIdTerm;
-import com.sun.mail.gimap.GmailThrIdTerm;
+import com.google.api.services.gmail.Gmail;
+import com.google.api.services.gmail.GmailScopes;
+import com.google.api.services.gmail.model.Label;
+import com.google.api.services.gmail.model.ListLabelsResponse;
+import com.google.api.services.gmail.model.ListMessagesResponse;
+import com.google.api.services.gmail.model.Message;
+import com.google.api.services.oauth2.Oauth2Scopes;
 
 /**
  * 
@@ -77,6 +74,8 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
 
     // Preferences
+    public final static String PREF_LABEL_ID = "label.id";
+    public final static String PREF_LABEL_NAME = "label.name";
     public final static String PREF_LABEL_REMOVE_AFTER_IMPORT = "label.removeafterimport";
     public final static String PREF_UNIQUE_ID = "uniqueid";
 
@@ -84,9 +83,9 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String CREDENTIALS_FILE_PATH = "google/client_secrets.json";
     private static final List<String> SCOPES = Arrays.asList(
-        "https://mail.google.com/", // Needed for IMAP access
+        GmailScopes.GMAIL_MODIFY, // Needed to read mail & modify labels
         "openid", // Needed to get id_token for user
-        "https://www.googleapis.com/auth/userinfo.email"); // Needed to get user's email
+        Oauth2Scopes.USERINFO_EMAIL); // Needed to get user's email
     private static final HttpTransport HTTP_TRANSPORT;
     private static final GoogleClientSecrets CLIENT_SECRETS;
     private static final FileDataStoreFactory DATA_STORE_FACTORY;
@@ -131,22 +130,29 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             Collections.singletonList(CLIENT_SECRETS.getDetails().getClientId())).build();
     }
 
-    private Long[] messageIds;
-    private Folder allMailFolder;
+    private List<Message> messages;
+
+    private String labelId;
+    private String labelName;
+
+    private Gmail gmailService;
 
     private boolean labelRemoveAfterImport = true;
     private String uniqueId = "";
 
     public GmailServer(int id) {
         super(id, EmailServer.TYPE_GMAIL);
-        allMailFolder = null;
-        messageIds = new Long[0];
+
+        gmailService = null;
+        messages = null;
 
         //
         // Load values from preferences & set defaults
         //
 
         Preferences prefs = MIST.getPrefs();
+        labelId = prefs.getString(getPrefName(PREF_LABEL_ID));
+        labelName = prefs.getString(getPrefName(PREF_LABEL_NAME));
 
         // Set default label-remove-after-import
         prefs.setDefault(getPrefName(PREF_LABEL_REMOVE_AFTER_IMPORT), true);
@@ -219,25 +225,6 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     }
 
     @Override
-    public void closeFolders() {
-        log.trace("{{}} closeFolders()", getNickname());
-        super.closeFolders();
-        if (store != null) {
-            try {
-                if (allMailFolder != null && allMailFolder.isOpen())
-                    allMailFolder.close();
-            } catch (MessagingException e) {
-                log.warn("{{}} Unable to close folder '{}'", getNickname(), allMailFolder.getName(), e);
-            } finally {
-                allMailFolder = null;
-            }
-        }
-    }
-
-    /**
-     * @see https://javaee.github.io/javamail/OAuth2
-     */
-    @Override
     public void connect() throws EmailServerException {
         log.trace("{{}} connect()", getNickname());
 
@@ -248,39 +235,21 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         log.debug("{{}} Connecting to Gmail...", getNickname());
 
-        store = null;
-        folder = null;
         currentMessageNumber = 0;
         totalMessages = 0;
-
-        Properties props = new Properties();
-        props.put("mail.gimap.ssl.enable", "true");
-        props.put("mail.gimap.auth.mechanisms", "XOAUTH2");
-        Session sess = Session.getInstance(props, null);
-
-        try {
-            store = sess.getStore("gimap"); // Defaults to using SSL to connect to "imap.gmail.com"
-        } catch (NoSuchProviderException e) {
-            throw new EmailServerException(e);
-        }
 
         Credential credential = null;
         try {
             credential = authorize();
         } catch (TokenResponseException e) {
-            closeStore();
             throw new EmailServerException(e.getDetails().getErrorDescription(), e);
         } catch (IOException e) {
-            closeStore();
             throw new EmailServerException(e);
         }
 
-        try {
-            store.connect("imap.gmail.com", username, credential.getAccessToken());
-        } catch (MessagingException e) {
-            closeStore();
-            throw new EmailServerException(e);
-        }
+        // Build a new authorized API client service
+        gmailService = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential) //
+            .setApplicationName(MIST.getAppNameWithVersion()).build();
 
         // Add property change listeners
         TntDb.addPropertyChangeListener(this);
@@ -290,24 +259,61 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     @Override
     public void disconnect() {
         log.trace("{{}} disconnect()", getNickname());
-        super.disconnect();
+        gmailService = null;
         TntDb.removePropertyChangeListener(this);
         HistoryModel.removePropertyChangeListener(this);
     }
 
-    @Override
-    public Message getNextMessage() throws EmailServerException {
-        log.trace("{{}} getNextMessage()", getNickname());
-        Long msgId = messageIds[currentMessageNumber++];
+    public String getLabelId() {
+        if (labelId == null)
+            return "";
+        return labelId;
+    }
+
+    public List<Label> getLabelList() throws EmailServerException {
+        log.trace("{{}} getLabelList()", getNickname());
+
+        ListLabelsResponse listResponse;
         try {
-            return allMailFolder.search(new GmailMsgIdTerm(msgId))[0];
-        } catch (MessagingException e) {
+            listResponse = gmailService.users().labels().list("me").execute();
+        } catch (IOException e) {
             throw new EmailServerException(e);
         }
+        List<Label> labelList = listResponse.getLabels();
+        labelList.sort((label1, label2) -> label1.getName().compareTo(label2.getName()));
+        return labelList;
+    }
+
+    public String getLabelName() {
+        if (labelName == null)
+            return "";
+        return labelName;
+    }
+
+    @Override
+    public EmailMessage getNextMessage() throws EmailServerException {
+        log.trace("{{}} getNextMessage()", getNickname());
+
+        Message message = messages.get(currentMessageNumber++);
+
+        // First load the full message, as we've thus far we only have a snippet
+        try {
+            message = gmailService.users().messages().get("me", message.getId()).setFormat("FULL").execute();
+        } catch (IOException e) {
+            throw new EmailServerException(e);
+        }
+
+        // Use the GmailMessage class to parse the message
+        return new GmailMessage(GmailServer.this, message);
     }
 
     public String getUniqueId() {
         return uniqueId;
+    }
+
+    @Override
+    public boolean isConnected() {
+        return gmailService != null;
     }
 
     public boolean isLabelRemoveAfterImport() {
@@ -317,69 +323,28 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     @Override
     public void loadMessageList() throws EmailServerException {
         log.trace("{{}} loadMessageList()", getNickname());
+
+        List<String> labelIds = Arrays.asList(getLabelId());
+        messages = new ArrayList<Message>();
+        ListMessagesResponse listResponse;
         try {
-            // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
-            // labeled, but not subsequent messages (even though it looks like it in the Gmail interface.
-            // Thus, we must get not only the messages in this folder, but all messages in their threads as well.
-
-            // First, get all the thread IDs for the messages in our folder
-            TreeSet<Long> thrIdSet = new TreeSet<Long>();
-            for (Message msg : folder.getMessages()) {
-                long thrId = ((GmailMessage) msg).getThrId();
-                if (thrIdSet.add(thrId))
-                    log.trace("Adding Gmail thread ID " + thrId);
-            }
-
-            // Now, go back through the thread IDs and get all the messages
-            // First open the All Mail Folder
-            openAllMailFolder();
-
-            TreeSet<Long> msgIdSet = new TreeSet<Long>();
-            // For each thread ID
-            for (long thrId : thrIdSet) {
-                // Find all messages with that thread ID
-                for (Message msg : allMailFolder.search(new GmailThrIdTerm(thrId))) {
-                    GmailMessage gMsg = (GmailMessage) msg;
-                    // Try to add them to our message set
-                    if (msgIdSet.add(gMsg.getMsgId())) {
-                        log.trace(
-                            String.format(
-                                "Adding Gmail message ID %s from thread ID %s",
-                                gMsg.getMsgId(),
-                                gMsg.getThrId()));
-                    }
+            listResponse = gmailService.users().messages().list("me").setLabelIds(labelIds).execute();
+            while (listResponse.getMessages() != null) {
+                messages.addAll(listResponse.getMessages());
+                String pageToken = listResponse.getNextPageToken();
+                if (pageToken != null) {
+                    listResponse = gmailService.users().messages().list("me").setLabelIds(labelIds) //
+                        .setPageToken(pageToken).execute();
+                } else {
+                    break;
                 }
             }
-            messageIds = msgIdSet.toArray(new Long[0]);
-            totalMessages = messageIds.length;
-            currentMessageNumber = 0;
-        } catch (MessagingException e) {
+        } catch (IOException e) {
             throw new EmailServerException(e);
         }
-    }
 
-    public void openAllMailFolder() throws EmailServerException {
-        log.trace("{{}} openAllMailFolder()", getNickname());
-
-        if (store == null || !store.isConnected()) {
-            throw new EmailServerException(String.format("{%s} Store not available", getNickname()));
-        }
-
-        if (allMailFolder != null && allMailFolder.isOpen()) {
-            log.trace("{{}} Folder 'All Mail' already open", getNickname());
-            return;
-        }
-
-        try {
-            allMailFolder = store.getFolder("[Gmail]/All Mail");
-            // We eeed to be able to "write" to remove labels;
-            // Note that for GmailServer, all email messages are loaded from allMailFolder, not folder.
-            // So folder can be READ_ONLY, but allMailFolder must be READ_WRITE.
-            allMailFolder.open(Folder.READ_WRITE);
-        } catch (MessagingException e) {
-            allMailFolder = null;
-            throw new EmailServerException(e);
-        }
+        totalMessages = messages.size();
+        currentMessageNumber = 0;
     }
 
     @Override
@@ -421,14 +386,19 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
     public void removeLabel(MessageSource messageSource) {
         log.trace("{{}} removeLabel()", getNickname());
-        Message msg = ((EmailMessage) messageSource).getMessage();
-        GmailMessage gMsg = (GmailMessage) msg;
-        String[] labels = { folderName };
-        try {
-            gMsg.setLabels(labels, false);
-        } catch (MessagingException e) {
-            log.error("Unable to remove label '{}' from message '{}'", folderName, messageSource, e);
-        }
+        // TODO
+    }
+
+    public void setLabelId(String labelId) {
+        this.labelId = labelId;
+        if (labelId != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_LABEL_ID), labelId);
+    }
+
+    public void setLabelName(String labelName) {
+        this.labelName = labelName;
+        if (labelName != null)
+            MIST.getPrefs().setValue(getPrefName(PREF_LABEL_NAME), labelName);
     }
 
     public void setLabelRemoveAfterImport(boolean labelRemoveAfterImport) {
