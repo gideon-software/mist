@@ -87,7 +87,7 @@ public class TntDb {
     private static boolean importing = false;
 
     // Other objects
-    private static String dbPath = MIST.getPrefs().getString(PREF_TNT_DBPATH);
+    private static String dbPath = null;
     private static Connection conn = null;
     private static boolean useCommit = true;
 
