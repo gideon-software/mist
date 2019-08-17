@@ -41,6 +41,53 @@ public class HistoryManager {
     }
 
     /**
+     * Adds existing Tnt history data (specified by {@code historyId} to the specified {@code history}.
+     * 
+     * @param history
+     *            The history to add existing Tnt history data to; null returns false
+     * @param historyId
+     *            The history ID; null returns false
+     * @return True if the history data was successfully added, false if not
+     */
+    private static boolean addTntDataToHistory(History history, Integer historyId) throws SQLException {
+        log.trace("addTntDataToHistory({},{})", history, historyId);
+
+        if (history == null || historyId == null)
+            return false;
+
+        String query = String.format(
+            "SELECT * FROM [History] JOIN [HistoryContact] "
+                + "ON ([History].[HistoryID] = [HistoryContact].[HistoryID]) "
+                + "WHERE [HistoryID] = %s",
+            historyId);
+        ResultSet rs = TntDb.runQuery(query);
+        if (!rs.first())
+            return false;
+
+        history.setHistoryId(rs.getInt("HistoryID"));
+        history.setLastEdit(TntDb.timestampToDate(rs.getTimestamp("LastEdit")));
+        history.setCampaignId(rs.getInt("CampaignID"));
+        history.setTaskTypeId(rs.getInt("TaskTypeID"));
+        history.setDescription(rs.getString("Description")); // X = UCanAccess fix for reserved word (TODO: still?)
+        history.setHistoryDate(TntDb.timestampToDate(rs.getTimestamp("HistoryDate")));
+        history.setNotes(rs.getString("Notes"));
+        history.setHistoryResultId(rs.getInt("HistoryResultID"));
+        history.setLoggedByUserId(rs.getInt("LoggedByUserID"));
+        history.setInMpdWeeklyUpdate(rs.getBoolean("InMPDWeeklyUpdate"));
+        history.setChallenge(rs.getBoolean("IsChallenge"));
+        history.setThank(rs.getBoolean("IsThank"));
+        history.setMassMailing(rs.getBoolean("IsMassMailing"));
+        history.setAutoGenCode(rs.getString("AutoGenCode"));
+        history.setDataChangeLogAsCsv(rs.getString("DataChangeLogAsCsv"));
+        history.setPledgeChangeAmount(TntDb.floatToMoney(rs.getFloat("PledgeChangeAmount")));
+        history.setPledgeChangeCurrencyId(rs.getInt("PledgeChangeCurrencyID"));
+        history.setBasePledgeChangeAmount(TntDb.floatToMoney(rs.getFloat("BasePledgeChangeAmount")));
+        history.setBaseCurrencyId(rs.getInt("BaseCurrencyID"));
+        history.getContactInfo().setId(rs.getInt("ContactID")); // Contact name and email not set
+        return true;
+    }
+
+    /**
      * Creates a new history in the Tnt database.
      * <p>
      * If the history was previously created (same contact ID, date and history result), it will not be created again.
@@ -79,7 +126,7 @@ public class HistoryManager {
 
         // Check for duplicate data (don't insert this twice!)
         // Two history records with the same contact, date and result are considered identical.
-        // (That way you can update description and notes without creating duplicates)
+        // (That way you can update description, notes, etc. without creating duplicates)
         History existingHistory = get(
             history.getContactInfo().getId(),
             history.getTaskTypeId(),
@@ -87,8 +134,9 @@ public class HistoryManager {
             history.getHistoryResultId());
         if (existingHistory != null) {
             log.debug("History already exists in TntConnect.");
-            history.setHistoryId(existingHistory.getHistoryId());
             history.setStatus(History.STATUS_EXISTS);
+            // Replace values in history with values from TntConnect (for editing in MIST)
+            addTntDataToHistory(history, existingHistory.getHistoryId());
             return;
         }
 
@@ -214,40 +262,11 @@ public class HistoryManager {
     public static History get(Integer historyId) throws SQLException {
         log.trace("get({})", historyId);
 
-        if (historyId == null)
-            return null;
-
-        String query = String.format(
-            "SELECT * FROM [History] JOIN [HistoryContact] "
-                + "ON ([History].[HistoryID] = [HistoryContact].[HistoryID]) "
-                + "WHERE [HistoryID] = %s",
-            historyId);
-        ResultSet rs = TntDb.runQuery(query);
-        if (!rs.first())
-            return null;
-
         History history = new History();
-        history.setHistoryId(rs.getInt("HistoryID"));
-        history.setLastEdit(TntDb.timestampToDate(rs.getTimestamp("LastEdit")));
-        history.setCampaignId(rs.getInt("CampaignID"));
-        history.setTaskTypeId(rs.getInt("TaskTypeID"));
-        history.setDescription(rs.getString("Description")); // X = UCanAccess fix for reserved word (TODO: still?)
-        history.setHistoryDate(TntDb.timestampToDate(rs.getTimestamp("HistoryDate")));
-        history.setNotes(rs.getString("Notes"));
-        history.setHistoryResultId(rs.getInt("HistoryResultID"));
-        history.setLoggedByUserId(rs.getInt("LoggedByUserID"));
-        history.setInMpdWeeklyUpdate(rs.getBoolean("InMPDWeeklyUpdate"));
-        history.setChallenge(rs.getBoolean("IsChallenge"));
-        history.setThank(rs.getBoolean("IsThank"));
-        history.setMassMailing(rs.getBoolean("IsMassMailing"));
-        history.setAutoGenCode(rs.getString("AutoGenCode"));
-        history.setDataChangeLogAsCsv(rs.getString("DataChangeLogAsCsv"));
-        history.setPledgeChangeAmount(TntDb.floatToMoney(rs.getFloat("PledgeChangeAmount")));
-        history.setPledgeChangeCurrencyId(rs.getInt("PledgeChangeCurrencyID"));
-        history.setBasePledgeChangeAmount(TntDb.floatToMoney(rs.getFloat("BasePledgeChangeAmount")));
-        history.setBaseCurrencyId(rs.getInt("BaseCurrencyID"));
-        history.getContactInfo().setId(rs.getInt("ContactID")); // Contact name and email not set
-        return history;
+        if (addTntDataToHistory(history, historyId))
+            return history;
+        else
+            return null;
     }
 
     /**
