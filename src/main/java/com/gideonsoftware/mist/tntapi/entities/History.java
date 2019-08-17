@@ -79,35 +79,35 @@ public class History {
     public History() {
     }
 
-    public History(History tntHistory) {
-        log.trace("{{}} TntHistory({})", this, tntHistory);
+    public History(History history) {
+        log.trace("{{}} History({})", this, history);
 
         // Database fields
-        this.historyId = tntHistory.historyId;
-        this.lastEdit = tntHistory.lastEdit;
-        this.campaignId = tntHistory.campaignId;
-        this.taskTypeId = tntHistory.taskTypeId;
-        this.description = tntHistory.description;
-        this.historyDate = tntHistory.historyDate;
-        this.notes = tntHistory.notes;
-        this.loggedByUserId = tntHistory.loggedByUserId;
-        this.inMpdWeeklyUpdate = tntHistory.inMpdWeeklyUpdate;
-        this.isChallenge = tntHistory.isChallenge;
-        this.isThank = tntHistory.isThank;
-        this.isMassMailing = tntHistory.isMassMailing;
-        this.autoGenCode = tntHistory.autoGenCode;
-        this.historyResultId = tntHistory.historyResultId;
-        this.dataChangeLogAsCsv = tntHistory.dataChangeLogAsCsv;
-        this.pledgeChangeAmount = tntHistory.pledgeChangeAmount;
-        this.pledgeChangeCurrencyId = tntHistory.pledgeChangeCurrencyId;
-        this.basePledgeChangeAmount = tntHistory.basePledgeChangeAmount;
-        this.baseCurrencyId = tntHistory.baseCurrencyId;
+        this.historyId = history.historyId;
+        this.lastEdit = history.lastEdit;
+        this.campaignId = history.campaignId;
+        this.taskTypeId = history.taskTypeId;
+        this.description = history.description;
+        this.historyDate = history.historyDate;
+        this.notes = history.notes;
+        this.loggedByUserId = history.loggedByUserId;
+        this.inMpdWeeklyUpdate = history.inMpdWeeklyUpdate;
+        this.isChallenge = history.isChallenge;
+        this.isThank = history.isThank;
+        this.isMassMailing = history.isMassMailing;
+        this.autoGenCode = history.autoGenCode;
+        this.historyResultId = history.historyResultId;
+        this.dataChangeLogAsCsv = history.dataChangeLogAsCsv;
+        this.pledgeChangeAmount = history.pledgeChangeAmount;
+        this.pledgeChangeCurrencyId = history.pledgeChangeCurrencyId;
+        this.basePledgeChangeAmount = history.basePledgeChangeAmount;
+        this.baseCurrencyId = history.baseCurrencyId;
 
         // Additional fields
-        this.messageSource = tntHistory.messageSource.cloneObject();
-        this.contactInfo = new ContactInfo(tntHistory.contactInfo);
-        this.status = tntHistory.status;
-        this.statusException = new Exception(tntHistory.statusException);
+        this.messageSource = history.messageSource.cloneObject();
+        this.contactInfo = new ContactInfo(history.contactInfo);
+        this.status = history.status;
+        this.statusException = new Exception(history.statusException);
     }
 
     public String getAutoGenCode() {
