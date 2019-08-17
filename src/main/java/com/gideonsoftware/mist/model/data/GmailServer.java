@@ -41,6 +41,7 @@ import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.tntapi.TntDb;
+import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.util.Util;
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
 import com.google.api.client.auth.oauth2.Credential;
@@ -65,6 +66,7 @@ import com.google.api.services.gmail.model.Label;
 import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.ModifyMessageRequest;
 import com.google.api.services.oauth2.Oauth2Scopes;
 
 /**
@@ -144,7 +146,6 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         super(id, EmailServer.TYPE_GMAIL);
 
         gmailService = null;
-        messages = null;
 
         //
         // Load values from preferences & set defaults
@@ -235,6 +236,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         log.debug("{{}} Connecting to Gmail...", getNickname());
 
+        messages = null;
         currentMessageNumber = 0;
         totalMessages = 0;
 
@@ -298,7 +300,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         // First load the full message, as we've thus far we only have a snippet
         try {
-            message = gmailService.users().messages().get("me", message.getId()).setFormat("FULL").execute();
+            message = gmailService.users().messages().get("me", message.getId()).setFormat("full").execute();
         } catch (IOException e) {
             throw new EmailServerException(e);
         }
@@ -351,42 +353,54 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("{{}} propertyChange({})", getNickname(), event);
 
-        // Disabled in beta until logic is fixed (what if some in thread weren't matched?)
-        /*
-         * if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
-         * // History has been processed
-         * 
-         * // If we're to remove labels after import
-         * if (isLabelRemoveAfterImport()) {
-         * History history = (History) event.getNewValue();
-         * // And this is the history's source server
-         * // And the history is added/exists
-         * if (getId() == history.getMessageSource().getSourceId()
-         * && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
-         * // Remove the label
-         * removeLabel(history.getMessageSource());
-         * }
-         * }
-         * 
-         * } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
-         * // A message has been ignored
-         * 
-         * // If we're to remove labels after import (and also when messages are ignored, btw!)
-         * if (isLabelRemoveAfterImport()) {
-         * MessageSource msg = (MessageSource) event.getNewValue();
-         * // And this is the history's source server
-         * if (getId() == msg.getSourceId()) {
-         * // Remove the label
-         * removeLabel(msg);
-         * }
-         * }
-         * }
-         */
+        if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
+            // History has been processed
+
+            // If we're to remove labels after import
+            if (isLabelRemoveAfterImport()) {
+                History history = (History) event.getNewValue();
+                // And this is the history's source server
+                // And the history is added/exists
+                if (getId() == history.getMessageSource().getSourceId()
+                    && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
+                    // Remove the label
+                    try {
+                        removeLabel((GmailMessage) history.getMessageSource());
+                    } catch (EmailServerException e) {
+                        Util.reportError("Gmail error", "Count not remove label", e);
+                    }
+                }
+            }
+
+        } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
+            // A message has been ignored
+
+            // If we're to remove labels after import (and also when messages are ignored, btw!)
+            if (isLabelRemoveAfterImport()) {
+                MessageSource msg = (MessageSource) event.getNewValue();
+                // And this is the history's source server
+                if (getId() == msg.getSourceId()) {
+                    // Remove the label
+                    try {
+                        removeLabel((GmailMessage) msg);
+                    } catch (EmailServerException e) {
+                        Util.reportError("Gmail error", "Count not remove label", e);
+                    }
+                }
+            }
+        }
+
     }
 
-    public void removeLabel(MessageSource messageSource) {
-        log.trace("{{}} removeLabel()", getNickname());
-        // TODO
+    public void removeLabel(GmailMessage gmailMessage) throws EmailServerException {
+        log.trace("{{}} removeLabel({})", getNickname(), gmailMessage);
+        ModifyMessageRequest modRequest = new ModifyMessageRequest().setRemoveLabelIds(Arrays.asList(getLabelId()));
+        try {
+            Message msg = gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest)
+                .execute();
+        } catch (IOException e) {
+            throw new EmailServerException(e);
+        }
     }
 
     public void setLabelId(String labelId) {

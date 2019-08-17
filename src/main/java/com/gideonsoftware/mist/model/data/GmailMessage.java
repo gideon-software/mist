@@ -170,6 +170,17 @@ public class GmailMessage extends EmailMessage {
         }
     }
 
+    /**
+     * Returns a clone of this gmail message
+     * 
+     * @return a clone of this gmail message
+     * @see https://dzone.com/articles/java-cloning-even-copy-constructors-are-not-suffic
+     */
+    @Override
+    public GmailMessage cloneObject() {
+        return new GmailMessage(this);
+    }
+
     public Message getMessage() {
         return message;
     }

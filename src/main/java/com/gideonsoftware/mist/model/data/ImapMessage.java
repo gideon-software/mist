@@ -156,6 +156,17 @@ public class ImapMessage extends EmailMessage {
         }
     }
 
+    /**
+     * Returns a clone of this IMAP message
+     * 
+     * @return a clone of this IMAP message
+     * @see https://dzone.com/articles/java-cloning-even-copy-constructors-are-not-suffic
+     */
+    @Override
+    public ImapMessage cloneObject() {
+        return new ImapMessage(this);
+    }
+
     public Message getMessage() {
         return message;
     }
