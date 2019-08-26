@@ -152,6 +152,8 @@ spotbugs {
     reportLevel = "low"
 }
 
+// Pro tip: If this task is failing, it could be due to an old gradle daemon.
+// Try shutting down that daemon and a new (working) one will be created. 
 task jdepsReport() {
     dependsOn 'shadowJar'
     group 'packaging'
@@ -165,22 +167,31 @@ task jdepsReport() {
         }    
         
         def stdOut = new FileOutputStream(jdepsReportPath)
-        exec {
-            workingDir "${buildDir}"
-            
-            // jdeps --multi-release 11 [--ignore-missing-deps] --print-module-deps -cp libs <fat MIST jar>
-            executable = 'jdeps'
-            args = [
-                '--multi-release', '11',
-                *extraJdepsArguments, // Needed on Windows but not on Linux (TODO: Mac?)
-                '--print-module-deps',
-                "-cp", "${mistLibraryPath}", 
-                shadowJarPath]
+ 
+        // jdk.crypto.ec is not picked up by jdeps but is necessary for GmailServer connection
+        stdOut << "jdk.crypto.ec,"
 
-            standardOutput = stdOut
-            
-            // jdk.crypto.ec is not picked up by jdeps but is necessary for GmailServer connection
-            stdOut << "jdk.crypto.ec,"
+        def result
+        try { 
+            result = exec {
+                workingDir "${buildDir}"
+    
+                // jdeps --multi-release 11 [--ignore-missing-deps] --print-module-deps -cp libs <fat MIST jar>
+                executable = 'jdeps'
+                args = [
+                    '--multi-release', '11',
+                    *extraJdepsArguments, // Needed on Windows but not on Linux (TODO: Mac?)
+                    '--print-module-deps',
+                    "-cp", "${mistLibraryPath}", 
+                    shadowJarPath]
+    
+                standardOutput = stdOut
+            }
+        } catch (all) {
+            // Clean up in the event of failure
+            if (result != 0)
+              delete jdepsReportPath
+            throw all
         }
     }
 }
