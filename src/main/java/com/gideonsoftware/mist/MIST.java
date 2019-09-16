@@ -165,7 +165,7 @@ public class MIST {
             Path dataDirPath = Paths.get(appConfDir);
 
             if (Files.notExists(dataDirPath))
-                Files.createDirectory(dataDirPath);
+                Files.createDirectories(dataDirPath);
 
             // Verify that the directory is secure; set permissions so that only the current user can read the file
             if (Util.isMac() || Util.isLinux()) {
