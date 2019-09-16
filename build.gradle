@@ -50,7 +50,7 @@ ext {
     if (operatingSystem.isWindows()) {
         swtOs = 'win64'
         appDist = 'win64'
-        extraJdepsArguments = ['--ignore-missing-deps']
+        extraJdepsArguments = [] // ['--ignore-missing-deps'] (not needed?)
         extraBundlerArguments = []
         appInfoTxtPath = file("${bundlePath}/appinfo.txt")
         innoSetupCompilerPath = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
