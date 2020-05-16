@@ -81,7 +81,7 @@ public class ContactManager {
         log.trace("addNewEmailAddress({},{},{})", email, contactId, usePrimaryContact);
 
         Contact contact = get(contactId);
-        String emailField = "";
+        String emailField = ""; //
         boolean addToExisting = false;
 
         if (usePrimaryContact) {
@@ -106,10 +106,14 @@ public class ContactManager {
 
         if (addToExisting) {
             // All our email slots are full; append this one to the end of an existing one
-            if (usePrimaryContact)
+            // TODO: This doesn't work yet =P  We also have to change the search feature
+            if (usePrimaryContact) {
+                emailField = "Email3";
                 email = String.format("%s,%s", contact.getEmail3(), email);
-            else
+            } else {
+                emailField = "SpouseEmail3";
                 email = String.format("%s,%s", contact.getSpouseEmail3(), email);
+            }
         }
 
         String query = String.format(
