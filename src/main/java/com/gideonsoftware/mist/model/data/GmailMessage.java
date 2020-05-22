@@ -70,18 +70,24 @@ public class GmailMessage extends EmailMessage {
         try {
             Map<String, MessagePart> mimeTypes = findMimeTypes(message.getPayload(), "text/plain", "text/html");
 
+            String content = null;
             if (mimeTypes.containsKey("text/plain")) {
-                String content = mimeTypes.get("text/plain").getBody().getData();
-                byte[] bodyBytes = Base64.decodeBase64(content);
-                String text = new String(bodyBytes, "UTF-8");
-                setBody(text);
-            } else if (mimeTypes.containsKey("text/html")) {
+                content = mimeTypes.get("text/plain").getBody().getData();
+                if (content != null) {
+                    byte[] bodyBytes = Base64.decodeBase64(content);
+                    String text = new String(bodyBytes, "UTF-8");
+                    setBody(text);
+                }
+            }
+            if (content == null && mimeTypes.containsKey("text/html")) {
                 // Get the text
-                String content = mimeTypes.get("text/html").getBody().getData();
-                byte[] bodyBytes = Base64.decodeBase64(content);
-                String text = new String(bodyBytes, "UTF-8");
-                // Try to parse it
-                setBody(new Source(text).getRenderer().toString());
+                content = mimeTypes.get("text/html").getBody().getData();
+                if (content != null) {
+                    byte[] bodyBytes = Base64.decodeBase64(content);
+                    String text = new String(bodyBytes, "UTF-8");
+                    // Try to parse it
+                    setBody(new Source(text).getRenderer().toString());
+                }
             }
         } catch (MessagingException | IOException e) {
             setBody("<error>");
