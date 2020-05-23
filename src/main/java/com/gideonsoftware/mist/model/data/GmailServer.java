@@ -367,7 +367,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
                     try {
                         removeLabel((GmailMessage) history.getMessageSource());
                     } catch (EmailServerException e) {
-                        Util.reportError("Gmail error", "Count not remove label", e);
+                        Util.reportError("Gmail error", "Could not remove label", e);
                     }
                 }
             }
@@ -384,7 +384,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
                     try {
                         removeLabel((GmailMessage) msg);
                     } catch (EmailServerException e) {
-                        Util.reportError("Gmail error", "Count not remove label", e);
+                        Util.reportError("Gmail error", "Could not remove label", e);
                     }
                 }
             }
