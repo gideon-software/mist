@@ -64,7 +64,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.Label;
 import com.google.api.services.gmail.model.ListLabelsResponse;
-import com.google.api.services.gmail.model.ListMessagesResponse;
+import com.google.api.services.gmail.model.ListThreadsResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.ModifyMessageRequest;
 import com.google.api.services.oauth2.Oauth2Scopes;
@@ -328,19 +328,37 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         List<String> labelIds = Arrays.asList(getLabelId());
         messages = new ArrayList<Message>();
-        ListMessagesResponse listResponse;
         try {
-            listResponse = gmailService.users().messages().list("me").setLabelIds(labelIds).execute();
-            while (listResponse.getMessages() != null) {
-                messages.addAll(listResponse.getMessages());
-                String pageToken = listResponse.getNextPageToken();
+
+            // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
+            // labeled, but not subsequent messages that may come in (even though it appears otherwise in the Gmail
+            // interface.) So, we must get the messages with this label AND all messages in their threads as well.
+
+            // Get all threads with this label
+            List<com.google.api.services.gmail.model.Thread> threads = new ArrayList<com.google.api.services.gmail.model.Thread>();
+            ListThreadsResponse listThreadsResponse = gmailService.users().threads().list("me").setLabelIds(labelIds)
+                .execute();
+            while (listThreadsResponse.getThreads() != null) {
+                threads.addAll(listThreadsResponse.getThreads());
+                String pageToken = listThreadsResponse.getNextPageToken();
                 if (pageToken != null) {
-                    listResponse = gmailService.users().messages().list("me").setLabelIds(labelIds) //
+                    listThreadsResponse = gmailService.users().threads().list("me").setLabelIds(labelIds) //
                         .setPageToken(pageToken).execute();
                 } else {
                     break;
                 }
             }
+
+            // Get all messages associated with the threads
+            for (com.google.api.services.gmail.model.Thread minThread : threads) {
+                // First we need to load the list of messages using threads.get
+                // See https://developers.google.com/gmail/api/v1/reference/users/threads/get#parameters
+                com.google.api.services.gmail.model.Thread fullThread = gmailService.users().threads().get(
+                    "me",
+                    minThread.getId()).execute();
+                messages.addAll(fullThread.getMessages());
+            }
+
         } catch (IOException e) {
             throw new EmailServerException(e);
         }
