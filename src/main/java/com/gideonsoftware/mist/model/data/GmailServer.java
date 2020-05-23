@@ -396,7 +396,9 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         log.trace("{{}} removeLabel({})", getNickname(), gmailMessage);
         ModifyMessageRequest modRequest = new ModifyMessageRequest().setRemoveLabelIds(Arrays.asList(getLabelId()));
         try {
-            gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest).execute();
+            Message msg = gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest)
+                .execute();
+            log.trace("Message is...", msg);
         } catch (IOException e) {
             throw new EmailServerException(e);
         }
