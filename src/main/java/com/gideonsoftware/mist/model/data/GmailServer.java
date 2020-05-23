@@ -415,6 +415,8 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         ModifyMessageRequest modRequest = new ModifyMessageRequest().setRemoveLabelIds(Arrays.asList(getLabelId()));
         try {
             gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest).execute();
+            // BUG: For unknown reasons, some threads (esp. those with attachments?) retain the label even after
+            // all their messages have the label removed.
         } catch (IOException e) {
             throw new EmailServerException(e);
         }

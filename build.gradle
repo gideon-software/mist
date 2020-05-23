@@ -101,8 +101,7 @@ dependencies {
     implementation group: 'com.google.oauth-client', name:'google-oauth-client-jetty', version: '1.23.0'
     
     // Gmail API Client Library
-    implementation group: 'com.google.apis', name: 'google-api-services-gmail', version: 'v1-rev105-1.25.0'
-    // v1-rev20200504-1.30.9?
+    implementation group: 'com.google.apis', name: 'google-api-services-gmail', version: 'v1-rev20200504-1.30.9'
     
     // HTML email parsing
     // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
