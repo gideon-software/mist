@@ -241,7 +241,7 @@ task createBundle() {
             
             // Due to JDK BUG 8217793 (https://bugs.openjdk.java.net/browse/JDK-8217793), 
             // jpackager throws an exception claiming that "Modules are not allowed in srcfiles"
-            // This is throw in regard to jlink, so if we call jlink (to create a java runtime) 
+            // This is thrown in regard to jlink, so if we call jlink (to create a java runtime) 
             // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
 
             def sharedArgs = [
