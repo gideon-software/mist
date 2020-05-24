@@ -73,7 +73,7 @@ public class MIST {
     public final static String COMPANY_NAME = "Gideon Software";
     public final static String COMPANY_NAME_NO_SPACES = "GideonSoftware";
     public final static String HOMEPAGE = "https://www.gideonsoftware.com";
-    public final static String EMAIL_SUPPORT = "mist-support@gideonsoftware.com";
+    public final static String EMAIL_SUPPORT = "hallmant@gmail.com";
     public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
 
     public final static String REGEX_EMAILADDRESS = "([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)";
