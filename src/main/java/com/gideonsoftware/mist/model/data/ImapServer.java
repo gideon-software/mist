@@ -232,6 +232,7 @@ public class ImapServer extends EmailServer {
         } catch (MessagingException e) {
             throw new EmailServerException(e);
         }
+        log.debug("{{}} Retrieved {} message(s) from folder '{}'", getNickname(), totalMessages, getFolderName());
     }
 
     public void openFolder() throws EmailServerException {

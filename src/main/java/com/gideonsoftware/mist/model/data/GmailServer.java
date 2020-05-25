@@ -326,7 +326,9 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public void loadMessageList() throws EmailServerException {
         log.trace("{{}} loadMessageList()", getNickname());
 
+        log.debug("{{}} Retrieving messages with label '{}'", getNickname(), getLabelName());
         List<String> labelIds = Arrays.asList(getLabelId());
+        List<com.google.api.services.gmail.model.Thread> threads = new ArrayList<com.google.api.services.gmail.model.Thread>();
         messages = new ArrayList<Message>();
         try {
 
@@ -335,7 +337,6 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             // interface.) So, we must get the messages with this label AND all messages in their threads as well.
 
             // Get all threads with this label
-            List<com.google.api.services.gmail.model.Thread> threads = new ArrayList<com.google.api.services.gmail.model.Thread>();
             ListThreadsResponse listThreadsResponse = gmailService.users().threads().list("me").setLabelIds(labelIds)
                 .execute();
             while (listThreadsResponse.getThreads() != null) {
@@ -365,6 +366,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         totalMessages = messages.size();
         currentMessageNumber = 0;
+        log.debug("{{}} Retrieved {} message(s) from {} thread(s)", getNickname(), totalMessages, threads.size());
     }
 
     @Override
