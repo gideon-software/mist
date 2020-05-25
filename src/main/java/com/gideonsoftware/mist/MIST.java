@@ -131,6 +131,9 @@ public class MIST {
             System.out.println("Incorrect configuration settings; confPath: " + logConfPath + "; logPath: " + logPath);
         }
 
+        // Secure log
+        securePath(logPath);
+
         // Disable Jericho logging
         net.htmlparser.jericho.Config.LoggerProvider = LoggerProvider.DISABLED;
 
@@ -160,45 +163,8 @@ public class MIST {
         // Set conf data dir
         appConfDir = appDataDir + "conf" + File.separator;
 
-        try {
-            // Verify that the directory exists
-            Path dataDirPath = Paths.get(appConfDir);
-
-            if (Files.notExists(dataDirPath))
-                Files.createDirectories(dataDirPath);
-
-            // Verify that the directory is secure; set permissions so that only the current user can read the file
-            if (Util.isMac() || Util.isLinux()) {
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
-                Files.setPosixFilePermissions(dataDirPath, permissions);
-            } else { // Windows; see https://stackoverflow.com/a/13892920/1307022
-                AclFileAttributeView aclAttr = Files.getFileAttributeView(dataDirPath, AclFileAttributeView.class);
-                UserPrincipalLookupService upls = dataDirPath.getFileSystem().getUserPrincipalLookupService();
-                UserPrincipal user = upls.lookupPrincipalByName(System.getProperty("user.name"));
-                AclEntry.Builder builder = AclEntry.newBuilder();
-                builder.setPermissions(
-                    EnumSet.of(
-                        AclEntryPermission.APPEND_DATA,
-                        AclEntryPermission.DELETE,
-                        AclEntryPermission.DELETE_CHILD,
-                        AclEntryPermission.EXECUTE,
-                        AclEntryPermission.READ_ACL,
-                        AclEntryPermission.READ_ATTRIBUTES,
-                        AclEntryPermission.READ_DATA,
-                        AclEntryPermission.READ_NAMED_ATTRS,
-                        AclEntryPermission.SYNCHRONIZE,
-                        AclEntryPermission.WRITE_ACL,
-                        AclEntryPermission.WRITE_ATTRIBUTES,
-                        AclEntryPermission.WRITE_DATA,
-                        AclEntryPermission.WRITE_NAMED_ATTRS,
-                        AclEntryPermission.WRITE_OWNER));
-                builder.setPrincipal(user);
-                builder.setType(AclEntryType.ALLOW);
-                aclAttr.setAcl(Collections.singletonList(builder.build()));
-            }
-        } catch (IOException e) {
-            log.error(e);
-        }
+        // Secure the conf data dir
+        securePath(appConfDir);
     }
 
     public static String getAppConfDir() {
@@ -301,6 +267,53 @@ public class MIST {
         OptionParser parser = new OptionParser();
         parser.accepts(OPTION_PROFILE).withRequiredArg();
         options = parser.parse(opts);
+    }
+
+    private static void securePath(String dir) {
+        if (log != null)
+            log.trace("securePath({})", dir);
+
+        try {
+            // Verify that the directory exists
+            Path path = Paths.get(dir);
+
+            if (Files.notExists(path))
+                Files.createDirectories(path);
+
+            // Verify that the directory is secure; set permissions so that only the current user can read the file
+            if (Util.isMac() || Util.isLinux()) {
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
+                Files.setPosixFilePermissions(path, permissions);
+            } else { // Windows; see https://stackoverflow.com/a/13892920/1307022
+                // Note: for dirs (e.g. conf dir), these create "special" permissions. Works, but strange...?
+                AclFileAttributeView aclAttr = Files.getFileAttributeView(path, AclFileAttributeView.class);
+                UserPrincipalLookupService upls = path.getFileSystem().getUserPrincipalLookupService();
+                UserPrincipal user = upls.lookupPrincipalByName(System.getProperty("user.name"));
+                AclEntry.Builder builder = AclEntry.newBuilder();
+                builder.setPermissions(
+                    EnumSet.of(
+                        AclEntryPermission.APPEND_DATA,
+                        AclEntryPermission.DELETE,
+                        AclEntryPermission.DELETE_CHILD,
+                        AclEntryPermission.EXECUTE,
+                        AclEntryPermission.READ_ACL,
+                        AclEntryPermission.READ_ATTRIBUTES,
+                        AclEntryPermission.READ_DATA,
+                        AclEntryPermission.READ_NAMED_ATTRS,
+                        AclEntryPermission.SYNCHRONIZE,
+                        AclEntryPermission.WRITE_ACL,
+                        AclEntryPermission.WRITE_ATTRIBUTES,
+                        AclEntryPermission.WRITE_DATA,
+                        AclEntryPermission.WRITE_NAMED_ATTRS,
+                        AclEntryPermission.WRITE_OWNER));
+                builder.setPrincipal(user);
+                builder.setType(AclEntryType.ALLOW);
+                aclAttr.setAcl(Collections.singletonList(builder.build()));
+            }
+        } catch (IOException e) {
+            if (log != null)
+                log.error(e);
+        }
     }
 
     public static void setLogfileLogLevel(String levelName) {
