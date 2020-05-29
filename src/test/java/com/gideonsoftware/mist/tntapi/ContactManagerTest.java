@@ -23,6 +23,7 @@ package com.gideonsoftware.mist.tntapi;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 
@@ -35,6 +36,8 @@ import org.junit.runners.JUnit4;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
+import com.gideonsoftware.mist.tntapi.entities.Contact;
+import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 
@@ -47,17 +50,33 @@ public class ContactManagerTest {
 
     private static History MRINCREDIBLE_HISTORY;
     private static Integer MRINCREDIBLE_CONTACTID;
+    private static String MRINCREDIBLE_FILEAS;
+    private static LocalDateTime MRINCREDIBLE_LASTGIFT;
     private static LocalDateTime MRINCREDIBLE_LASTLETTER;
     private static LocalDateTime MRINCREDIBLE_LASTACTIVITY;
     private static Integer MRINCREDIBLE_CHALLENGESSINCELASTGIFT;
 
     private static History GEORGEJETSON_HISTORY;
     private static Integer GEORGEJETSON_CONTACTID;
+    private static String GEORGEJETSON_FILEAS;
     private static LocalDateTime GEORGEJETSON_LASTACTIVITY;
     private static LocalDateTime GEORGEJETSON_LASTTHANK;
     private static LocalDateTime GEORGEJETSON_LASTCHALLENGE;
+    private static LocalDateTime GEORGEJETSON_LASTVISIT;
+    private static LocalDateTime GEORGEJETSON_LASTAPPOINTMENT;
+    private static LocalDateTime GEORGEJETSON_LASTCALL;
+    private static LocalDateTime GEORGEJETSON_LASTPRECALL;
+    private static LocalDateTime GEORGEJETSON_LASTLETTER;
+
+    private static Integer BAMBIDEER_CONTACTID;
+    private static String BAMBIDEER_FILEAS;
+    private static LocalDateTime BAMBIDEER_LASTACTIVITY;
+    private static LocalDateTime BAMBIDEER_LASTPRECALL;
+    private static Integer BAMBIDEER_CHALLENGESSINCELASTGIFT;
 
     private static Integer DONALDDUCK_CONTACTID;
+    private static Integer RABBITRABBIT_CONTACTID;
+    private static Integer NONEXISTENT_CONTACTID;
 
     private static Integer USERID_TOM;
 
@@ -76,8 +95,10 @@ public class ContactManagerTest {
         //
 
         MRINCREDIBLE_CONTACTID = Integer.valueOf(1);
+        MRINCREDIBLE_FILEAS = "Parr, Bob and Helen";
+        MRINCREDIBLE_LASTGIFT = null;
         MRINCREDIBLE_LASTLETTER = LocalDateTime.of(2008, 2, 23, 0, 0);
-        MRINCREDIBLE_LASTACTIVITY = MRINCREDIBLE_LASTLETTER; // They're the same
+        MRINCREDIBLE_LASTACTIVITY = MRINCREDIBLE_LASTLETTER;
         MRINCREDIBLE_CHALLENGESSINCELASTGIFT = Integer.valueOf(2);
 
         MRINCREDIBLE_HISTORY = new History();
@@ -95,13 +116,19 @@ public class ContactManagerTest {
         //
 
         GEORGEJETSON_CONTACTID = Integer.valueOf(1799108674);
+        GEORGEJETSON_FILEAS = "Jetson, George and Jane";
         GEORGEJETSON_LASTACTIVITY = LocalDateTime.of(2008, 2, 23, 0, 0);
         GEORGEJETSON_LASTTHANK = LocalDateTime.of(2006, 9, 28, 0, 0);
         GEORGEJETSON_LASTCHALLENGE = LocalDateTime.of(2007, 6, 15, 0, 0);
+        GEORGEJETSON_LASTVISIT = GEORGEJETSON_LASTCHALLENGE;
+        GEORGEJETSON_LASTAPPOINTMENT = GEORGEJETSON_LASTCHALLENGE;
+        GEORGEJETSON_LASTPRECALL = null;
+        GEORGEJETSON_LASTCALL = LocalDateTime.of(2006, 4, 22, 0, 0);
+        GEORGEJETSON_LASTLETTER = LocalDateTime.of(2008, 2, 23, 0, 0);
 
         GEORGEJETSON_HISTORY = new History();
         GEORGEJETSON_HISTORY.setHistoryDate(NEWDATE);
-        MRINCREDIBLE_HISTORY.setTaskTypeId(TaskType.EMAIL);
+        GEORGEJETSON_HISTORY.setTaskTypeId(TaskType.EMAIL);
         GEORGEJETSON_HISTORY.setDescription("This is my description.");
         GEORGEJETSON_HISTORY.setNotes("These are my notes.");
         GEORGEJETSON_HISTORY.setHistoryResultId(History.RESULT_DONE);
@@ -114,7 +141,15 @@ public class ContactManagerTest {
         // Other contact data
         //
 
+        BAMBIDEER_CONTACTID = Integer.valueOf(272072119);
+        BAMBIDEER_FILEAS = "Deer, Bambi and Feline";
+        BAMBIDEER_LASTACTIVITY = LocalDateTime.of(2008, 2, 23, 0, 0);
+        BAMBIDEER_LASTPRECALL = LocalDateTime.of(2007, 11, 6, 0, 0);
+        BAMBIDEER_CHALLENGESSINCELASTGIFT = Integer.valueOf(0);
+
         DONALDDUCK_CONTACTID = Integer.valueOf(608241759);
+        RABBITRABBIT_CONTACTID = Integer.valueOf(408495102);
+        NONEXISTENT_CONTACTID = Integer.valueOf(2);
     }
 
     @BeforeClass
@@ -130,9 +165,114 @@ public class ContactManagerTest {
     }
 
     /**
+     * Tests adding new email addresses
+     */
+    @Test
+    public void addNewEmailAddress() throws TntDbException, SQLException {
+
+        // Add unique email addresses to a contact
+        for (int i = 0; i < 20; i++) {
+
+            // Verify that testEmail doesn't already exist in the DB
+            String testEmail = "testEmail" + i + "@gmail.com";
+            assertEquals(null, ContactManager.getContactIdByEmail(testEmail));
+
+            // Add email (adding every other one to spouse)
+            ContactManager.addNewEmailAddress(testEmail, MRINCREDIBLE_CONTACTID, i % 2 == 0);
+
+            // Verify that the email exists in the DB
+            assertEquals(MRINCREDIBLE_CONTACTID, ContactManager.getContactIdByEmail(testEmail));
+        }
+
+        // Test adding where "Email" field is previously blank
+        assertEquals(null, ContactManager.getContactIdByEmail("bambi@deer.com"));
+        ContactManager.addNewEmailAddress("bambi@deer.com", BAMBIDEER_CONTACTID, true);
+        Contact bambi = ContactManager.get(BAMBIDEER_CONTACTID);
+        assertEquals("bambi@deer.com", bambi.getEmail());
+        assertEquals(true, bambi.isEmailValid());
+
+        // Test adding existing email
+        Contact contact = ContactManager.get(MRINCREDIBLE_CONTACTID);
+        String email = contact.getEmail();
+        assertEquals(1, ContactManager.getContactsByEmailCount(email));
+        try {
+            ContactManager.addNewEmailAddress(email, MRINCREDIBLE_CONTACTID, true);
+            fail("Shouldn't be able to add an email address to the same contact a second time");
+        } catch (TntDbException e) {
+        }
+        try {
+            ContactManager.addNewEmailAddress(email, MRINCREDIBLE_CONTACTID, false);
+            fail("Shouldn't be able to add an email address to the same contact's spouse a second time");
+        } catch (TntDbException e) {
+        }
+        try {
+            ContactManager.addNewEmailAddress(email, DONALDDUCK_CONTACTID, true);
+            fail("Shouldn't be able to add an email address to a different contact a second time");
+        } catch (TntDbException e) {
+        }
+
+        // Test nulls
+        try {
+            ContactManager.addNewEmailAddress(null, MRINCREDIBLE_CONTACTID, true);
+            fail("Shouldn't be able to add a null email address");
+        } catch (TntDbException e) {
+        }
+        try {
+            ContactManager.addNewEmailAddress(email, null, true);
+            fail("Shouldn't be able to add an email address to a null contact");
+        } catch (TntDbException e) {
+        }
+    }
+
+    /**
+     * Tests getting & creating contacts
+     */
+    @Test
+    public void getAndCreateContact() throws TntDbException, SQLException {
+        // Test getting null
+        assertEquals(null, ContactManager.get(null));
+
+        // Test creating null
+        try {
+            ContactManager.create(null);
+            fail("Shouldn't be able to create null contact");
+        } catch (TntDbException e) {
+        }
+
+        // Test getting non-existant
+        assertEquals(null, ContactManager.get(NONEXISTENT_CONTACTID));
+
+        // Test getting and creating normal
+        Contact contact = ContactManager.get(MRINCREDIBLE_CONTACTID);
+        try {
+            ContactManager.create(contact);
+            fail("Shouldn't be able to recreate same contact");
+        } catch (TntDbException e) {
+        }
+
+        contact.setContactId(null); // Should create new!
+        Integer newContactId = ContactManager.create(contact);
+        Contact newContact = ContactManager.get(newContactId);
+
+        newContact.setContactId(contact.getContactId());
+
+        Field[] fields = Contact.class.getFields();
+        for (Field field : fields) {
+            try {
+                if (!"log".equals(field.getName()))
+                    assertEquals(true, field.get(contact).equals(field.get(newContact)));
+            } catch (IllegalAccessException e) {
+                fail("IllegalAccessException: " + e.getMessage());
+            }
+        }
+
+    }
+
+    /**
      * Tests getting the challenges since a contact's last gift.
      */
-    public void getContactChallengesSinceLastGift() throws TntDbException, SQLException {
+    @Test
+    public void getChallengesSinceLastGift() throws TntDbException, SQLException {
         Integer challenges = ContactManager.getChallengesSinceLastGift(MRINCREDIBLE_CONTACTID);
         assertEquals(MRINCREDIBLE_CHALLENGESSINCELASTGIFT, challenges);
     }
@@ -142,10 +282,8 @@ public class ContactManagerTest {
      */
     @Test
     public void getContactIdByEmailFound() throws TntDbException, SQLException {
-        int count = ContactManager.getContactsByEmailCount("dduck@disney.org");
-        assertEquals(1, count);
-        Integer id = ContactManager.getContactIdByEmail("dduck@disney.org");
-        assertEquals(DONALDDUCK_CONTACTID, id);
+        assertEquals(1, ContactManager.getContactsByEmailCount("dduck@disney.org"));
+        assertEquals(DONALDDUCK_CONTACTID, ContactManager.getContactIdByEmail("dduck@disney.org"));
     }
 
     /**
@@ -154,11 +292,10 @@ public class ContactManagerTest {
     @Test
     public void getContactIdByEmailFoundWithBrackets() throws TntDbException, SQLException {
         TntDb.runQuery(
-            "UPDATE [Contact] SET [Email3] = '\"Bob Parr\" <parrb@metroinsurance.com>' WHERE [ContactID] = 1");
-        int count = ContactManager.getContactsByEmailCount("parrb@metroinsurance.com");
-        assertEquals(1, count);
-        Integer id = ContactManager.getContactIdByEmail("parrb@metroinsurance.com");
-        assertEquals(MRINCREDIBLE_CONTACTID, id);
+            "UPDATE [Contact] SET [Email3] = '\"Bob Parr\" <parrb@metroinsurance.com>' WHERE [ContactID] = "
+                + MRINCREDIBLE_CONTACTID);
+        assertEquals(1, ContactManager.getContactsByEmailCount("parrb@metroinsurance.com"));
+        assertEquals(MRINCREDIBLE_CONTACTID, ContactManager.getContactIdByEmail("parrb@metroinsurance.com"));
     }
 
     /**
@@ -169,40 +306,77 @@ public class ContactManagerTest {
         TntDb.runQuery(
             "UPDATE [Contact] SET [Email3] = 'parr_b@metroinsurance.com' WHERE [ContactID] = "
                 + MRINCREDIBLE_CONTACTID);
-        int count = ContactManager.getContactsByEmailCount("parr_b@metroinsurance.com");
-        assertEquals(1, count);
-        Integer id = ContactManager.getContactIdByEmail("parr_b@metroinsurance.com");
-        assertEquals(MRINCREDIBLE_CONTACTID, id);
+        assertEquals(1, ContactManager.getContactsByEmailCount("parr_b@metroinsurance.com"));
+        assertEquals(MRINCREDIBLE_CONTACTID, ContactManager.getContactIdByEmail("parr_b@metroinsurance.com"));
     }
 
     /**
      * Tests counting and returning contacts given an existing, non-unique email address
      */
-    @Test(expected = TntDbException.class)
+    @Test
     public void getContactIdByEmailMultipleFound() throws TntDbException, SQLException {
         // Add duplicate email address to primary contact
         TntDb.runQuery(
             "UPDATE [Contact] SET [Email3] = 'dduck@disney.org' WHERE [ContactID] = " + MRINCREDIBLE_CONTACTID);
-        int count = ContactManager.getContactsByEmailCount("dduck@disney.org");
-        assertEquals(2, count);
-        ContactManager.getContactIdByEmail("dduck@disney.org");
-        fail("Multiple contacts found; this should have failed.");
+        assertEquals(2, ContactManager.getContactsByEmailCount("dduck@disney.org"));
+        try {
+            ContactManager.getContactIdByEmail("dduck@disney.org");
+            fail("Multiple contacts should throw exception");
+        } catch (TntDbException e) {
+        }
     }
 
     /**
-     * Tests counting and returning contacts given a non-existent email address
+     * Tests counting and returning contacts given non-existent, null and partial email addresses
      */
     @Test
     public void getContactIdByEmailNotFound() throws TntDbException, SQLException {
         assertEquals(0, ContactManager.getContactsByEmailCount("nobody@nowhere.nope"));
         assertEquals(null, ContactManager.getContactIdByEmail("nobody@nowhere.nope"));
+        assertEquals(null, ContactManager.getContactIdByEmail(null));
+        assertEquals(0, ContactManager.getContactsByEmailCount("duck@disney.org")); // dduck@disney.org exists
+        assertEquals(null, ContactManager.getContactIdByEmail("duck@disney.org"));
+        assertEquals(0, ContactManager.getContactsByEmailCount("George Jetson")); // Not an email address but exists
+        assertEquals(null, ContactManager.getContactIdByEmail("George Jetson"));
+    }
+
+    /**
+     * Tests getting the contact list
+     */
+    @Test
+    public void getContactList() throws TntDbException, SQLException {
+        // Get the contact list
+        ContactInfo[] contactList = ContactManager.getContactList();
+
+        // Verify size
+        assertEquals(59, contactList.length);
+
+        // Spot check
+        for (ContactInfo ci : contactList) {
+            if (MRINCREDIBLE_CONTACTID == ci.getId())
+                assertEquals(MRINCREDIBLE_FILEAS, ci.getName());
+            else if (GEORGEJETSON_CONTACTID == ci.getId())
+                assertEquals(GEORGEJETSON_FILEAS, ci.getName());
+            else if (BAMBIDEER_CONTACTID == ci.getId())
+                assertEquals(BAMBIDEER_FILEAS, ci.getName());
+        }
+    }
+
+    /**
+     * Tests getting contact names for contacts
+     */
+    @Test
+    public void getFileAs() throws TntDbException, SQLException {
+        assertEquals("Parr, Bob and Helen", ContactManager.getFileAs(MRINCREDIBLE_CONTACTID));
+        assertEquals("Duck, Donald and Daisy", ContactManager.getFileAs(DONALDDUCK_CONTACTID));
+        assertEquals(null, ContactManager.getFileAs(0));
     }
 
     /**
      * Tests retrieval of Contact's "Last Activity" date
      */
     @Test
-    public void getContactLastActivityDate() throws TntDbException, SQLException {
+    public void getLastActivityDate() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
 
@@ -223,7 +397,7 @@ public class ContactManagerTest {
      * Tests retrieval of Contact's "Last Challenge" date
      */
     @Test
-    public void getContactLastChallengeDate() throws TntDbException, SQLException {
+    public void getLastChallengeDate() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTCHALLENGE, ContactManager.getLastChallengeDate(GEORGEJETSON_CONTACTID));
         assertEquals(true, GEORGEJETSON_HISTORY.isChallenge());
@@ -244,7 +418,7 @@ public class ContactManagerTest {
      * Tests retrieval of Contact's "Last Letter" date (and "Last Activity", which may be redundant)
      */
     @Test
-    public void getContactLastLetterDate() throws TntDbException, SQLException {
+    public void getLastLetterDate() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTLETTER, ContactManager.getLastLetterDate(MRINCREDIBLE_CONTACTID));
 
@@ -266,7 +440,7 @@ public class ContactManagerTest {
      * Tests retrieval of Contact's "Last Thank" date
      */
     @Test
-    public void getContactLastThankDate() throws TntDbException, SQLException {
+    public void getLastThankDate() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
         assertEquals(true, GEORGEJETSON_HISTORY.isThank());
@@ -284,53 +458,72 @@ public class ContactManagerTest {
     }
 
     /**
-     * Tests getting contact names for contacts that exist
-     */
-    @Test
-    public void getContactNameFound() throws TntDbException, SQLException {
-        assertEquals("Parr, Bob and Helen", ContactManager.getFileAs(MRINCREDIBLE_CONTACTID));
-        assertEquals("Duck, Donald and Daisy", ContactManager.getFileAs(DONALDDUCK_CONTACTID));
-    }
-
-    /**
-     * Tests getting a contact name for a contact that doesn't exist
-     */
-    @Test
-    public void getContactNameNotFound() throws TntDbException, SQLException {
-        assertEquals(null, ContactManager.getFileAs(0));
-    }
-
-    /**
      * Tests recalculation of a contact's challenges since the last gift
      */
     @Test
-    public void recalculateContactChallengesSinceLastGift() throws TntDbException, SQLException {
+    public void recalculateChallengesSinceLastGift() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(
-            MRINCREDIBLE_CHALLENGESSINCELASTGIFT.intValue(),
-            ContactManager.getChallengesSinceLastGift(MRINCREDIBLE_CONTACTID));
+            BAMBIDEER_CHALLENGESSINCELASTGIFT.intValue(),
+            ContactManager.getChallengesSinceLastGift(BAMBIDEER_CONTACTID));
 
         // Set number of challenges to 0
         TntDb.runQuery(
             String.format(
                 "UPDATE [Contact] SET [ChallengesSinceLastGift] = 0 WHERE [ContactID] = %s",
-                MRINCREDIBLE_CONTACTID));
-        assertEquals(0, ContactManager.getChallengesSinceLastGift(MRINCREDIBLE_CONTACTID));
+                BAMBIDEER_CONTACTID));
+        assertEquals(0, ContactManager.getChallengesSinceLastGift(BAMBIDEER_CONTACTID));
 
         // Recalculate
-        ContactManager.recalculateChallengesSinceLastGift(MRINCREDIBLE_CONTACTID);
+        ContactManager.recalculateChallengesSinceLastGift(BAMBIDEER_CONTACTID);
 
         // Verify that the number of challenges is correct
         assertEquals(
+            BAMBIDEER_CHALLENGESSINCELASTGIFT.intValue(),
+            ContactManager.getChallengesSinceLastGift(BAMBIDEER_CONTACTID));
+
+        //
+        // Test case of no last gift
+        //
+        assertEquals(null, MRINCREDIBLE_LASTGIFT);
+        ContactManager.recalculateChallengesSinceLastGift(MRINCREDIBLE_CONTACTID);
+        assertEquals(
             MRINCREDIBLE_CHALLENGESSINCELASTGIFT.intValue(),
             ContactManager.getChallengesSinceLastGift(MRINCREDIBLE_CONTACTID));
+    }
+
+    /**
+     * Tests recalculating of all history data
+     */
+    @Test
+    public void recalculateHistoryData() throws TntDbException, SQLException {
+        // Set all the dates to null
+        String query = String.format(
+            "UPDATE [Contact] SET [LastActivity] = NULL, [LastAppointment] = NULL, [LastCall] = NULL, "
+                + "[LastChallenge] = NULL, [LastLetter] = NULL, [LastPreCall] = NULL, [LastThank] = NULL, "
+                + "[LastVisit] = NULL WHERE [ContactId] = %s",
+            GEORGEJETSON_CONTACTID);
+        TntDb.runQuery(query);
+
+        // Recalculate everything
+        ContactManager.recalculateHistoryData(GEORGEJETSON_CONTACTID);
+
+        // Verify the results
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTCHALLENGE, ContactManager.getLastChallengeDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTLETTER, ContactManager.getLastLetterDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTPRECALL, ContactManager.getLastPreCallDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
     }
 
     /**
      * Tests recalculation of a contact's last activity
      */
     @Test
-    public void recalculateContactLastActivity() throws TntDbException, SQLException {
+    public void recalculateLastActivity() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
 
@@ -344,13 +537,68 @@ public class ContactManagerTest {
 
         // Verify that last activity is correct
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
+
+        //
+        // Test case of no last activity
+        //
+
+        // Verify initial state
+        assertEquals(null, ContactManager.getLastActivityDate(RABBITRABBIT_CONTACTID));
+
+        // Recalculate
+        ContactManager.recalculateLastActivityDate(RABBITRABBIT_CONTACTID);
+
+        // Verify that last activity is correct
+        assertEquals(null, ContactManager.getLastActivityDate(RABBITRABBIT_CONTACTID));
+    }
+
+    /**
+     * Tests recalculation of a contact's last appointment
+     */
+    @Test
+    public void recalculateLastAppointment() throws TntDbException, SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last appointment
+        TntDb.runQuery(
+            String.format(
+                "UPDATE [Contact] SET [LastAppointment] = null WHERE [ContactID] = %s",
+                GEORGEJETSON_CONTACTID));
+        assertEquals(null, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+
+        // Recalculate
+        ContactManager.recalculateLastAppointmentDate(GEORGEJETSON_CONTACTID);
+
+        // Verify that last appointment is correct
+        assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+    }
+
+    /**
+     * Tests recalculation of a contact's last call
+     */
+    @Test
+    public void recalculateLastCall() throws TntDbException, SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last call
+        TntDb.runQuery(
+            String.format("UPDATE [Contact] SET [LastCall] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
+        assertEquals(null, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+
+        // Recalculate
+        ContactManager.recalculateLastCallDate(GEORGEJETSON_CONTACTID);
+
+        // Verify that last call is correct
+        assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
     }
 
     /**
      * Tests recalculation of a contact's last challenge
      */
     @Test
-    public void recalculateContactLastChallenge() throws TntDbException, SQLException {
+    public void recalculateLastChallenge() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTCHALLENGE, ContactManager.getLastChallengeDate(GEORGEJETSON_CONTACTID));
 
@@ -372,7 +620,7 @@ public class ContactManagerTest {
      * Tests recalculation of a contact's last letter
      */
     @Test
-    public void recalculateContactLastLetter() throws TntDbException, SQLException {
+    public void recalculateLastLetter() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTLETTER, ContactManager.getLastLetterDate(MRINCREDIBLE_CONTACTID));
 
@@ -389,14 +637,36 @@ public class ContactManagerTest {
     }
 
     /**
+     * Tests recalculation of a contact's last pre-call
+     */
+    @Test
+    public void recalculateLastPreCall() throws TntDbException, SQLException {
+        // Note: we're using Bambi here, not George!
+
+        // Verify initial state
+        assertEquals(BAMBIDEER_LASTPRECALL, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+
+        // Remove last pre-call
+        TntDb.runQuery(
+            String.format("UPDATE [Contact] SET [LastPreCall] = null WHERE [ContactID] = %s", BAMBIDEER_CONTACTID));
+        assertEquals(null, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+
+        // Recalculate
+        ContactManager.recalculateLastPreCallDate(BAMBIDEER_CONTACTID);
+
+        // Verify that last pre-call is correct
+        assertEquals(BAMBIDEER_LASTPRECALL, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+    }
+
+    /**
      * Tests recalculation of a contact's last thank
      */
     @Test
-    public void recalculateContactLastThank() throws TntDbException, SQLException {
+    public void recalculateLastThank() throws TntDbException, SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
 
-        // Remove last challenge
+        // Remove last thank
         TntDb.runQuery(
             String.format("UPDATE [Contact] SET [LastThank] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
         assertEquals(null, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
@@ -408,6 +678,44 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
     }
 
+    /**
+     * Tests recalculation of a contact's last visit
+     */
+    @Test
+    public void recalculateLastVisit() throws TntDbException, SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last visit
+        TntDb.runQuery(
+            String.format("UPDATE [Contact] SET [LastVisit] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
+        assertEquals(null, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
+
+        // Recalculate
+        ContactManager.recalculateLastVisitDate(GEORGEJETSON_CONTACTID);
+
+        // Verify that last challenge is correct
+        assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
+    }
+
+    /**
+     * Test making sure we can't end up in an infinite loop of updating LastX and then recalculating LastX
+     */
+    @Test
+    public void recalculateWithoutInfiniteLoop() throws TntDbException, SQLException {
+        // George Jetson has no precall.
+        // If we try to recalculate the precall, we must not end up in an infinite loop!
+
+        // Verify initial state
+        assertEquals(null, ContactManager.getLastPreCallDate(GEORGEJETSON_CONTACTID));
+
+        // Recalculate -- mustn't enter infinite loop!
+        ContactManager.recalculateLastPreCallDate(GEORGEJETSON_CONTACTID);
+
+        // Verify that last pre-call is still null
+        assertEquals(null, ContactManager.getLastPreCallDate(GEORGEJETSON_CONTACTID));
+    }
+
     @After
     public void rollback() throws TntDbException {
         TntDb.rollback();
@@ -417,7 +725,7 @@ public class ContactManagerTest {
      * Tests updating of a contact's last activity
      */
     @Test
-    public void updateContactLastActivityDate() throws SQLException {
+    public void updateLastActivityDate() throws SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
 
@@ -433,10 +741,54 @@ public class ContactManagerTest {
     }
 
     /**
+     * Tests updating of a contact's last appointment
+     */
+    @Test
+    public void updateLastAppointmentDate() throws SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Update last appointment
+        ContactManager.updateLastAppointmentDate(GEORGEJETSON_CONTACTID, NEWDATE);
+
+        // Verify that last appointment and last activity are correct
+        assertEquals(NEWDATE, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+        assertEquals(NEWDATE, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last appointment; should force a recalculation
+        ContactManager.updateLastAppointmentDate(GEORGEJETSON_CONTACTID, null);
+        assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+    }
+
+    /**
+     * Tests updating of a contact's last call
+     */
+    @Test
+    public void updateLastCallDate() throws SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Update last call
+        ContactManager.updateLastCallDate(GEORGEJETSON_CONTACTID, NEWDATE);
+
+        // Verify that last call and last activity are correct
+        assertEquals(NEWDATE, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+        assertEquals(NEWDATE, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last call; should force a recalculation
+        ContactManager.updateLastCallDate(GEORGEJETSON_CONTACTID, null);
+        assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+    }
+
+    /**
      * Tests updating of a contact's last challenge
      */
     @Test
-    public void updateContactLastChallengeDate() throws SQLException {
+    public void updateLastChallengeDate() throws SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTCHALLENGE, ContactManager.getLastChallengeDate(GEORGEJETSON_CONTACTID));
         assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
@@ -458,7 +810,7 @@ public class ContactManagerTest {
      * Tests updating of a contact's last edit
      */
     @Test
-    public void updateContactLastEdit() throws SQLException {
+    public void updateLastEdit() throws SQLException {
         // Get current LastEdit
         LocalDateTime curLastEdit = ContactManager.getLastEditDate(MRINCREDIBLE_CONTACTID);
 
@@ -474,7 +826,7 @@ public class ContactManagerTest {
      * Tests updating of a contact's last letter
      */
     @Test
-    public void updateContactLastLetterDate() throws SQLException {
+    public void updateLastLetterDate() throws SQLException {
         // Verify initial state
         assertEquals(MRINCREDIBLE_LASTLETTER, ContactManager.getLastLetterDate(MRINCREDIBLE_CONTACTID));
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
@@ -493,10 +845,34 @@ public class ContactManagerTest {
     }
 
     /**
+     * Tests updating of a contact's last pre-call
+     */
+    @Test
+    public void updateLastPreCallDate() throws SQLException {
+        // Note: we're using Bambi here, not George
+
+        // Verify initial state
+        assertEquals(BAMBIDEER_LASTPRECALL, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+        assertEquals(BAMBIDEER_LASTACTIVITY, ContactManager.getLastActivityDate(BAMBIDEER_CONTACTID));
+
+        // Update last pre-call
+        ContactManager.updateLastPreCallDate(BAMBIDEER_CONTACTID, NEWDATE);
+
+        // Verify that last pre-call and last activity are correct
+        assertEquals(NEWDATE, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+        assertEquals(NEWDATE, ContactManager.getLastActivityDate(BAMBIDEER_CONTACTID));
+
+        // Remove last pre-call; should force a recalculation
+        ContactManager.updateLastPreCallDate(BAMBIDEER_CONTACTID, null);
+        assertEquals(BAMBIDEER_LASTPRECALL, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
+        assertEquals(BAMBIDEER_LASTACTIVITY, ContactManager.getLastActivityDate(BAMBIDEER_CONTACTID));
+    }
+
+    /**
      * Tests updating of a contact's last thank
      */
     @Test
-    public void updateContactLastThankDate() throws SQLException {
+    public void updateLastThankDate() throws SQLException {
         // Verify initial state
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
         assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
@@ -511,6 +887,28 @@ public class ContactManagerTest {
         // Remove last thank; should force a recalculation
         ContactManager.updateLastThankDate(GEORGEJETSON_CONTACTID, null);
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+    }
+
+    /**
+     * Tests updating of a contact's last visit
+     */
+    @Test
+    public void updateLastVisitDate() throws SQLException {
+        // Verify initial state
+        assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
+        assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Update last visit
+        ContactManager.updateLastVisitDate(GEORGEJETSON_CONTACTID, NEWDATE);
+
+        // Verify that last visit and last activity are correct
+        assertEquals(NEWDATE, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
+        assertEquals(NEWDATE, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
+
+        // Remove last visit; should force a recalculation
+        ContactManager.updateLastVisitDate(GEORGEJETSON_CONTACTID, null);
+        assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
         assertEquals(GEORGEJETSON_LASTACTIVITY, ContactManager.getLastActivityDate(GEORGEJETSON_CONTACTID));
     }
 }

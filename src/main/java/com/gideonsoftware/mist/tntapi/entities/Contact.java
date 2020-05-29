@@ -76,7 +76,7 @@ public class Contact {
     private String spouseMiddleName = "";
     private String spouseLastName = "";
     private boolean deceased = false;
-    private int mailingAddressType = 1;
+    private Integer mailingAddressType = 1;
     private String mailingStreetAddress = "";
     private String mailingCity = "";
     private String mailingState = "";
@@ -86,7 +86,7 @@ public class Contact {
     private String homeCity = "";
     private String homeState = "";
     private String homePostalCode = "";
-    private int homeCountryId = 840;
+    private Integer homeCountryId = 840;
     private String homeCountry = "United States of America";
     private boolean homeAddressIsDeliverable = false;
     private String homeAddressBlock = "";
@@ -95,7 +95,7 @@ public class Contact {
     private String otherCity = "";
     private String otherState = "";
     private String otherPostalCode = "";
-    private int otherCountryId = 840;
+    private Integer otherCountryId = 840;
     private String otherCountry = "United States of America";
     private boolean otherAddressIsDeliverable = false;
     private String otherAddressBlock = "";
@@ -105,7 +105,7 @@ public class Contact {
     private String businessCity = "";
     private String businessState = "";
     private String businessPostalCode = "";
-    private int businessCountryId = 840;
+    private Integer businessCountryId = 840;
     private String businessCountry = "United States of America";
     private boolean businessAddressIsDeliverable = false;
     private String businessAddressBlock = "";
@@ -115,13 +115,13 @@ public class Contact {
     private String spouseBusinessCity = "";
     private String spouseBusinessState = "";
     private String spouseBusinessPostalCode = "";
-    private int spouseBusinessCountryId = 840;
+    private Integer spouseBusinessCountryId = 840;
     private String spouseBusinessCountry = "United States of America";
     private boolean spouseBusinessAddressIsDeliverable = false;
     private String spouseBusinessAddressBlock = "";
     private boolean spouseBusinessAddressBlockIsCustom = false;
-    private int preferredPhoneType = 0;
-    private int phoneIsValidMask = 133693440; // Default in Access = 134217727
+    private Integer preferredPhoneType = 0;
+    private Integer phoneIsValidMask = 133693440; // Default in Access = 134217727
     private String phoneCountryIds = "";
     private String homePhone = "";
     private String homePhone2 = "";
@@ -142,7 +142,7 @@ public class Contact {
     private String spouseMobilePhone = "";
     private String spouseMobilePhone2 = "";
     private String spousePagerNumber = "";
-    private int preferredEmailTypes = 2;
+    private Integer preferredEmailTypes = 2;
     private String emailLabels = "";
     private String email1 = "";
     private String email2 = "";
@@ -178,8 +178,8 @@ public class Contact {
     private String spouseSocialWeb4 = "";
     private String notesAsRtf = "";
     private String notes = "";
-    private int familySideId = 0;
-    private int familyLevelId = 0;
+    private Integer familySideId = 0;
+    private Integer familyLevelId = 0;
     private String children = "";
     private String interests = "";
     private String nickname = "";
@@ -206,49 +206,49 @@ public class Contact {
     private String user7 = "";
     private String user8 = "";
     private String userStatus = "";
-    private int mapAddressType = 0;
+    private Integer mapAddressType = 0;
     private Integer mapLat = null;
     private Integer mapLng = null;
     private String mapStatus = "CRC=0";
     private FastMoney pledgeAmount = null;
-    private int pledgeFrequencyId = 0;
+    private Integer pledgeFrequencyId = 0;
     private boolean pledgeReceived = false;
     private LocalDateTime pledgeStartDate = null;
-    private int pledgeCurrencyId = 0;
+    private Integer pledgeCurrencyId = 0;
     private String referredBy = "";
     private String referredByList = "";
-    private int mpdPhaseId = 0;
+    private Integer mpdPhaseId = 0;
     private Integer fundRepId = null;
     private LocalDateTime nextAsk = null;
     private FastMoney nextAskAmount = null;
     private FastMoney estimatedAnnualCapacity = null;
     private boolean neverAsk = false;
     private String region = "";
-    private int likelyToGiveId = 0;
+    private Integer likelyToGiveId = 0;
     private String churchName = "";
     private boolean sendNewsletter = false;
     private String newsletterMediaPref = "+E";
-    private int newsletterLangId = 0;
+    private Integer newsletterLangId = 0;
     private boolean directDeposit = false;
     private boolean magazine = false;
     private FastMoney monthlyPledge = FastMoney.of(0, "USD");
     private LocalDateTime firstGiftDate = null;
     private LocalDateTime lastGiftDate = null;
     private FastMoney lastGiftAmount = FastMoney.of(0, "USD");
-    private int lastGiftCurrencyId = 0;
-    private int lastGiftOrganizationId = 0;
+    private Integer lastGiftCurrencyId = 0;
+    private Integer lastGiftOrganizationId = 0;
     private String lastGiftOrgDonorCode = "";
     private String lastGiftPaymentMethod = "";
     private FastMoney prevYearTotal = FastMoney.of(0, "USD");
     private FastMoney yearTotal = FastMoney.of(0, "USD");
     private FastMoney lifetimeTotal = FastMoney.of(0, "USD");
-    private int lifetimeNumberOfGifts = 0;
+    private Integer lifetimeNumberOfGifts = 0;
     private FastMoney largestGift = FastMoney.of(0, "USD");
     private LocalDateTime goodUntil = null;
     private FastMoney aveMonthlyGift = FastMoney.of(0, "USD");
     private LocalDateTime lastDateInAve = null;
     private FastMoney twelveMonthTotal = FastMoney.of(0, "USD");
-    private int baseCurrencyId = CurrencyManager.getBaseCurrencyId();
+    private Integer baseCurrencyId = CurrencyManager.getBaseCurrencyId();
     private FastMoney baseMonthlyPledge = FastMoney.of(0, "USD");
     private FastMoney baseLastGiftAmount = FastMoney.of(0, "USD");
     private FastMoney basePrevYearTotal = FastMoney.of(0, "USD");
@@ -265,8 +265,8 @@ public class Contact {
     private LocalDateTime lastVisit = null;
     private LocalDateTime lastThank = null;
     private LocalDateTime lastChallenge = null;
-    private int campaignsSinceLastGift = 0;
-    private int challengesSinceLastGift = 0;
+    private Integer campaignsSinceLastGift = 0;
+    private Integer challengesSinceLastGift = 0;
     private String orgDonorCodes = "";
 
     public Contact() {
@@ -292,7 +292,7 @@ public class Contact {
         return baseAveMonthlyGift;
     }
 
-    public int getBaseCurrencyId() {
+    public Integer getBaseCurrencyId() {
         return baseCurrencyId;
     }
 
@@ -348,7 +348,7 @@ public class Contact {
         return businessCountry;
     }
 
-    public int getBusinessCountryId() {
+    public Integer getBusinessCountryId() {
         return businessCountryId;
     }
 
@@ -380,7 +380,7 @@ public class Contact {
         return businessStreetAddress;
     }
 
-    public int getCampaignsSinceLastGift() {
+    public Integer getCampaignsSinceLastGift() {
         return campaignsSinceLastGift;
     }
 
@@ -388,7 +388,7 @@ public class Contact {
         return categories;
     }
 
-    public int getChallengesSinceLastGift() {
+    public Integer getChallengesSinceLastGift() {
         return challengesSinceLastGift;
     }
 
@@ -475,11 +475,11 @@ public class Contact {
         return estimatedAnnualCapacity;
     }
 
-    public int getFamilyLevelID() {
+    public Integer getFamilyLevelID() {
         return familyLevelId;
     }
 
-    public int getFamilySideID() {
+    public Integer getFamilySideID() {
         return familySideId;
     }
 
@@ -523,7 +523,7 @@ public class Contact {
         return homeCountry;
     }
 
-    public int getHomeCountryId() {
+    public Integer getHomeCountryId() {
         return homeCountryId;
     }
 
@@ -591,7 +591,7 @@ public class Contact {
         return lastGiftAmount;
     }
 
-    public int getLastGiftCurrencyId() {
+    public Integer getLastGiftCurrencyId() {
         return lastGiftCurrencyId;
     }
 
@@ -599,7 +599,7 @@ public class Contact {
         return lastGiftDate;
     }
 
-    public int getLastGiftOrganizationId() {
+    public Integer getLastGiftOrganizationId() {
         return lastGiftOrganizationId;
     }
 
@@ -642,7 +642,7 @@ public class Contact {
         return lastVisit;
     }
 
-    public int getLifetimeNumberOfGifts() {
+    public Integer getLifetimeNumberOfGifts() {
         return lifetimeNumberOfGifts;
     }
 
@@ -650,7 +650,7 @@ public class Contact {
         return lifetimeTotal;
     }
 
-    public int getLikelyToGiveId() {
+    public Integer getLikelyToGiveId() {
         return likelyToGiveId;
     }
 
@@ -658,7 +658,7 @@ public class Contact {
         return mailingAddressBlock;
     }
 
-    public int getMailingAddressType() {
+    public Integer getMailingAddressType() {
         return mailingAddressType;
     }
 
@@ -682,7 +682,7 @@ public class Contact {
         return mailingStreetAddress;
     }
 
-    public int getMapAddressType() {
+    public Integer getMapAddressType() {
         return mapAddressType;
     }
 
@@ -714,11 +714,11 @@ public class Contact {
         return monthlyPledge;
     }
 
-    public int getMpdPhaseId() {
+    public Integer getMpdPhaseId() {
         return mpdPhaseId;
     }
 
-    public int getNewsletterLangId() {
+    public Integer getNewsletterLangId() {
         return newsletterLangId;
     }
 
@@ -770,7 +770,7 @@ public class Contact {
         return otherCountry;
     }
 
-    public int getOtherCountryId() {
+    public Integer getOtherCountryId() {
         return otherCountryId;
     }
 
@@ -806,7 +806,7 @@ public class Contact {
         return phoneCountryIds;
     }
 
-    public int getPhoneIsValidMask() {
+    public Integer getPhoneIsValidMask() {
         return phoneIsValidMask;
     }
 
@@ -814,11 +814,11 @@ public class Contact {
         return pledgeAmount;
     }
 
-    public int getPledgeCurrencyId() {
+    public Integer getPledgeCurrencyId() {
         return pledgeCurrencyId;
     }
 
-    public int getPledgeFrequencyId() {
+    public Integer getPledgeFrequencyId() {
         return pledgeFrequencyId;
     }
 
@@ -844,11 +844,11 @@ public class Contact {
             PledgeFrequencyManager.get(pledgeFrequencyId).getDescription());
     }
 
-    public int getPreferredEmailTypes() {
+    public Integer getPreferredEmailTypes() {
         return preferredEmailTypes;
     }
 
-    public int getPreferredPhoneType() {
+    public Integer getPreferredPhoneType() {
         return preferredPhoneType;
     }
 
@@ -924,7 +924,7 @@ public class Contact {
         return spouseBusinessCountry;
     }
 
-    public int getSpouseBusinessCountryId() {
+    public Integer getSpouseBusinessCountryId() {
         return spouseBusinessCountryId;
     }
 
@@ -1243,15 +1243,15 @@ public class Contact {
         return spouseEmail3IsValid;
     }
 
-    public void setAnniversaryDay(int anniversaryDay) {
+    public void setAnniversaryDay(Integer anniversaryDay) {
         this.anniversaryDay = anniversaryDay;
     }
 
-    public void setAnniversaryMonth(int anniversaryMonth) {
+    public void setAnniversaryMonth(Integer anniversaryMonth) {
         this.anniversaryMonth = anniversaryMonth;
     }
 
-    public void setAnniversaryYear(int anniversaryYear) {
+    public void setAnniversaryYear(Integer anniversaryYear) {
         this.anniversaryYear = anniversaryYear;
     }
 
@@ -1263,7 +1263,7 @@ public class Contact {
         this.baseAveMonthlyGift = baseAveMonthlyGift;
     }
 
-    public void setBaseCurrencyId(int baseCurrencyId) {
+    public void setBaseCurrencyId(Integer baseCurrencyId) {
         this.baseCurrencyId = baseCurrencyId;
     }
 
@@ -1327,7 +1327,7 @@ public class Contact {
         this.businessCountry = businessCountry;
     }
 
-    public void setBusinessCountryId(int businessCountryId) {
+    public void setBusinessCountryId(Integer businessCountryId) {
         this.businessCountryId = businessCountryId;
     }
 
@@ -1359,7 +1359,7 @@ public class Contact {
         this.businessStreetAddress = businessStreetAddress;
     }
 
-    public void setCampaignsSinceLastGift(int campaignsSinceLastGift) {
+    public void setCampaignsSinceLastGift(Integer campaignsSinceLastGift) {
         this.campaignsSinceLastGift = campaignsSinceLastGift;
     }
 
@@ -1367,7 +1367,7 @@ public class Contact {
         this.categories = categories;
     }
 
-    public void setChallengesSinceLastGift(int challengesSinceLastGift) {
+    public void setChallengesSinceLastGift(Integer challengesSinceLastGift) {
         this.challengesSinceLastGift = challengesSinceLastGift;
     }
 
@@ -1447,11 +1447,11 @@ public class Contact {
         this.estimatedAnnualCapacity = estimatedAnnualCapacity;
     }
 
-    public void setFamilyLevelID(int familyLevelID) {
+    public void setFamilyLevelID(Integer familyLevelID) {
         this.familyLevelId = familyLevelID;
     }
 
-    public void setFamilySideID(int familySideID) {
+    public void setFamilySideID(Integer familySideID) {
         this.familySideId = familySideID;
     }
 
@@ -1515,7 +1515,7 @@ public class Contact {
         this.homeCountry = homeCountry;
     }
 
-    public void setHomeCountryID(int homeCountryID) {
+    public void setHomeCountryID(Integer homeCountryID) {
         this.homeCountryId = homeCountryID;
     }
 
@@ -1629,7 +1629,7 @@ public class Contact {
         this.lastGiftAmount = lastGiftAmount;
     }
 
-    public void setLastGiftCurrencyId(int lastGiftCurrencyId) {
+    public void setLastGiftCurrencyId(Integer lastGiftCurrencyId) {
         this.lastGiftCurrencyId = lastGiftCurrencyId;
     }
 
@@ -1637,7 +1637,7 @@ public class Contact {
         this.lastGiftDate = lastGiftDate;
     }
 
-    public void setLastGiftOrganizationId(int lastGiftOrganizationId) {
+    public void setLastGiftOrganizationId(Integer lastGiftOrganizationId) {
         this.lastGiftOrganizationId = lastGiftOrganizationId;
     }
 
@@ -1669,7 +1669,7 @@ public class Contact {
         this.lastVisit = lastVisit;
     }
 
-    public void setLifetimeNumberOfGifts(int lifetimeNumberOfGifts) {
+    public void setLifetimeNumberOfGifts(Integer lifetimeNumberOfGifts) {
         this.lifetimeNumberOfGifts = lifetimeNumberOfGifts;
     }
 
@@ -1677,7 +1677,7 @@ public class Contact {
         this.lifetimeTotal = lifetimeTotal;
     }
 
-    public void setLikelyToGiveId(int likelyToGiveId) {
+    public void setLikelyToGiveId(Integer likelyToGiveId) {
         this.likelyToGiveId = likelyToGiveId;
     }
 
@@ -1693,7 +1693,7 @@ public class Contact {
         this.mailingAddressIsDeliverable = mailingAddressIsDeliverable;
     }
 
-    public void setMailingAddressType(int mailingAddressType) {
+    public void setMailingAddressType(Integer mailingAddressType) {
         this.mailingAddressType = mailingAddressType;
     }
 
@@ -1717,7 +1717,7 @@ public class Contact {
         this.mailingStreetAddress = mailingStreetAddress;
     }
 
-    public void setMapAddressType(int mapAddressType) {
+    public void setMapAddressType(Integer mapAddressType) {
         this.mapAddressType = mapAddressType;
     }
 
@@ -1749,7 +1749,7 @@ public class Contact {
         this.monthlyPledge = monthlyPledge;
     }
 
-    public void setMpdPhaseId(int mpdPhaseId) {
+    public void setMpdPhaseId(Integer mpdPhaseId) {
         this.mpdPhaseId = mpdPhaseId;
     }
 
@@ -1757,7 +1757,7 @@ public class Contact {
         this.neverAsk = neverAsk;
     }
 
-    public void setNewsletterLangId(int newsletterLangId) {
+    public void setNewsletterLangId(Integer newsletterLangId) {
         this.newsletterLangId = newsletterLangId;
     }
 
@@ -1821,7 +1821,7 @@ public class Contact {
         this.otherCountry = otherCountry;
     }
 
-    public void setOtherCountryID(int otherCountryID) {
+    public void setOtherCountryID(Integer otherCountryID) {
         this.otherCountryId = otherCountryID;
     }
 
@@ -1861,7 +1861,7 @@ public class Contact {
         this.phoneIsValid = phoneIsValid;
     }
 
-    public void setPhoneIsValidMask(int phoneIsValidMask) {
+    public void setPhoneIsValidMask(Integer phoneIsValidMask) {
         this.phoneIsValidMask = phoneIsValidMask;
     }
 
@@ -1869,11 +1869,11 @@ public class Contact {
         this.pledgeAmount = pledgeAmount;
     }
 
-    public void setPledgeCurrencyId(int pledgeCurrencyId) {
+    public void setPledgeCurrencyId(Integer pledgeCurrencyId) {
         this.pledgeCurrencyId = pledgeCurrencyId;
     }
 
-    public void setPledgeFrequencyId(int pledgeFrequencyId) {
+    public void setPledgeFrequencyId(Integer pledgeFrequencyId) {
         this.pledgeFrequencyId = pledgeFrequencyId;
     }
 
@@ -1885,11 +1885,11 @@ public class Contact {
         this.pledgeStartDate = pledgeStartDate;
     }
 
-    public void setPreferredEmailTypes(int preferredEmailTypes) {
+    public void setPreferredEmailTypes(Integer preferredEmailTypes) {
         this.preferredEmailTypes = preferredEmailTypes;
     }
 
-    public void setPreferredPhoneType(int preferredPhoneType) {
+    public void setPreferredPhoneType(Integer preferredPhoneType) {
         this.preferredPhoneType = preferredPhoneType;
     }
 
@@ -1985,7 +1985,7 @@ public class Contact {
         this.spouseBusinessCountry = spouseBusinessCountry;
     }
 
-    public void setSpouseBusinessCountryId(int spouseBusinessCountryId) {
+    public void setSpouseBusinessCountryId(Integer spouseBusinessCountryId) {
         this.spouseBusinessCountryId = spouseBusinessCountryId;
     }
 

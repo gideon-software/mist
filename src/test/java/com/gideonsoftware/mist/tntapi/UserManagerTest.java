@@ -33,8 +33,6 @@ import org.junit.runners.JUnit4;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
-import com.gideonsoftware.mist.tntapi.TntDb;
-import com.gideonsoftware.mist.tntapi.UserManager;
 import com.gideonsoftware.mist.tntapi.entities.User;
 
 @RunWith(JUnit4.class)
@@ -65,6 +63,7 @@ public class UserManagerTest {
      */
     @Test
     public void getUserName() throws TntDbException, SQLException {
+        assertEquals(null, UserManager.getUserName(null));
         assertEquals("Tom", UserManager.getUserName(USERID_TOM));
         assertEquals("David", UserManager.getUserName(USERID_DAVID));
     }

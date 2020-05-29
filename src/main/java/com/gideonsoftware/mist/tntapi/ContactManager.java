@@ -25,7 +25,10 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +39,7 @@ import com.gideonsoftware.mist.tntapi.entities.Contact;
 import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
+import com.gideonsoftware.mist.util.Util;
 
 /**
  *
@@ -72,13 +76,24 @@ public class ContactManager {
      * @throws SQLException
      *             if there is a database access problem
      * @throws TntDbException
-     *             TODO: Rollback shouldn't send this
+     *             if email or contactId was null
+     *             if the email already exists in the Tnt database
+     *             if a rollback was required but failed
      */
     public static void addNewEmailAddress(
         String email,
         Integer contactId,
         boolean usePrimaryContact) throws SQLException, TntDbException {
         log.trace("addNewEmailAddress({},{},{})", email, contactId, usePrimaryContact);
+
+        if (email == null)
+            throw new TntDbException("Email address not supplied");
+
+        if (contactId == null)
+            throw new TntDbException("Contact not supplied");
+
+        if (getContactsByEmailCount(email) != 0)
+            throw new TntDbException("Email address already exists in the Tnt database");
 
         Contact contact = get(contactId);
         String emailField = ""; //
@@ -106,7 +121,6 @@ public class ContactManager {
 
         if (addToExisting) {
             // All our email slots are full; append this one to the end of an existing one
-            // TODO: This doesn't work yet =P  We also have to change the search feature
             if (usePrimaryContact) {
                 emailField = "Email3";
                 email = String.format("%s,%s", contact.getEmail3(), email);
@@ -460,7 +474,7 @@ public class ContactManager {
             return null;
 
         Contact contact = new Contact();
-        contact.setContactId(rs.getInt("ContactID"));
+        contact.setContactId(TntDb.getRSInteger(rs, "ContactID"));
         contact.setLastEdit(TntDb.timestampToDate(rs.getTimestamp("LastEdit")));
         contact.setCreatedDate(TntDb.timestampToDate(rs.getTimestamp("CreatedDate")));
         contact.setRejectedDuplicateContactIDs(rs.getString("RejectedDuplicateContactIDs"));
@@ -493,7 +507,7 @@ public class ContactManager {
         contact.setSpouseMiddleName(rs.getString("SpouseMiddleName"));
         contact.setSpouseLastName(rs.getString("SpouseLastName"));
         contact.setDeceased(rs.getBoolean("Deceased"));
-        contact.setMailingAddressType(rs.getInt("MailingAddressType"));
+        contact.setMailingAddressType(TntDb.getRSInteger(rs, "MailingAddressType"));
         contact.setMailingStreetAddress(rs.getString("MailingStreetAddress"));
         contact.setMailingCity(rs.getString("MailingCity"));
         contact.setMailingState(rs.getString("MailingState"));
@@ -503,7 +517,7 @@ public class ContactManager {
         contact.setHomeCity(rs.getString("HomeCity"));
         contact.setHomeState(rs.getString("HomeState"));
         contact.setHomePostalCode(rs.getString("HomePostalCode"));
-        contact.setHomeCountryID(rs.getInt("HomeCountryID"));
+        contact.setHomeCountryID(TntDb.getRSInteger(rs, "HomeCountryID"));
         contact.setHomeCountry(rs.getString("HomeCountry"));
         contact.setHomeAddressIsDeliverable(rs.getBoolean("HomeAddressIsDeliverable"));
         contact.setHomeAddressBlock(rs.getString("HomeAddressBlock"));
@@ -512,7 +526,7 @@ public class ContactManager {
         contact.setOtherCity(rs.getString("OtherCity"));
         contact.setOtherState(rs.getString("OtherState"));
         contact.setOtherPostalCode(rs.getString("OtherPostalCode"));
-        contact.setOtherCountryID(rs.getInt("OtherCountryID"));
+        contact.setOtherCountryID(TntDb.getRSInteger(rs, "OtherCountryID"));
         contact.setOtherCountry(rs.getString("OtherCountry"));
         contact.setOtherAddressIsDeliverable(rs.getBoolean("OtherAddressIsDeliverable"));
         contact.setOtherAddressBlock(rs.getString("OtherAddressBlock"));
@@ -522,7 +536,7 @@ public class ContactManager {
         contact.setBusinessCity(rs.getString("BusinessCity"));
         contact.setBusinessState(rs.getString("BusinessState"));
         contact.setBusinessPostalCode(rs.getString("BusinessPostalCode"));
-        contact.setBusinessCountryId(rs.getInt("BusinessCountryID"));
+        contact.setBusinessCountryId(TntDb.getRSInteger(rs, "BusinessCountryID"));
         contact.setBusinessCountry(rs.getString("BusinessCountry"));
         contact.setBusinessAddressIsDeliverable(rs.getBoolean("BusinessAddressIsDeliverable"));
         contact.setBusinessAddressBlock(rs.getString("BusinessAddressBlock"));
@@ -532,13 +546,13 @@ public class ContactManager {
         contact.setSpouseBusinessCity(rs.getString("SpouseBusinessCity"));
         contact.setSpouseBusinessState(rs.getString("SpouseBusinessState"));
         contact.setSpouseBusinessPostalCode(rs.getString("SpouseBusinessPostalCode"));
-        contact.setSpouseBusinessCountryId(rs.getInt("SpouseBusinessCountryID"));
+        contact.setSpouseBusinessCountryId(TntDb.getRSInteger(rs, "SpouseBusinessCountryID"));
         contact.setSpouseBusinessCountry(rs.getString("SpouseBusinessCountry"));
         contact.setSpouseBusinessAddressIsDeliverable(rs.getBoolean("SpouseBusinessAddressIsDeliverable"));
         contact.setSpouseBusinessAddressBlock(rs.getString("SpouseBusinessAddressBlock"));
         contact.setSpouseBusinessAddressBlockIsCustom(rs.getBoolean("SpouseBusinessAddressBlockIsCustom"));
-        contact.setPreferredPhoneType(rs.getInt("PreferredPhoneType"));
-        contact.setPhoneIsValidMask(rs.getInt("PhoneIsValidMask"));
+        contact.setPreferredPhoneType(TntDb.getRSInteger(rs, "PreferredPhoneType"));
+        contact.setPhoneIsValidMask(TntDb.getRSInteger(rs, "PhoneIsValidMask"));
         contact.setPhoneCountryIds(rs.getString("PhoneCountryIDs"));
         contact.setHomePhone(rs.getString("HomePhone"));
         contact.setHomePhone2(rs.getString("HomePhone2"));
@@ -559,7 +573,7 @@ public class ContactManager {
         contact.setSpouseMobilePhone(rs.getString("SpouseMobilePhone"));
         contact.setSpouseMobilePhone2(rs.getString("SpouseMobilePhone2"));
         contact.setSpousePagerNumber(rs.getString("SpousePagerNumber"));
-        contact.setPreferredEmailTypes(rs.getInt("PreferredEmailTypes"));
+        contact.setPreferredEmailTypes(TntDb.getRSInteger(rs, "PreferredEmailTypes"));
         contact.setEmailLabels(rs.getString("EmailLabels"));
         contact.setEmail1(rs.getString("Email1"));
         contact.setEmail2(rs.getString("Email2"));
@@ -595,8 +609,8 @@ public class ContactManager {
         contact.setSpouseSocialWeb4(rs.getString("SpouseSocialWeb4"));
         contact.setNotesAsRtf(rs.getString("NotesAsRTF"));
         contact.setNotes(rs.getString("Notes"));
-        contact.setFamilySideID(rs.getInt("FamilySideID"));
-        contact.setFamilyLevelID(rs.getInt("FamilyLevelID"));
+        contact.setFamilySideID(TntDb.getRSInteger(rs, "FamilySideID"));
+        contact.setFamilyLevelID(TntDb.getRSInteger(rs, "FamilyLevelID"));
         contact.setChildren(rs.getString("Children"));
         contact.setInterests(rs.getString("Interests"));
         contact.setNickname(rs.getString("Nickname"));
@@ -604,15 +618,15 @@ public class ContactManager {
         contact.setSpouseInterests(rs.getString("SpouseInterests"));
         contact.setSpouseNickname(rs.getString("SpouseNickname"));
         contact.setSpouseProfession(rs.getString("SpouseProfession"));
-        contact.setAnniversaryMonth(rs.getInt("AnniversaryMonth"));
-        contact.setAnniversaryDay(rs.getInt("AnniversaryDay"));
-        contact.setAnniversaryYear(rs.getInt("AnniversaryYear"));
-        contact.setBirthdayMonth(rs.getInt("BirthdayMonth"));
-        contact.setBirthdayDay(rs.getInt("BirthdayDay"));
-        contact.setBirthdayYear(rs.getInt("BirthdayYear"));
-        contact.setSpouseBirthdayMonth(rs.getInt("SpouseBirthdayMonth"));
-        contact.setSpouseBirthdayDay(rs.getInt("SpouseBirthdayDay"));
-        contact.setSpouseBirthdayYear(rs.getInt("SpouseBirthdayYear"));
+        contact.setAnniversaryMonth(TntDb.getRSInteger(rs, "AnniversaryMonth"));
+        contact.setAnniversaryDay(TntDb.getRSInteger(rs, "AnniversaryDay"));
+        contact.setAnniversaryYear(TntDb.getRSInteger(rs, "AnniversaryYear"));
+        contact.setBirthdayMonth(TntDb.getRSInteger(rs, "BirthdayMonth"));
+        contact.setBirthdayDay(TntDb.getRSInteger(rs, "BirthdayDay"));
+        contact.setBirthdayYear(TntDb.getRSInteger(rs, "BirthdayYear"));
+        contact.setSpouseBirthdayMonth(TntDb.getRSInteger(rs, "SpouseBirthdayMonth"));
+        contact.setSpouseBirthdayDay(TntDb.getRSInteger(rs, "SpouseBirthdayDay"));
+        contact.setSpouseBirthdayYear(TntDb.getRSInteger(rs, "SpouseBirthdayYear"));
         contact.setCategories(rs.getString("Categories"));
         contact.setUser1(rs.getString("User1"));
         contact.setUser2(rs.getString("User2"));
@@ -623,49 +637,49 @@ public class ContactManager {
         contact.setUser7(rs.getString("User7"));
         contact.setUser8(rs.getString("User8"));
         contact.setUserStatus(rs.getString("UserStatus"));
-        contact.setMapAddressType(rs.getInt("MapAddressType"));
-        contact.setMapLat(rs.getInt("MapLat"));
-        contact.setMapLng(rs.getInt("MapLng"));
+        contact.setMapAddressType(TntDb.getRSInteger(rs, "MapAddressType"));
+        contact.setMapLat(TntDb.getRSInteger(rs, "MapLat"));
+        contact.setMapLng(TntDb.getRSInteger(rs, "MapLng"));
         contact.setMapStatus(rs.getString("MapStatus"));
         contact.setPledgeAmount(TntDb.floatToMoney(rs.getFloat("PledgeAmount")));
-        contact.setPledgeFrequencyId(rs.getInt("PledgeFrequencyID"));
+        contact.setPledgeFrequencyId(TntDb.getRSInteger(rs, "PledgeFrequencyID"));
         contact.setPledgeReceived(rs.getBoolean("PledgeReceived"));
         contact.setPledgeStartDate(TntDb.timestampToDate(rs.getTimestamp("PledgeStartDate")));
-        contact.setPledgeCurrencyId(rs.getInt("PledgeCurrencyID"));
+        contact.setPledgeCurrencyId(TntDb.getRSInteger(rs, "PledgeCurrencyID"));
         contact.setReferredBy(rs.getString("ReferredBy"));
         contact.setReferredByList(rs.getString("ReferredByList"));
-        contact.setMpdPhaseId(rs.getInt("MPDPhaseID"));
-        contact.setFundRepId(rs.getInt("FundRepID"));
+        contact.setMpdPhaseId(TntDb.getRSInteger(rs, "MPDPhaseID"));
+        contact.setFundRepId(TntDb.getRSInteger(rs, "FundRepID"));
         contact.setNextAsk(TntDb.timestampToDate(rs.getTimestamp("NextAsk")));
         contact.setNextAskAmount(TntDb.floatToMoney(rs.getFloat("NextAskAmount")));
         contact.setEstimatedAnnualCapacity(TntDb.floatToMoney(rs.getFloat("EstimatedAnnualCapacity")));
         contact.setNeverAsk(rs.getBoolean("NeverAsk"));
         contact.setRegion(rs.getString("Region"));
-        contact.setLikelyToGiveId(rs.getInt("LikelyToGiveID"));
+        contact.setLikelyToGiveId(TntDb.getRSInteger(rs, "LikelyToGiveID"));
         contact.setChurchName(rs.getString("ChurchName"));
         contact.setSendNewsletter(rs.getBoolean("SendNewsletter"));
         contact.setNewsletterMediaPref(rs.getString("NewsletterMediaPref"));
-        contact.setNewsletterLangId(rs.getInt("NewsletterLangID"));
+        contact.setNewsletterLangId(TntDb.getRSInteger(rs, "NewsletterLangID"));
         contact.setDirectDeposit(rs.getBoolean("DirectDeposit"));
         contact.setMagazine(rs.getBoolean("Magazine"));
         contact.setMonthlyPledge(TntDb.floatToMoney(rs.getFloat("MonthlyPledge")));
         contact.setFirstGiftDate(TntDb.timestampToDate(rs.getTimestamp("FirstGiftDate")));
         contact.setLastGiftDate(TntDb.timestampToDate(rs.getTimestamp("LastGiftDate")));
         contact.setLastGiftAmount(TntDb.floatToMoney(rs.getFloat("LastGiftAmount")));
-        contact.setLastGiftCurrencyId(rs.getInt("LastGiftCurrencyID"));
-        contact.setLastGiftOrganizationId(rs.getInt("LastGiftOrganizationID"));
+        contact.setLastGiftCurrencyId(TntDb.getRSInteger(rs, "LastGiftCurrencyID"));
+        contact.setLastGiftOrganizationId(TntDb.getRSInteger(rs, "LastGiftOrganizationID"));
         contact.setLastGiftOrgDonorCode(rs.getString("LastGiftOrgDonorCode"));
         contact.setLastGiftPaymentMethod(rs.getString("LastGiftPaymentMethod"));
         contact.setPrevYearTotal(TntDb.floatToMoney(rs.getFloat("PrevYearTotal")));
         contact.setYearTotal(TntDb.floatToMoney(rs.getFloat("YearTotal")));
         contact.setLifetimeTotal(TntDb.floatToMoney(rs.getFloat("LifetimeTotal")));
-        contact.setLifetimeNumberOfGifts(rs.getInt("LifetimeNumberOfGifts"));
+        contact.setLifetimeNumberOfGifts(TntDb.getRSInteger(rs, "LifetimeNumberOfGifts"));
         contact.setLargestGift(TntDb.floatToMoney(rs.getFloat("LargestGift")));
         contact.setGoodUntil(TntDb.timestampToDate(rs.getTimestamp("GoodUntil")));
         contact.setAveMonthlyGift(TntDb.floatToMoney(rs.getFloat("AveMonthlyGift")));
         contact.setLastDateInAve(TntDb.timestampToDate(rs.getTimestamp("LastDateInAve")));
         contact.setTwelveMonthTotal(TntDb.floatToMoney(rs.getFloat("TwelveMonthTotal")));
-        contact.setBaseCurrencyId(rs.getInt("BaseCurrencyID"));
+        contact.setBaseCurrencyId(TntDb.getRSInteger(rs, "BaseCurrencyID"));
         contact.setBaseMonthlyPledge(TntDb.floatToMoney(rs.getFloat("BaseMonthlyPledge")));
         contact.setBaseLastGiftAmount(TntDb.floatToMoney(rs.getFloat("BaseLastGiftAmount")));
         contact.setBasePrevYearTotal(TntDb.floatToMoney(rs.getFloat("BasePrevYearTotal")));
@@ -682,8 +696,8 @@ public class ContactManager {
         contact.setLastVisit(TntDb.timestampToDate(rs.getTimestamp("LastVisit")));
         contact.setLastThank(TntDb.timestampToDate(rs.getTimestamp("LastThank")));
         contact.setLastChallenge(TntDb.timestampToDate(rs.getTimestamp("LastChallenge")));
-        contact.setCampaignsSinceLastGift(rs.getInt("CampaignsSinceLastGift"));
-        contact.setChallengesSinceLastGift(rs.getInt("ChallengesSinceLastGift"));
+        contact.setCampaignsSinceLastGift(TntDb.getRSInteger(rs, "CampaignsSinceLastGift"));
+        contact.setChallengesSinceLastGift(TntDb.getRSInteger(rs, "ChallengesSinceLastGift"));
         contact.setOrgDonorCodes(rs.getString("OrgDonorCodes"));
         return contact;
     }
@@ -724,21 +738,36 @@ public class ContactManager {
      */
     public static Integer getContactIdByEmail(String email) throws TntDbException, SQLException {
         log.trace("getContactIdByEmail({})", email);
-        return TntDb.getOneInt(getContactIdByEmailQuery(email));
+        Integer[] contactIds = getContactIdByEmailHelper(email);
+        switch (contactIds.length) {
+            case 0:
+                return null;
+            case 1:
+                return contactIds[0];
+            default:
+                throw new TntDbException("Multiple contacts exist with this email address");
+        }
     }
 
     /**
-     * Return the query needed to search for contact IDs by email.
+     * Return an array of contact ids found when searching by email.
      *
      * @param email
      *            the email for which to find associated contacts
-     * @return the query needed to search for contact IDs by email
+     * @return an array of contact ids found when searching by email.
+     * @throws SQLException
+     *             if there is a database access problem
      */
-    private static String getContactIdByEmailQuery(String email) {
+    private static Integer[] getContactIdByEmailHelper(String email) throws SQLException {
         log.trace("getContactIdByEmailQuery({})", email);
 
         if (email == null)
-            return null;
+            return new Integer[0];
+
+        //
+        // First we search for all partial string matches in the DB
+        //
+        HashSet<Integer> contactIds = new HashSet<Integer>();
 
         // Add escape clause if any underscores exist; otherwise ignore
         String emailFormatted = email.replace("_", "\\_");
@@ -746,23 +775,40 @@ public class ContactManager {
         if (!emailFormatted.equals(email))
             escapeStr = "ESCAPE '\\'";
 
+        // Concatenate the email addresses together with commas
         String query = String.format(
-            "SELECT [ContactID] FROM [Contact] WHERE "
-                + "[Email1] LIKE '%1$s' %2$s OR [Email1] LIKE '*<%1$s>' %2$s OR "
-                + "[Email2] LIKE '%1$s' %2$s OR [Email2] LIKE '*<%1$s>' %2$s OR "
-                + "[Email3] LIKE '%1$s' %2$s OR [Email3] LIKE '*<%1$s>' %2$s",
+            "SELECT [ContactID],"
+                + "[Email1] & ',' & [Email2] & ',' & [Email3] & ',' & "
+                + "[SpouseEmail1] & ',' & [SpouseEmail2] & ',' & [SpouseEmail3]"
+                + "FROM [Contact] WHERE "
+                + "[Email1] LIKE '*%1$s*' %2$s OR "
+                + "[Email2] LIKE '*%1$s*' %2$s OR "
+                + "[Email3] LIKE '*%1$s*' %2$s OR "
+                + "[SpouseEmail1] LIKE '*%1$s*' %2$s OR "
+                + "[SpouseEmail2] LIKE '*%1$s*' %2$s OR "
+                + "[SpouseEmail3] LIKE '*%1$s*' %2$s",
             emailFormatted,
             escapeStr);
 
-        // Search spouse fields as well
-        query += String.format(
-            " OR [SpouseEmail1] LIKE '%1$s' %2$s OR [SpouseEmail1] LIKE '*<%1$s>' %2$s OR "
-                + "[SpouseEmail2] LIKE '%1$s' %2$s OR [SpouseEmail2] LIKE '*<%1$s>' %2$s OR "
-                + "[SpouseEmail3] LIKE '%1$s' %2$s OR [SpouseEmail3] LIKE '*<%1$s>' %2$s",
-            emailFormatted,
-            escapeStr);
+        ResultSet rs = TntDb.runQuery(query);
+        Pattern pattern = Pattern.compile(MIST.REGEX_EMAILADDRESS);
+        while (rs.next()) {
+            Integer contactId = rs.getInt("ContactID");
+            String emailStr = rs.getString(2);
 
-        return query;
+            // Parse out individual email addresses
+            ArrayList<String> emails = new ArrayList<String>();
+            Util.addMatchesToList(emails, pattern, emailStr);
+
+            // Now look for exact matches
+            for (Iterator<String> it = emails.iterator(); it.hasNext();) {
+                String em = it.next();
+                if (email.equals(em))
+                    contactIds.add(contactId);
+            }
+        }
+
+        return contactIds.toArray(new Integer[0]);
     }
 
     /**
@@ -794,8 +840,7 @@ public class ContactManager {
      */
     public static int getContactsByEmailCount(String email) throws SQLException {
         log.trace("getContactsByEmailCount({})", email);
-        ResultSet rs = TntDb.runQuery(getContactIdByEmailQuery(email));
-        return TntDb.getRowCount(rs);
+        return getContactIdByEmailHelper(email).length;
     }
 
     /**
@@ -1128,9 +1173,9 @@ public class ContactManager {
             maxDate = TntDb.getOneDate(query);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
+            return;
         }
-        if (maxDate != null)
-            updateLastChallengeDate(contactId, maxDate);
+        updateLastChallengeDate(contactId, maxDate);
     }
 
     /**
@@ -1193,9 +1238,9 @@ public class ContactManager {
             maxDate = TntDb.getOneDate(query);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
+            return;
         }
-        if (maxDate != null)
-            updateLastThankDate(contactId, maxDate);
+        updateLastThankDate(contactId, maxDate);
     }
 
     /**
@@ -1279,9 +1324,9 @@ public class ContactManager {
             maxDate = TntDb.getOneDate(query);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
+            return;
         }
-        if (maxDate != null)
-            updateLastXDate(contactId, maxDate, lastType);
+        updateLastXDate(contactId, maxDate, lastType);
     }
 
     /**
@@ -1327,9 +1372,9 @@ public class ContactManager {
             maxDate = TntDb.getOneDate(query);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
+            return;
         }
-        if (maxDate != null)
-            updateLastXDate(contactId, maxDate, lastType);
+        updateLastXDate(contactId, maxDate, lastType);
     }
 
     /**
@@ -1340,7 +1385,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last activity date
+     *            the date to set; null forces a recalculation of last activity date (unless last activity date was
+     *            already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastActivityDate(int)
@@ -1358,7 +1404,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param lastActivity
-     *            the date to set; null forces a recalculation of last activity date
+     *            the date to set; null forces a recalculation of last activity date (unless last activity date was
+     *            already null prior to calling this function)
      * @param force
      *            true forces this update even if {@code date} is older than the date in the Tnt database; false
      *            will not override a newer date in the Tnt database
@@ -1384,7 +1431,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last appointment date and last activity date
+     *            the date to set; null forces a recalculation of last appointment date and last activity date (unless
+     *            last appointment date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastAppointmentDate(int)
@@ -1405,7 +1453,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last call date and last activity date
+     *            the date to set; null forces a recalculation of last call date and last activity date (unless last
+     *            call date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastCallDate(int)
@@ -1426,7 +1475,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last challenge date and last activity date
+     *            the date to set; null forces a recalculation of last challenge date and last activity date (unless
+     *            last challenge date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastChallengeDate(int)
@@ -1462,7 +1512,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last letter date and last activity date
+     *            the date to set; null forces a recalculation of last letter date and last activity date (unless last
+     *            letter date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastLetterDate(int)
@@ -1485,7 +1536,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last pre-call date and last activity date
+     *            the date to set; null forces a recalculation of last pre-call date and last activity date (unless last
+     *            pre-call date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #updateLastLetterDate(int, Date)
@@ -1508,7 +1560,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last thank date and last activity date
+     *            the date to set; null forces a recalculation of last thank date and last activity date (unless last
+     *            thank date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastThankDate(int)
@@ -1529,7 +1582,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last visit date and last activity date
+     *            the date to set; null forces a recalculation of last visit date and last activity date (unless last
+     *            visit date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastVisitDate(int)
@@ -1550,7 +1604,8 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last X date and last activity date
+     *            the date to set; null forces a recalculation of last X date and last activity date (unless last X date
+     *            was already null prior to calling this function)
      * @param lastType
      *            the type of last date to set
      * @throws SQLException
@@ -1573,12 +1628,14 @@ public class ContactManager {
      * @param contactId
      *            the contact ID for which to set the last date
      * @param date
-     *            the date to set; null forces a recalculation of last X date and last activity date
+     *            the date to set; null forces a recalculation of last X date and last activity date (unless last X date
+     *            was already null prior to calling this function)
      * @param lastType
      *            the type of last date to set
      * @param force
      *            true forces this update even if {@code date} is older than the date in the Tnt database; false
-     *            will not override a newer date in the Tnt database
+     *            will not override a newer date in the Tnt database. Force is ignored if {@code date} is null and the
+     *            date was already null prior to calling this function)
      * @throws SQLException
      *             if there is a database access problem
      * @see #recalculateLastXDate(int,String)
@@ -1593,6 +1650,9 @@ public class ContactManager {
 
         // Update the given field
         LocalDateTime lastDate = getLastXDate(contactId, lastType);
+        if (date == null && lastDate == null)
+            return;
+
         if (date == null || lastDate == null || force || lastDate.isBefore(date)) {
             String query = String.format(
                 "UPDATE [Contact] SET [Last%s] = %s WHERE [ContactId] = %s",

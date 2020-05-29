@@ -201,7 +201,7 @@ public class TntDb {
         }
 
         try {
-            // Note: we load thse into memory rather than making DB calls simply for efficiency
+            // Note: we load these into memory rather than making DB calls simply for efficiency
             CurrencyManager.load();
             PledgeFrequencyManager.load();
         } catch (SQLException e) {
@@ -210,20 +210,23 @@ public class TntDb {
     }
 
     /**
-     * TODO
+     * Returns an INSERT query for the specified table based on column/value information from a 2D String array.
+     * Values must already be formatted for DB insertion. See formatDb*()
      *
-     * @param table
+     * @param tableName
+     *            the name of the table
      * @param colValuePairs
+     *            a 2D String array of the form {{colName1, value1}, {colName2, value2}, ...}
      */
-    public static String createInsertQuery(String table, String[][] colValuePairs) {
-        log.trace("createInsertQuery({},{})", table, "<" + colValuePairs.length + " pairs>");
+    public static String createInsertQuery(String tableName, String[][] colValuePairs) {
+        log.trace("createInsertQuery({},{})", tableName, "<" + colValuePairs.length + " pairs>");
         StringBuilder colNames = new StringBuilder();
         StringBuilder values = new StringBuilder();
         for (int i = 0; i < colValuePairs.length; i++) {
             colNames.append((i > 0 ? "," : "") + "[" + colValuePairs[i][0] + "]");
             values.append((i > 0 ? "," : "") + colValuePairs[i][1]);
         }
-        return String.format("INSERT INTO [%s] (%s) VALUES (%s)", table, colNames, values);
+        return String.format("INSERT INTO [%s] (%s) VALUES (%s)", tableName, colNames, values);
     }
 
     /**
@@ -508,6 +511,9 @@ public class TntDb {
     protected static Object getOneX(String query, String type) throws TntDbException, SQLException {
         log.trace("getOneX({},{})", query, type);
 
+        if (query == null || type == null)
+            return null;
+
         ResultSet rs = runQuery(query);
         // Make sure we only have one result
         int count = getRowCount(rs);
@@ -588,6 +594,23 @@ public class TntDb {
                 rs.absolute(prev);
         }
         return size;
+    }
+
+    /**
+     * Returns an Integer from a given ResultSet. This forces null to be null rather than 0.
+     * 
+     * @param rs
+     *            The ResultSet from which to get an Integer
+     * @param colName
+     *            The column from which to get the Integer
+     * @return The Integer, which may be null
+     * @throws SQLException
+     *             If there is a database access problem
+     * @see https://stackoverflow.com/a/3786996/1307022
+     */
+    public static Integer getRSInteger(ResultSet rs, String colName) throws SQLException {
+        Integer intValue = rs.getInt(colName);
+        return rs.wasNull() ? null : intValue;
     }
 
     /**
@@ -843,21 +866,21 @@ public class TntDb {
      * <p>
      * Does NOT automatically commit changes to the Tnt database.
      *
-     * @param table
+     * @param tableName
      *            the table to update
      * @param id
      *            the id of the table's primary key to update
      * @throws SQLException
      *             if there is a database access problem
      */
-    public static void updateTableLastEdit(String table, int id) throws SQLException {
-        log.trace("updateTableLastEdit({},{})", table, id);
+    public static void updateTableLastEdit(String tableName, int id) throws SQLException {
+        log.trace("updateTableLastEdit({},{})", tableName, id);
 
         String query = String.format(
             "UPDATE [%s] SET [LastEdit] = %s WHERE [%sId] = %s",
-            table,
+            tableName,
             formatDbDate(LocalDateTime.now().withNano(0)),
-            table,
+            tableName,
             id);
         runQuery(query);
     }
