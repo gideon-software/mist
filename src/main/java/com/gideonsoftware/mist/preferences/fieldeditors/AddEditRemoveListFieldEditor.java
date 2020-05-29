@@ -4,7 +4,7 @@ import static com.gideonsoftware.mist.util.ui.GridDataUtil.applyGridData;
 import static com.gideonsoftware.mist.util.ui.GridDataUtil.onGridData;
 import static com.gideonsoftware.mist.util.ui.GridLayoutUtil.applyGridLayout;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.dialogs.InputDialog;

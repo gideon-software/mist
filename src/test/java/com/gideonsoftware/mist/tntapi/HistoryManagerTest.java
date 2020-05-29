@@ -26,7 +26,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,8 +36,6 @@ import org.junit.runners.JUnit4;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
-import com.gideonsoftware.mist.tntapi.HistoryManager;
-import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 

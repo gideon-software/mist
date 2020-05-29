@@ -98,7 +98,7 @@ dependencies {
 
     // TntConnect MS Access database
     // https://mvnrepository.com/artifact/net.sf.ucanaccess/ucanaccess
-    implementation group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '4.0.4' // Note: 5.0 exists as of Jan 2020
+    implementation group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '5.0.0'
 
     // Money type
     // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
