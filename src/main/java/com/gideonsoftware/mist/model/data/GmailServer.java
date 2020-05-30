@@ -314,6 +314,13 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     }
 
     @Override
+    public boolean hasNextMessage() {
+        if (messages == null)
+            return false;
+        return currentMessageNumber < messages.size();
+    }
+
+    @Override
     public boolean isConnected() {
         return gmailService != null;
     }
@@ -334,7 +341,7 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
             // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
             // labeled, but not subsequent messages that may come in (even though it appears otherwise in the Gmail
-            // interface.) So, we must get the messages with this label AND all messages in their threads as well.
+            // interface.) So, we must get the messages with this label AND all other messages in their threads as well.
 
             // Get all threads with this label
             ListThreadsResponse listThreadsResponse = gmailService.users().threads().list("me").setLabelIds(labelIds)
@@ -352,11 +359,9 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
             // Get all messages associated with the threads
             for (com.google.api.services.gmail.model.Thread minThread : threads) {
-                // First we need to load the list of messages using threads.get
-                // See https://developers.google.com/gmail/api/v1/reference/users/threads/get#parameters
                 com.google.api.services.gmail.model.Thread fullThread = gmailService.users().threads().get(
                     "me",
-                    minThread.getId()).execute();
+                    minThread.getId()).setFormat("minimal").execute();
                 messages.addAll(fullThread.getMessages());
             }
 

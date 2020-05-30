@@ -226,7 +226,7 @@ public abstract class EmailServerPreferencePage extends FieldEditorPreferencePag
         log.trace("connectToServer()");
         savePageSettings();
 
-        Util.connectToEmailServer(server, false);
+        Util.connectToEmailServer(server);
         boolean success = server.isConnected();
         if (success) {
             // Do custom stuff!

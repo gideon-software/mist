@@ -53,10 +53,12 @@ public class EmailModel {
     public final static String PROP_EMAILSERVER_REMOVED = "emailmodel.emailserver.removed";
     public final static String PROP_EMAILSERVERS_INIT = "emailmodel.emailservers.init";
     public final static String PROP_IMPORTING = "emailmodel.importstatus.importing";
+    public final static String PROP_MESSAGES_LOADING = "emailmodel.messages.loading";
 
     private static List<EmailServer> emailServers = new ArrayList<EmailServer>();
 
     private static boolean importing = false;
+    private static boolean messagesLoading = false;
 
     static {
         // Set default preferences
@@ -179,6 +181,10 @@ public class EmailModel {
         return importing;
     }
 
+    public static boolean isMessagesLoading() {
+        return messagesLoading;
+    }
+
     private static void loadEmailServers() {
         log.trace("loadEmailServers()");
 
@@ -238,10 +244,10 @@ public class EmailModel {
     }
 
     /**
-     * Called by email servers when they're complete; checks whether all servers are done
+     * Called by email servers when they're done importing; checks whether all servers are done
      */
-    public static void serverComplete() {
-        log.trace("serverComplete()");
+    public static void serverImportComplete() {
+        log.trace("serverImportComplete()");
         // Check all enabled email server statuses to see if they're *all* done
         boolean stillImporting = false;
         for (EmailServer emailServer : emailServers) {
@@ -253,11 +259,34 @@ public class EmailModel {
         setImporting(stillImporting);
     }
 
+    /**
+     * Called by email servers when they're done loading messages; checks whether all servers are done
+     */
+    public static void serverMessagesLoaded() {
+        log.trace("serverMessagesLoaded()");
+        // Check all enabled email server statuses to see if all messages have been loaded
+        boolean stillLoading = false;
+        for (EmailServer emailServer : emailServers) {
+            if (!emailServer.isEnabled())
+                continue;
+            else if (emailServer.isLoadingMessages())
+                stillLoading = true;
+        }
+        setMessagesLoading(stillLoading);
+    }
+
     private static void setImporting(boolean importing) {
         log.trace("setImporting({})", importing);
         boolean oldImporting = EmailModel.importing;
         EmailModel.importing = importing;
         pcs.firePropertyChange(PROP_IMPORTING, oldImporting, importing);
+    }
+
+    private static void setMessagesLoading(boolean loading) {
+        log.trace("setMessagesLoading({})", loading);
+        boolean oldLoading = EmailModel.messagesLoading;
+        EmailModel.messagesLoading = loading;
+        pcs.firePropertyChange(PROP_MESSAGES_LOADING, oldLoading, loading);
     }
 
     /**

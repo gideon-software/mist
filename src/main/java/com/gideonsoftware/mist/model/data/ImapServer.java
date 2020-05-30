@@ -215,6 +215,11 @@ public class ImapServer extends EmailServer {
     }
 
     @Override
+    public boolean hasNextMessage() {
+        return currentMessageNumber < totalMessages;
+    }
+
+    @Override
     public boolean isConnected() {
         return store != null;
     }
@@ -227,6 +232,7 @@ public class ImapServer extends EmailServer {
     public void loadMessageList() throws EmailServerException {
         log.trace("{{}} loadMessageList()", getNickname());
         try {
+            openFolder();
             totalMessages = folder.getMessageCount();
             currentMessageNumber = 0;
         } catch (MessagingException e) {

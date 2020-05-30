@@ -76,6 +76,7 @@ public abstract class EmailServer implements Cloneable {
     protected String[] ignoreAddresses;
     protected String[] myAddresses;
 
+    protected boolean loadingMessages;
     protected int currentMessageNumber;
     protected int totalMessages;
 
@@ -86,6 +87,7 @@ public abstract class EmailServer implements Cloneable {
 
         // Non-preference initialization
         currentMessageNumber = 0;
+        loadingMessages = false;
         totalMessages = 0;
 
         stopImporting = false;
@@ -200,9 +202,7 @@ public abstract class EmailServer implements Cloneable {
         return username;
     }
 
-    public boolean hasNextMessage() {
-        return currentMessageNumber < totalMessages;
-    }
+    public abstract boolean hasNextMessage();
 
     public abstract boolean isConnected();
 
@@ -218,6 +218,10 @@ public abstract class EmailServer implements Cloneable {
 
     public boolean isImportComplete() {
         return importComplete;
+    }
+
+    public boolean isLoadingMessages() {
+        return loadingMessages;
     }
 
     public abstract void loadMessageList() throws EmailServerException;
@@ -243,7 +247,15 @@ public abstract class EmailServer implements Cloneable {
     private void setImportComplete(boolean importComplete) {
         this.importComplete = importComplete;
         if (importComplete)
-            EmailModel.serverComplete();
+            EmailModel.serverImportComplete();
+    }
+
+    /**
+     * Set loadingMessages; also notify the EmailModel.
+     */
+    public void setLoadingMessages(boolean loadingMessages) {
+        this.loadingMessages = loadingMessages;
+        EmailModel.serverMessagesLoaded();
     }
 
     public void setMyAddresses(String[] myAddresses) {
@@ -299,40 +311,51 @@ public abstract class EmailServer implements Cloneable {
         // Make sure we're in the proper state
         stopImporting = false;
         importComplete = false;
+        loadingMessages = false;
 
         Thread importThread = new Thread() {
             @Override
             public void run() {
-                Util.connectToEmailServer(EmailServer.this, true);
+                Util.connectToEmailServer(EmailServer.this);
                 if (!isConnected()) {
                     // We didn't connect, so our import is done
                     setImportComplete(true);
                     return;
                 }
 
-                log.debug("{{}} Found {} messages to import", nickname, totalMessages);
+                setLoadingMessages(true);
+                try {
+                    EmailServer.this.loadMessageList();
+                } catch (EmailServerException e) {
+                    Display.getDefault().syncExec(new Runnable() {
+                        @Override
+                        public void run() {
+                            String msg = String.format("Can't load messages on server '%s'", nickname);
+                            Util.reportError("Email server error", msg, e);
+                        }
+                    });
+                } finally {
+                    setLoadingMessages(false);
+                }
 
-                while (hasNextMessage() && !stopImporting) {
-                    log.debug(
-                        "{{}} Processing message {}/{}",
-                        nickname,
-                        currentMessageNumber + 1, // +1 because we're ABOUT to get it in getNextMessage()
-                        totalMessages);
-
-                    try {
-                        // Add Message to message queue
-                        MessageModel.addMessage(getNextMessage());
-                    } catch (EmailServerException e) {
-                        Display.getDefault().syncExec(new Runnable() {
-                            @Override
-                            public void run() {
-                                String msg = String.format(
-                                    "Can't retrieve message %s on server '%s'",
-                                    currentMessageNumber,
-                                    nickname);
-                                Util.reportError("Email server error", msg, e);
-                            }
-                        });
+                while (!stopImporting && hasNextMessage()) {
+                    if (hasNextMessage()) {
+                        log.debug("{{}} Processing message {}", nickname, currentMessageNumber + 1);
+                        try {
+                            // Add Message to message queue
+                            MessageModel.addMessage(getNextMessage());
+                        } catch (EmailServerException e) {
+                            Display.getDefault().syncExec(new Runnable() {
+                                @Override
+                                public void run() {
+                                    String msg = String.format(
+                                        "Can't retrieve message %s on server '%s'",
+                                        currentMessageNumber,
+                                        nickname);
+                                    Util.reportError("Email server error", msg, e);
+                                }
+                            });
+                        }
                     }
                 }
 
@@ -355,7 +378,7 @@ public abstract class EmailServer implements Cloneable {
                     });
                 }
 
-            } // run()
+            } // importThread.run()
         };
         importThread.setName(String.format("ESImport%s", id));
         importThread.start();

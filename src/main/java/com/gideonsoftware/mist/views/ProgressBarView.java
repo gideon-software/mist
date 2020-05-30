@@ -48,22 +48,37 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
         log.trace("ProgressBarView({})", parent);
 
         MessageModel.addPropertyChangeListener(this);
+        EmailModel.addPropertyChangeListener(this);
         addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 log.trace("ProgressBarView.widgetDisposed()");
                 MessageModel.removePropertyChangeListener(ProgressBarView.this);
+                EmailModel.removePropertyChangeListener(ProgressBarView.this);
             }
         });
 
         applyGridLayout(this).numColumns(1);
         applyGridData(this).withHorizontalFill();
 
+        createProgressBar(false);
+    }
+
+    private void createProgressBar(boolean areMessagesLoading) {
         // Create progress bar that spans length of the space
-        progressBar = new ProgressBar(this, SWT.SMOOTH);
+        if (progressBar != null && !progressBar.isDisposed())
+            progressBar.dispose();
+
+        if (areMessagesLoading) {
+            progressBar = new ProgressBar(this, SWT.INDETERMINATE);
+        } else {
+            progressBar = new ProgressBar(this, SWT.SMOOTH);
+            progressBar.setMinimum(0);
+            progressBar.setMaximum(1); // The minimum maximum
+        }
+
         applyGridData(progressBar).withHorizontalFill();
-        progressBar.setMinimum(0);
-        progressBar.setMaximum(1); // The minimum maximum
+        layout();
     }
 
     public ProgressBar getProgressBar() {
@@ -71,9 +86,24 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
     }
 
     @Override
+    // TODO:
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
+        if (EmailModel.PROP_MESSAGES_LOADING.equals(event.getPropertyName())
+            && !event.getNewValue().equals(event.getOldValue())) {
+            if (Display.getDefault().isDisposed())
+                return;
+            Display.getDefault().syncExec(new Runnable() {
+                @Override
+                public void run() {
+                    if (!progressBar.isDisposed()) {
+                        boolean areMessagesLoading = (Boolean) event.getNewValue();
+                        createProgressBar(areMessagesLoading);
+                    }
+                }
+            });
+        }
         if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
             || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
             if (Display.getDefault().isDisposed())
@@ -81,9 +111,9 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
-                    int total = EmailModel.getMessageCountTotal();
-                    int current = EmailModel.getCurrentMessageNumberTotal();
                     if (!progressBar.isDisposed()) {
+                        int total = EmailModel.getMessageCountTotal();
+                        int current = EmailModel.getCurrentMessageNumberTotal();
                         progressBar.setMaximum(total);
                         progressBar.setSelection(current);
                     }

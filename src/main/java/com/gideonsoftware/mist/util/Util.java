@@ -44,18 +44,15 @@ import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.model.data.EmailServer;
-import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.util.ui.MistProgressMonitorDialog;
 
 class EmailConnectionRunnable implements IRunnableWithProgress {
 
     private EmailServer server;
-    private boolean loadMessageList;
 
-    public EmailConnectionRunnable(EmailServer server, boolean loadMessageList) {
+    public EmailConnectionRunnable(EmailServer server) {
         this.server = server;
-        this.loadMessageList = loadMessageList;
     }
 
     @Override
@@ -65,17 +62,6 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
             IProgressMonitor.UNKNOWN);
         try {
             server.connect();
-            if (server.isConnected() && loadMessageList) {
-
-                if (EmailServer.TYPE_IMAP.equals(server.getType())
-                    && !((ImapServer) server).getFolderName().isEmpty()) {
-                    monitor.setTaskName(String.format("%s: Opening folder...", server.getNickname()));
-                    ((ImapServer) server).openFolder();
-                }
-
-                monitor.setTaskName(String.format("%s: Loading message list...", server.getNickname()));
-                server.loadMessageList();
-            }
         } catch (EmailServerException e) {
             throw new InvocationTargetException(e);
         }
@@ -111,11 +97,9 @@ public class Util {
      * 
      * @param emailServer
      *            the email server to connect to
-     * @param loadMessageList
-     *            true if we should load the message list; false if not
      */
-    public static void connectToEmailServer(EmailServer emailServer, boolean loadMessageList) {
-        log.trace("connectToEmailServer({},{})", emailServer, loadMessageList);
+    public static void connectToEmailServer(EmailServer emailServer) {
+        log.trace("connectToEmailServer({})", emailServer);
 
         if (emailServer == null)
             return;
@@ -127,7 +111,7 @@ public class Util {
                     MistProgressMonitorDialog dialog = new MistProgressMonitorDialog(
                         Display.getDefault().getActiveShell());
                     dialog.setTitle("Connecting");
-                    dialog.run(true, false, new EmailConnectionRunnable(emailServer, loadMessageList));
+                    dialog.run(true, false, new EmailConnectionRunnable(emailServer));
                 } catch (InvocationTargetException e) {
                     String msg = String.format(
                         "Unable to connect to email server '%s'.%nPlease check your settings and try again.",

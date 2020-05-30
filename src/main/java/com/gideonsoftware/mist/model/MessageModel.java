@@ -47,7 +47,7 @@ public class MessageModel {
     private MessageModel() {
     }
 
-    public static void addMessage(MessageSource message) { // Need synchronized?
+    public static void addMessage(MessageSource message) {
         log.trace("addMessage({})", message);
         if (!messageQueue.offer(message)) {
             log.error("Couldn't add message to queue!");
