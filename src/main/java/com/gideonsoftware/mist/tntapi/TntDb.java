@@ -818,7 +818,7 @@ public class TntDb {
                     while (MessageModel.hasMessages() && !stopImporting) {
                         try {
                             MessageSource message = MessageModel.getNextMessage();
-                            if (message != null) // Thread paranoia that's actually happened!
+                            if (message != null)
                                 importMessage(message);
                         } catch (Exception e) {
                             Display.getDefault().syncExec(new Runnable() {

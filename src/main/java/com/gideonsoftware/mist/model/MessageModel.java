@@ -22,8 +22,9 @@ package com.gideonsoftware.mist.model;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +39,7 @@ public class MessageModel {
     public final static String PROP_MESSAGE_ADD = "messagemodel.message.add";
     public final static String PROP_MESSAGE_INIT = "messagemodel.message.init";
 
-    private static volatile Queue<MessageSource> messageQueue = new LinkedList<MessageSource>();
+    private static BlockingQueue<MessageSource> messageQueue = new LinkedBlockingQueue<MessageSource>();
 
     /**
      * No instantiation allowed!
@@ -46,7 +47,7 @@ public class MessageModel {
     private MessageModel() {
     }
 
-    public static synchronized void addMessage(MessageSource message) {
+    public static void addMessage(MessageSource message) { // Need synchronized?
         log.trace("addMessage({})", message);
         if (!messageQueue.offer(message)) {
             log.error("Couldn't add message to queue!");
@@ -60,15 +61,19 @@ public class MessageModel {
         pcs.addPropertyChangeListener(listener);
     }
 
-    public static synchronized int getMessageCount() {
+    public static int getMessageCount() {
         return messageQueue.size();
     }
 
-    public static synchronized MessageSource getNextMessage() {
-        return messageQueue.poll();
+    public static MessageSource getNextMessage() {
+        try {
+            return messageQueue.poll(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return null;
+        }
     }
 
-    public static synchronized boolean hasMessages() {
+    public static boolean hasMessages() {
         return !messageQueue.isEmpty();
     }
 
