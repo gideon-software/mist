@@ -164,6 +164,18 @@ public class Util {
     }
 
     /**
+     * Increment the integer at the specified preference by the specified amount
+     * 
+     * @param prefName
+     *            The name of the preference to increment
+     * @param incBy
+     *            The amount to increment by
+     */
+    public static void incPrefCounter(String prefName, int incBy) {
+        MIST.getPrefs().setValue(prefName, MIST.getPrefs().getInt(prefName) + incBy);
+    }
+
+    /**
      * Shows JFace ErrorDialog but improved by constructing full stack trace in detail area.
      * 
      * @see https://stackoverflow.com/a/9404081

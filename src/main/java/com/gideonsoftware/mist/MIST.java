@@ -80,7 +80,11 @@ public class MIST {
 
     public final static String OPTION_PROFILE = "profile";
 
+    // Preferences
     public final static String PREF_LOGFILE_LOGLEVEL = "mist.logfile.loglevel";
+    public final static String PREF_TOTAL_EXAMINED_EMAILS = "mist.total.examined.emails";
+    public final static String PREF_TOTAL_IMPORTED_EMAILS = "mist.total.imported.emails";
+    public final static String PREF_FIRST_RUN_DATE = "mist.first.run.date";
 
     private static String profileExt = "";
     private static String appDataDir = "";
@@ -218,6 +222,12 @@ public class MIST {
         EmailModel.init();
     }
 
+    public static void initPrefs() {
+        // Record first-run date
+        if (!MIST.getPrefs().contains(MIST.PREF_FIRST_RUN_DATE))
+            MIST.getPrefs().setValue(MIST.PREF_FIRST_RUN_DATE, System.currentTimeMillis());
+    }
+
     public static boolean isDevel() {
         // Check for existence of devel folder
         return Files.exists(Path.of("devel"));
@@ -239,7 +249,7 @@ public class MIST {
         configureLogging(MIST.class);
 
         // Load preferences
-        MIST.getPrefs();
+        initPrefs();
 
         // Set user-specified logging level now that preferences are loaded
         MIST.getPrefs().setDefault(PREF_LOGFILE_LOGLEVEL, Level.WARN.name()); // If changed, see LoggingPreferencePage
@@ -334,6 +344,37 @@ public class MIST {
     private static void shutdown() {
         log.trace("shutdown()");
 
+        // Shut down Email import server
+        if (EmailModel.isImporting()) {
+            log.trace("shutdown: Shutting down email import service...");
+            EmailModel.stopImportService();
+            while (EmailModel.isImporting()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+
+        // Shut down Tnt import service
+        if (TntDb.isImporting()) {
+            log.trace("shutdown: Shutting down TntConnect import service...");
+            TntDb.stopImportService();
+            while (TntDb.isImporting()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+            }
+            TntDb.disconnect();
+        }
+
+        // Disconnect all email servers
+        // This must happen last because the TntImport may need to execute commands on the server
+        // (e.g. removing labels, etc.)
+        log.trace("shutdown: Disconnecting email servers...");
+        EmailModel.disconnectServers();
+
         // Save preferences
         log.trace("shutdown: Saving preferences...");
         try {
@@ -347,44 +388,6 @@ public class MIST {
             Display.getDefault().dispose();
         }
 
-        Thread shutdownThread = new Thread() {
-            @Override
-            public void run() {
-                // Shut down Email import server
-                if (EmailModel.isImporting()) {
-                    log.trace("shutdown: Shutting down email import service...");
-                    EmailModel.stopImportService();
-                    while (EmailModel.isImporting()) {
-                        try {
-                            sleep(100);
-                        } catch (InterruptedException e) {
-                        }
-                    }
-                }
-
-                // Shut down Tnt import service
-                if (TntDb.isImporting()) {
-                    log.trace("shutdown: Shutting down TntConnect import service...");
-                    TntDb.stopImportService();
-                    while (TntDb.isImporting()) {
-                        try {
-                            sleep(100);
-                        } catch (InterruptedException e) {
-                        }
-                    }
-                    TntDb.disconnect();
-                }
-
-                // Disconnect all email servers
-                // This must happen last because the TntImport may need to execute commands on the server
-                // (e.g. removing labels, etc.)
-                log.trace("shutdown: Disconnecting email servers...");
-                EmailModel.disconnectServers();
-
-                log.trace("=== shutdown complete ===");
-            }
-        };
-        shutdownThread.setName("Shutdown");
-        shutdownThread.start();
+        log.trace("=== shutdown complete ===");
     }
 }

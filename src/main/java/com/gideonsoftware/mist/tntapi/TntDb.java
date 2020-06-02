@@ -86,6 +86,9 @@ public class TntDb {
     private static boolean stopImporting = false;
     private static boolean importing = false;
 
+    // Number of created emails since init
+    private static int addedEmailsCount = 0;
+
     // Other objects
     private static String dbPath = null;
     private static Connection conn = null;
@@ -410,6 +413,10 @@ public class TntDb {
      */
     protected static Connection getConnection() {
         return conn;
+    }
+
+    public static int getCreatedEmailsCount() {
+        return addedEmailsCount;
     }
 
     /**
@@ -773,6 +780,7 @@ public class TntDb {
             return;
 
         stopImporting = false;
+        addedEmailsCount = 0;
         Util.connectToTntDatabase();
 
         Thread importThread = new Thread() {
@@ -793,6 +801,8 @@ public class TntDb {
                     if (history.getStatus() == History.STATUS_NONE) {
                         try {
                             HistoryManager.create(history);
+                            if (History.STATUS_ADDED == history.getStatus())
+                                addedEmailsCount++;
                         } catch (TntDbException | SQLException e) {
                             history.setStatus(History.STATUS_ERROR);
                             history.setStatusException(e);
@@ -833,6 +843,8 @@ public class TntDb {
                 }
                 log.trace("=== TntDb Import Service Stopped ===");
                 importing = false;
+                Util.incPrefCounter(MIST.PREF_TOTAL_IMPORTED_EMAILS, addedEmailsCount);
+                log.info("Added {} email(s) to Tnt database", addedEmailsCount);
                 pcs.firePropertyChange(PROP_IMPORTSTATUS_STOPPED, null, importing);
             }
         };

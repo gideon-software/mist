@@ -41,15 +41,13 @@ import com.gideonsoftware.mist.tntapi.ContactManager;
 import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
+import com.gideonsoftware.mist.util.Util;
 
 public class HistoryModel {
     private static Logger log = LogManager.getLogger();
 
     private static boolean useAutoThank;
     private static String[] autoThankSubjectArr;
-
-    // Preferences
-    public final static String PREF_TOTAL_IMPORTED = "history.total.imported";
 
     // Property change values
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(HistoryModel.class);
@@ -60,6 +58,9 @@ public class HistoryModel {
 
     // A list of all history added to Tnt (including errors)
     private static volatile ArrayList<History> historyArr = new ArrayList<History>();
+
+    // Number of examined emails since init
+    private static int examinedEmailsCount;
 
     /**
      * No instantiation allowed!
@@ -125,6 +126,10 @@ public class HistoryModel {
         return retArr.toArray(new History[0]);
     }
 
+    public static int getExaminedEmailsCount() {
+        return examinedEmailsCount;
+    }
+
     /**
      * 
      * @param msg
@@ -132,6 +137,10 @@ public class HistoryModel {
      */
     public static History[] getHistory(EmailMessage msg) {
         log.trace("getHistory({})", msg);
+
+        // Increment counters
+        examinedEmailsCount++;
+        Util.incPrefCounter(MIST.PREF_TOTAL_EXAMINED_EMAILS, 1);
 
         // Is the email from someone on the ignore lists?
         if (EmailModel.isEmailInIgnoreList(msg.getFromId())) {
@@ -173,11 +182,6 @@ public class HistoryModel {
         return historyArr;
     }
 
-    public static History getHistoryAt(int index) {
-        // log.trace("getHistoryAt({})", index);
-        return historyArr.get(index);
-    }
-
     /**
      * Create a History object from a message that is [possibly] from a Contact
      * 
@@ -203,11 +207,6 @@ public class HistoryModel {
         }
 
         return history;
-    }
-
-    public static int getHistorySize() {
-        // log.trace("getHistorySize()");
-        return historyArr.size();
     }
 
     /**
@@ -301,6 +300,7 @@ public class HistoryModel {
     public static void init() {
         log.trace("init()");
         historyArr.clear();
+        examinedEmailsCount = 0;
         pcs.firePropertyChange(PROP_HISTORY_INIT, false, true); // Newly-initialized history array!
 
         useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
