@@ -7,14 +7,14 @@
 
   <Appenders>
     <RollingFile name="logfile" fileName="${log.path}" filePattern="${log.path}.%i" append="true">
-      <PatternLayout pattern="%d %-5p [%c] %m%n"/>
+      <PatternLayout pattern="%d %t %-5p [%c] %m%n"/>
       <Policies>
-        <SizeBasedTriggeringPolicy size="1 MB"/>
+        <SizeBasedTriggeringPolicy size="10 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="2" />
+      <DefaultRolloverStrategy max="5" />
     </RollingFile>
     <Console name="STDOUT" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{ABSOLUTE} %-5p [%c{1}] %m%n"/>
+      <PatternLayout pattern="%d{ABSOLUTE} %t %-5p [%c{1}] %m%n"/>
     </Console>
   </Appenders>
   
