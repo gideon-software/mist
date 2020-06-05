@@ -30,6 +30,8 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,6 +69,7 @@ import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.ListThreadsResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.ModifyMessageRequest;
+import com.google.api.services.gmail.model.ModifyThreadRequest;
 import com.google.api.services.oauth2.Oauth2Scopes;
 
 /**
@@ -141,6 +144,15 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
     private boolean labelRemoveAfterImport = true;
     private String uniqueId = "";
+
+    /**
+     * As of 2020-06, there is either a bug in MIST or in Gmail such that removing all labels from a thread does NOT
+     * remove the label from the thread itself. This results in trying to reimport the same messages over and over.
+     * 
+     * Our solution is to maintain a map of thread IDs which contain a set of message IDs. As each message is removed,
+     * check to see if that thread's message set is empty. If it is, remove the label from the thread as well.
+     */
+    private HashMap<String, HashSet<String>> threadMap = null;
 
     public GmailServer(int id) {
         super(id, EmailServer.TYPE_GMAIL);
@@ -256,6 +268,9 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         // Add property change listeners
         TntDb.addPropertyChangeListener(this);
         HistoryModel.addPropertyChangeListener(this);
+
+        // Init threadMap; see note
+        threadMap = new HashMap<String, HashSet<String>>();
     }
 
     @Override
@@ -339,9 +354,11 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         messages = new ArrayList<Message>();
         try {
 
-            // When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
-            // labeled, but not subsequent messages that may come in (even though it appears otherwise in the Gmail
-            // interface.) So, we must get the messages with this label AND all other messages in their threads as well.
+            /*
+             * When you label an email in Gmail, that email and all emails in that thread UP TO THAT POINT are
+             * labeled, but not subsequent messages that may come in (even though it appears otherwise in the Gmail
+             * interface.) So, we must get the messages with this label AND all other messages in their threads as well.
+             */
 
             // Get all threads with this label
             ListThreadsResponse listThreadsResponse = gmailService.users().threads().list("me").setLabelIds(labelIds)
@@ -363,6 +380,12 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
                     "me",
                     minThread.getId()).setFormat("minimal").execute();
                 messages.addAll(fullThread.getMessages());
+
+                // See note on threadMap
+                HashSet<String> messageIdSet = new HashSet<String>(fullThread.getMessages().size());
+                for (Message message : fullThread.getMessages())
+                    messageIdSet.add(message.getId());
+                threadMap.put(minThread.getId(), messageIdSet);
             }
 
         } catch (IOException e) {
@@ -422,8 +445,17 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         ModifyMessageRequest modRequest = new ModifyMessageRequest().setRemoveLabelIds(Arrays.asList(getLabelId()));
         try {
             gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest).execute();
-            // BUG: For unknown reasons, some threads (esp. those with attachments?) retain the label even after
-            // all their messages have the label removed.
+
+            // See note on threadMap
+            HashSet<String> messageSet = threadMap.get(gmailMessage.getMessage().getThreadId());
+            messageSet.remove(gmailMessage.getMessage().getId());
+            if (messageSet.isEmpty()) {
+                log.debug("{{}} removing thread label from thread containing message: {}", getNickname(), gmailMessage);
+                ModifyThreadRequest modRequestThr = new ModifyThreadRequest().setRemoveLabelIds(
+                    Arrays.asList(getLabelId()));
+                gmailService.users().threads().modify("me", gmailMessage.getMessage().getThreadId(), modRequestThr)
+                    .execute();
+            }
         } catch (IOException e) {
             throw new EmailServerException(e);
         }
