@@ -38,6 +38,7 @@ public class MessageModel {
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(MessageModel.class);
     public final static String PROP_MESSAGE_ADD = "messagemodel.message.add";
     public final static String PROP_MESSAGE_INIT = "messagemodel.message.init";
+    public final static String PROP_MESSAGE_NEXT = "messagemodel.message.next";
 
     private static BlockingQueue<MessageSource> messageQueue = new LinkedBlockingQueue<MessageSource>();
 
@@ -67,7 +68,10 @@ public class MessageModel {
 
     public static MessageSource getNextMessage() {
         try {
-            return messageQueue.poll(100, TimeUnit.MILLISECONDS);
+            MessageSource nextMsg = messageQueue.poll(100, TimeUnit.MILLISECONDS);
+            if (nextMsg != null)
+                pcs.firePropertyChange(PROP_MESSAGE_NEXT, null, nextMsg);
+            return nextMsg;
         } catch (InterruptedException e) {
             return null;
         }

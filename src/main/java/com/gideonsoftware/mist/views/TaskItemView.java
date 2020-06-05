@@ -81,16 +81,20 @@ public class TaskItemView implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
-        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
-            || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
+        if (MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_NEXT.equals(event.getPropertyName())) {
             if (Display.getDefault().isDisposed())
                 return;
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     if (taskItem != null && !taskItem.isDisposed()) {
-                        int total = EmailModel.getMessageCountTotal();
-                        int current = EmailModel.getCurrentMessageNumberTotal();
+                        int messageQueueLen = MessageModel.getMessageCount();
+                        int emailMsgTotal = EmailModel.getMessageCountTotal();
+                        int emailMsgCurrent = EmailModel.getCurrentMessageNumberTotal();
+                        int total = emailMsgTotal + messageQueueLen;
+                        int current = emailMsgCurrent;
+
                         if (current < total) {
                             taskItem.setProgress(current * 100 / total);
                             taskItem.setProgressState(SWT.NORMAL);

@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Display;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
+import com.gideonsoftware.mist.model.MessageModel;
 import com.gideonsoftware.mist.util.ui.Images;
 
 public class ImportButtonView extends Composite implements PropertyChangeListener {
@@ -47,11 +48,13 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
         super(parent, SWT.NONE);
         log.trace("ImportButtonView({})", parent);
 
+        MessageModel.addPropertyChangeListener(this);
         EmailModel.addPropertyChangeListener(this);
         addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 log.trace("ImportButtonView.widgetDisposed()");
+                MessageModel.removePropertyChangeListener(ImportButtonView.this);
                 EmailModel.removePropertyChangeListener(ImportButtonView.this);
             }
         });
@@ -88,13 +91,15 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
         log.trace("propertyChange({})", event);
 
         if (EmailModel.PROP_IMPORTING.equals(event.getPropertyName())
-            || EmailModel.PROP_EMAILSERVERS_INIT.equals(event.getPropertyName())) {
+            || EmailModel.PROP_EMAILSERVERS_INIT.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_NEXT.equals(event.getPropertyName())) {
             if (Display.getDefault().isDisposed())
                 return;
             Display.getDefault().syncExec(new Runnable() {
                 @Override
                 public void run() {
-                    configureImportButton(EmailModel.isImporting());
+                    configureImportButton(EmailModel.isImporting() || MessageModel.getMessageCount() > 0);
                 }
             });
         }

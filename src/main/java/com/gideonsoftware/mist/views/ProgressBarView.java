@@ -64,8 +64,13 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
         createProgressBar(false);
     }
 
+    /**
+     * Create progress bar that spans length of the space
+     * 
+     * @param areMessagesLoading
+     */
     private void createProgressBar(boolean areMessagesLoading) {
-        // Create progress bar that spans length of the space
+
         if (progressBar != null && !progressBar.isDisposed())
             progressBar.dispose();
 
@@ -86,7 +91,6 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
     }
 
     @Override
-    // TODO:
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("propertyChange({})", event);
 
@@ -104,18 +108,24 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
                 }
             });
         }
-        if (MessageModel.PROP_MESSAGE_ADD.equals(event.getPropertyName())
-            || MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())) {
+        if (MessageModel.PROP_MESSAGE_INIT.equals(event.getPropertyName())
+            || MessageModel.PROP_MESSAGE_NEXT.equals(event.getPropertyName())) {
             if (Display.getDefault().isDisposed())
                 return;
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     if (!progressBar.isDisposed()) {
-                        int total = EmailModel.getMessageCountTotal();
-                        int current = EmailModel.getCurrentMessageNumberTotal();
+                        int messageQueueLen = MessageModel.getMessageCount();
+                        int emailMsgTotal = EmailModel.getMessageCountTotal();
+                        int emailMsgCurrent = EmailModel.getCurrentMessageNumberTotal();
+                        int total = emailMsgTotal + messageQueueLen;
+                        int current = emailMsgCurrent;
+
+                        progressBar.setRedraw(false); // Try to update these values together
+                        progressBar.setSelection(Math.round(current));
                         progressBar.setMaximum(total);
-                        progressBar.setSelection(current);
+                        progressBar.setRedraw(true);
                     }
                 }
             });
