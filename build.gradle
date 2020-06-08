@@ -19,7 +19,6 @@ plugins {
 sourceCompatibility = 11
 targetCompatibility = 11
 
-version = appVersion
 wrapper.gradleVersion = '6.4.1'
 
 import org.gradle.internal.os.OperatingSystem
@@ -35,25 +34,23 @@ ext {
     javaRuntimePath = file("${buildDir}/java-runtime")
     bundlePath      = file("${buildDir}/bundle")
 
+    javaHome = System.properties.'java.home'
+                
     operatingSystem = OperatingSystem.current()
     if (operatingSystem.isWindows()) {
         swtOs = 'win64'
         appDist = 'win64'
-        extraJdepsArguments = [] // ['--ignore-missing-deps'] (not needed?)
-        extraBundlerArguments = []
         appInfoTxtPath = file("${bundlePath}/appinfo.txt")
         innoSetupCompilerPath = file("C:\\Program Files (x86)\\Inno Setup 6\\iscc.exe")
         innoSetupInstallPath = file("package/os/windows/mist.iss")
-        installerPath = "$bundlePath\\$appName-$appVersion-$appDist-setup.exe"
+        installerPath = "${bundlePath}\\${appName}-${appVersion}-${appDist}-setup.exe"
     } else if (operatingSystem.isMacOsX()) {
-        swtOs = 'macosx'
-        installerPath = "" // TODO
-        jpackagerPath = file("/opt/jpackager/jpackager")
-        extraJdepsArguments = []
+        swtOs = 'macos'
+        appDist = 'macos'
+        installerPath = "${bundlePath}/${appName}-${appVersion}-${appDist}.dmg"
     } else if (operatingSystem.isLinux()) {
         swtOs = 'linux'
-        jpackagerPath = file("/opt/jpackager/jpackager")
-        extraJdepsArguments = []
+        appDist = 'linux'
     }
 }
 
@@ -166,11 +163,11 @@ task jdepsReport() {
             result = exec {
                 workingDir "${buildDir}"
     
-                // jdeps --multi-release 11 [--ignore-missing-deps] --print-module-deps -cp libs <fat MIST jar>
-                executable = 'jdeps'
+                // jdeps --multi-release 14 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
+                executable = "${javaHome}/bin/jdeps"
                 args = [
-                    '--multi-release', '11',
-                    *extraJdepsArguments, // Needed on Windows but not on Linux (TODO: Mac?)
+                    '--multi-release', '14',
+                    '--ignore-missing-deps',
                     '--print-module-deps',
                     "-cp", "${mistLibraryPath}", 
                     shadowJarPath]
@@ -199,7 +196,7 @@ task javaRuntime() {
             def moduleList = jdepsReportPath.text.trim();  // Need trim() else error (EOL?)
             
             // jlink --output <runtime loc> --no-header-files --no-man-pages --compress=2 --strip-debug --add-modules <modules>
-            executable = 'jlink'
+            executable = "${javaHome}/bin/jlink"
             args = [
                 '--output', "${javaRuntimePath}",
                 '--no-header-files',
@@ -223,70 +220,56 @@ task createBundle() {
         exec {
             workingDir "${buildDir}"
             
-            // Need to use a backport of jpackager for JDK 11
-            // See https://mail.openjdk.java.net/pipermail/openjfx-dev/2018-September/022500.html?source=post_page---------------------------
-            // For Windows:
-            // - Move jpackager.exe -> %JAVA_HOME%\bin
-            // - Move jdk.packager.jar -> %JAVA_HOME%\jmods            
-            
             // Due to JDK BUG 8217793 (https://bugs.openjdk.java.net/browse/JDK-8217793), 
             // jpackager throws an exception claiming that "Modules are not allowed in srcfiles"
             // This is thrown in regard to jlink, so if we call jlink (to create a java runtime) 
-            // explicitly first, we can work around the bug  (Last checked 2019-07-25)            
+            // explicitly first, we can work around the bug  (Last checked 2019-07-25)
+            
+            // jpackager may work without ^that^ now; see "options for creating runtime image" in jpackage              
 
             def sharedArgs = [
-                //'--verbose',
-                //'--echo-mode',
                 '--main-jar', shadowJar.archiveFileName.get(),
-                '--version', version,
                 '--input', mistLibraryPath,
-                '--output', bundlePath,
+                '--dest', bundlePath,
                 '--runtime-image', javaRuntimePath,
-                '--copyright', appCopyright
+                '--app-version', appVersion,
+                '--description', appLongname,
+                '--vendor', appPublisher,
+                '--copyright', appCopyright,
             ]
 
             if (operatingSystem.isWindows()) {
-
                 // jpackager creates a ton of [unneeded?] DLLs in the resulting bundle
                 // See https://bugs.openjdk.java.net/browse/JDK-8222504 (Last checked 2019-07-25)
-                def javaHome = System.properties.'java.home'
-                executable = "$javaHome\\bin\\java.exe"
+                executable = "${javaHome}\\bin\\jpackage.exe"
                 args = [
-                    '-Xmx512M',
-                    '--module-path', "$javaHome\\jmods",
-                    '--add-opens', 'jdk.jlink/jdk.tools.jlink.internal.packager=jdk.packager',
-                    '-m', 'jdk.packager/jdk.packager.Main',
-                    'create-image',
+                    '-t', 'app-image',
+                    '-n', appName,
                     *sharedArgs,
-                    '--name', appName,
+                    '--module-path', "${javaHome}\\jmods",
                     '--icon', file('package/icons/mist.ico')
                 ]
                     
-            } else {
-                // Mac & Linux
-                executable = jpackagerPath
-                def macLinuxSharedArgs = [
-                    '--name', appName.toLowerCase(),
+            } else if (operatingSystem.isMacOsX()) {
+                executable = "${javaHome}/bin/jpackage"
+                args = [
+                    '-t', 'dmg',
+                    '-n', appName,
+                    *sharedArgs,
+                    '--module-path', "${javaHome}/jmods",
+                    '--java-options', '-XstartOnFirstThread',
+                    '--icon', file('package/icons/mist.icns')
                 ]
-            
-                if (operatingSystem.isMacOsX()) {
-                    // TODO: Test
-                    args = [
-                        'create-installer', 'dmg',
-                        *sharedArgs,
-                        *macLinuxSharedArgs,
-                        '--icon', file('package/icons/mist.icns'),
-                        '--mac-sign'
-                    ]
-                } else if (operatingSystem.isLinux()) {
-                    args = [
-                        'create-installer', 'deb',
-                        *sharedArgs,
-                        *macLinuxSharedArgs,
-                        '--icon', file('package/icons/mist-180x180.png'),
-                        '--linux-deb-maintainer', appDebMaintainer
-                    ]
-                }
+
+            } else if (operatingSystem.isLinux()) {
+                executable = file("/opt/jpackager/jpackager")
+                args = [
+                    'create-installer', 'deb',
+                    *sharedArgs,
+                    '--name', appName.toLowerCase(),
+                    '--icon', file('package/icons/mist-180x180.png'),
+                    '--linux-deb-maintainer', appDebMaintainer
+                ]
             }
         }
     }    

@@ -102,16 +102,7 @@ public class MIST {
             logConfPath = String.format("devel/%s", logConfFileName);
             logPath = String.format("devel/logs/%s", logFilename);
         } else if (Util.isMac()) {
-            // Mac OS X: From inside an application bundle
-            // TODO: Text Mac installation to verify if this works
-//            URL mistJarURL = MIST.class.getProtectionDomain().getCodeSource().getLocation();
-//            File mistJarFile = new File(mistJarURL.getPath());
-//            String logXMLPath = String.format(
-//                "%s/conf/%s",
-//                mistJarFile.getParentFile().getParentFile().getPath(),
-//                logConfFileName);
-//            File logXMLFile = new File(logXMLPath);
-//            logConfPath = logXMLFile.getAbsolutePath();
+            // macOS
             logConfPath = logConfFileName;
             logPath = String.format("%s/Library/Logs/%s/%s", System.getProperty("user.home"), APP_NAME, logFilename);
         } else if (Util.isLinux()) {
@@ -154,18 +145,18 @@ public class MIST {
         else
             profileExt = "";
 
-        // Set app data dir
+        // Set app & conf data dir
         appDataDir = "";
-        if (Util.isWindows())
+        if (Util.isWindows()) {
             appDataDir = String.format("%s\\%s\\", System.getenv("APPDATA"), APP_NAME.toLowerCase());
-        else if (Util.isLinux())
+            appConfDir = appDataDir + "conf" + File.separator;
+        } else if (Util.isLinux()) {
             appDataDir = String.format("%s/.%s/", System.getProperty("user.home"), APP_NAME.toLowerCase());
-        else { // Mac
-            appDataDir = ""; // TODO! Also use in configureLogging()
+            appConfDir = appDataDir;
+        } else { // Mac
+            appDataDir = String.format("%s/Library/%s/", System.getProperty("user.home"), APP_NAME);
+            appConfDir = appDataDir;
         }
-
-        // Set conf data dir
-        appConfDir = appDataDir + "conf" + File.separator;
 
         // Secure the conf data dir
         securePath(appConfDir);

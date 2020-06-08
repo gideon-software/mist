@@ -230,7 +230,7 @@ public class Util {
             localizedMessage,
             e);
 
-        ErrorDialog.openError(Display.getDefault().getActiveShell(), title, msg, ms);
+        Display.getDefault().syncExec(() -> ErrorDialog.openError(null, title, msg, ms));
     }
 
 }
