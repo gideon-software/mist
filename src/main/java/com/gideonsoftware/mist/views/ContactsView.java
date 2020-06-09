@@ -120,20 +120,23 @@ public class ContactsView extends Composite implements PropertyChangeListener {
             return;
 
         if (HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     // Initialize the contact list
                     contacts = new ArrayList<ContactInfo>();
                     contactList.removeAll();
                     oldSelectionIndex = -1;
+
+                    // Force UI update (needed on Mac)
+                    contactList.update();
                 }
             });
 
         } // PROP_HISTORY_INIT
 
         else if (HistoryModel.PROP_HISTORY_ADD.equals(event.getPropertyName())) {
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     // Get the new history item
@@ -155,13 +158,16 @@ public class ContactsView extends Composite implements PropertyChangeListener {
                         // Add it to the contacts list (but without any [?], etc.)
                         ci.setName(originalName);
                         contacts.add(pos, ci);
+
+                        // Force UI update (needed on Mac)
+                        contactList.update();
                     }
                 }
             });
         } // PROP_HISTORY_ADD
 
         else if (HistoryModel.PROP_CONTACT_REMOVE.equals(event.getPropertyName())) {
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     // Get the removed contact
@@ -178,6 +184,9 @@ public class ContactsView extends Composite implements PropertyChangeListener {
                     }
 
                     oldSelectionIndex = -1;
+
+                    // Force UI update (needed on Mac)
+                    contactList.update();
                 }
             });
 

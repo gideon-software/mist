@@ -98,7 +98,7 @@ public class ProgressBarView extends Composite implements PropertyChangeListener
             && !event.getNewValue().equals(event.getOldValue())) {
             if (Display.getDefault().isDisposed())
                 return;
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     if (!progressBar.isDisposed()) {

@@ -80,6 +80,9 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
             importButton.setText("&Import Email");
             importButton.setImage(Images.getImage(Images.ICON_IMPORT_START));
         }
+
+        // Force UI update (needed on Mac)
+        importButton.update();
     }
 
     public Button getImportButton() {
@@ -96,7 +99,7 @@ public class ImportButtonView extends Composite implements PropertyChangeListene
             || MessageModel.PROP_MESSAGE_NEXT.equals(event.getPropertyName())) {
             if (Display.getDefault().isDisposed())
                 return;
-            Display.getDefault().syncExec(new Runnable() {
+            Display.getDefault().asyncExec(new Runnable() {
                 @Override
                 public void run() {
                     configureImportButton(EmailModel.isImporting() || MessageModel.getMessageCount() > 0);

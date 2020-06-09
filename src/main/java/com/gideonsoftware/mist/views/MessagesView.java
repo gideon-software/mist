@@ -252,6 +252,9 @@ public class MessagesView extends Composite implements PropertyChangeListener {
         item.setText(COL_SUBJECT, history.getDescription());
         item.setData(DATA_DATE, date); // Store original date for sorting
         item.setData(DATA_HISTORY, history); // Store history for lookup later
+
+        // Force UI update (needed on Mac?)
+        messagesTable.update();
     }
 
     public Table getMessagesTable() {
@@ -275,13 +278,15 @@ public class MessagesView extends Composite implements PropertyChangeListener {
             History his = (History) event.getNewValue();
             if (contactInfo.equals(his.getContactInfo())) {
                 // New history is being added for our contact; add it to the table
-                Display.getDefault().syncExec(new Runnable() {
+                Display.getDefault().asyncExec(new Runnable() {
                     @Override
                     public void run() {
                         addTableItem(his);
                         // Scroll to the bottom of the table as items are entered
                         if (!messagesTable.isDisposed())
                             messagesTable.setTopIndex(messagesTable.getItemCount() - 1);
+                        // Force UI update (needed on Mac?)
+                        messagesTable.update();
                     }
                 });
             }
@@ -292,6 +297,8 @@ public class MessagesView extends Composite implements PropertyChangeListener {
             messagesTable.removeAll();
             oldSelectionIndex = -1;
             contactInfo = null;
+            // Force UI update (needed on Mac?)
+            messagesTable.update();
 
         } else if (MessageDetailsView.PROP_SUBJECT.equals(event.getPropertyName())) {
             // The subject has been altered; update it here

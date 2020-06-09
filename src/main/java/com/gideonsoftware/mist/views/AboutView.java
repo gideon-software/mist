@@ -27,7 +27,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.util.Util;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -43,8 +42,8 @@ public class AboutView extends Dialog {
     private static Logger log = LogManager.getLogger();
 
     private Link homepageLink = null;
+    private Link facebookLink = null;
     private Link mailingListLink = null;
-    private Button facebookButton = null;
 
     public AboutView(Shell parentShell) {
         super(parentShell);
@@ -70,21 +69,14 @@ public class AboutView extends Dialog {
         applyGridLayout(comp).numColumns(2);
         applyGridData(comp).withFill();
 
-        // Left side includes the logo & facebook button
+        // Left side includes the logo
         Composite leftComp = new Composite(comp, SWT.NONE);
-        applyGridLayout(leftComp).numColumns(2);
+        applyGridLayout(leftComp).numColumns(1);
         applyGridData(leftComp).withFill();
 
         Label imageLabel = new Label(leftComp, SWT.NONE);
         imageLabel.setImage(Images.getImage(Images.LOGO_MIST));
-        applyGridData(imageLabel).withFill().horizontalSpan(2);
-
-        facebookButton = new Button(leftComp, SWT.PUSH);
-        facebookButton.setImage(Images.getImage(Images.LOGO_FACEBOOK));
-        if (Util.isMac()) {
-            applyGridData(facebookButton).horizontalAlignment(SWT.CENTER).verticalAlignment(SWT.CENTER)
-                .grabExcessHorizontalSpace(true).grabExcessVerticalSpace(true).heightHint(50);
-        }
+        applyGridData(imageLabel).withFill().verticalAlignment(SWT.TOP);
 
         // Right side includes the text
         Composite rightComp = new Composite(comp, SWT.NONE);
@@ -93,9 +85,11 @@ public class AboutView extends Dialog {
 
         (new Label(rightComp, SWT.NONE)).setText(
             String.format("MIST: eMail Import System for TntConnect %s", MIST.getAppVersion()));
-        new Label(rightComp, SWT.NONE);
+        // new Label(rightComp, SWT.NONE);
         homepageLink = new Link(rightComp, SWT.NONE);
         homepageLink.setText(String.format("Homepage: <a>%s</a>", MIST.HOMEPAGE));
+        facebookLink = new Link(rightComp, SWT.NONE);
+        facebookLink.setText(String.format("Facebook: <a>%s</a>", MIST.FACEBOOK));
         mailingListLink = new Link(rightComp, SWT.NONE);
         // TODO: Reformat into two controls to use SimpleEmailLink (and remove EmailLinkListener?)
         mailingListLink.setText(String.format("Email support: <a>%s</a>", MIST.EMAIL_SUPPORT));
@@ -110,8 +104,8 @@ public class AboutView extends Dialog {
         return comp;
     }
 
-    public Button getFacebookButton() {
-        return facebookButton;
+    public Link getFacebookLink() {
+        return facebookLink;
     }
 
     public Link getHomepageLink() {
