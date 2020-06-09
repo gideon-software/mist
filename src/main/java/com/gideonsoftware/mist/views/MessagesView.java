@@ -142,7 +142,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
 
         final TableColumn dateColumn = new TableColumn(messagesTable, SWT.NONE);
         dateColumn.setText("Date");
-        dateColumn.setWidth(130);
+        dateColumn.setWidth(160);
 
         final TableColumn resultColumn = new TableColumn(messagesTable, SWT.NONE);
         resultColumn.setText("Email Result");
@@ -150,7 +150,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
 
         final TableColumn subjectColumn = new TableColumn(messagesTable, SWT.NONE);
         subjectColumn.setText("Subject");
-        subjectColumn.setWidth(300);
+        subjectColumn.setWidth(320);
 
         // Resize subject column as the table/window resizes
         // TODO: Adjust this to allow for a minimum, but no maximum
