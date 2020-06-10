@@ -26,7 +26,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.gideonsoftware.mist.MIST;
-import com.gideonsoftware.mist.model.data.EmailMessage;
 import com.gideonsoftware.mist.tntapi.TntDbTest;
 
 public class EmailMessageTest {
@@ -48,7 +47,7 @@ public class EmailMessageTest {
             { "=?UTF-8?B?3zSQ5y63IFRvZGQgD2hxaXN0ZW5zb24=?= John Doe", "John" } };
 
         for (int i = 0; i < tests.length; i++) {
-            assertEquals(tests[i][1], EmailMessage.guessFromName(tests[i][0]));
+            assertEquals(tests[i][1], MessageSource.guessFromName(tests[i][0]));
         }
     }
 }
