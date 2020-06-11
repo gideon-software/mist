@@ -181,7 +181,7 @@ public class Preferences extends PreferenceStore {
             if (oldPrefs.nodeExists("TntMPD")) {
                 log.debug("Loading preferences from 4.x...");
 
-                setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", null));
+                setValue(TntDb.PREF_TNT_DBPATH, oldPrefs.node("TntMPD").get("DbPath", ""));
 
                 // Pre-5.0 stored its one IMAP server under "Mail" node
                 ImapServer server = new ImapServer(0);
