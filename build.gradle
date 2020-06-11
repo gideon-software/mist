@@ -262,13 +262,17 @@ task createBundle() {
                 ]
 
             } else if (operatingSystem.isLinux()) {
-                executable = file("/opt/jpackager/jpackager")
+                executable = "${javaHome}/bin/jpackage"
                 args = [
-                    'create-installer', 'deb',
-                    *sharedArgs,
-                    '--name', appName.toLowerCase(),
+                    '-t', 'deb',
+                    '-n', appName.toLowerCase(),
+                    *sharedArgs,                    
+                    '--module-path', "${javaHome}/jmods",
                     '--icon', file('package/icons/mist-180x180.png'),
-                    '--linux-deb-maintainer', appDebMaintainer
+                    '--linux-deb-maintainer', appDebMaintainer,
+                    //'--linux-package-name', appName, // Error? 
+                    '--linux-app-category', 'Utility',
+                    '--linux-shortcut'
                 ]
             }
         }
