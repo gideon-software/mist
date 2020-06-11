@@ -22,6 +22,7 @@ package com.gideonsoftware.mist.model.data;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.stream.Stream;
 
 /**
  * Base class for message sources.
@@ -92,6 +93,10 @@ public class MessageSource {
         }
     }
 
+    public void addRecipients(Object[] recipients) {
+        this.recipients = Stream.of(this.recipients, recipients).flatMap(Stream::of).toArray();
+    }
+
     /**
      * Returns a clone of this message source.
      * 
@@ -160,10 +165,6 @@ public class MessageSource {
 
     public void setFromName(String fromName) {
         this.fromName = fromName;
-    }
-
-    public void setRecipients(Object[] recipients) {
-        this.recipients = recipients;
     }
 
     public void setSourceId(Integer sourceId) {

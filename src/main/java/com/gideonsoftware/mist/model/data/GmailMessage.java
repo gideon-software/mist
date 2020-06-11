@@ -114,18 +114,20 @@ public class GmailMessage extends EmailMessage {
                         } catch (AddressException e) {
                             setFromName("Unknown");
                             setFromId("Unknown");
-                            log.error("Error retrieving 'from' from message ({})", message);
+                            log.error("Error retrieving 'From' from message ({})", message);
                         }
                         break;
 
                     // Recipients
                     case "To":
+                    case "Cc":
+                    case "Bcc":
                         try {
-                            InternetAddress[] _to = InternetAddress.parse(header.getValue());
-                            setRecipients(_to);
+                            InternetAddress[] _recip = InternetAddress.parse(header.getValue());
+                            addRecipients(_recip);
                         } catch (AddressException e) {
-                            setRecipients(new String[] { "Unknown" });
-                            log.error("Error retrieving 'to' from message ({})", message);
+                            addRecipients(new String[] { "Unknown" });
+                            log.error("Error retrieving '{}' from message ({})", header.getName(), message);
                         }
                         break;
 

@@ -107,9 +107,9 @@ public class ImapMessage extends EmailMessage {
 
         // Recipients
         try {
-            setRecipients(message.getAllRecipients());
+            addRecipients(message.getAllRecipients());
         } catch (MessagingException e) {
-            setRecipients(new Address[0]);
+            addRecipients(new Address[0]);
             log.error("Error retrieving 'to' from message ({})", message);
         }
     }
