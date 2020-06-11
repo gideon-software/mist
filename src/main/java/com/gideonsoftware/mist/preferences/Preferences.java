@@ -23,6 +23,7 @@ package com.gideonsoftware.mist.preferences;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +159,16 @@ public class Preferences extends PreferenceStore {
             // See if there are MIST 4.x settings that can be loaded
             loadPreferencesFromMIST4();
             savePreferences();
+        }
+        // List preferences (alphabetically)
+        if (log.isDebugEnabled()) {
+            String[] prefNames = new String[prefs.preferenceNames().length];
+            System.arraycopy(prefs.preferenceNames(), 0, prefNames, 0, prefs.preferenceNames().length);
+            Arrays.sort(prefNames);
+            for (String prefName : prefNames) {
+                String prefValue = prefName.contains("password") ? "*****" : prefs.getString(prefName);
+                log.debug("Preference: {}: {}", prefName, prefValue);
+            }
         }
     }
 
