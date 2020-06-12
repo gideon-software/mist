@@ -138,14 +138,17 @@ public class ImapServer extends EmailServer {
         props.setProperty("mail.port", getPort());
         props.setProperty("mail.user", getUsername());
         props.setProperty("mail.password", getPassword());
-
         if (useSsl) {
             // Don't verify server identity. This is required for self-signed
             // certificates, which missionaries may very well use ;)
             // Source: http://stackoverflow.com/a/5730201/1307022
             props.setProperty("mail.imaps.ssl.checkserveridentity", "false");
             props.setProperty("mail.imaps.ssl.trust", "*");
+            props.setProperty("mail.imaps.connectionpooltimeout", String.valueOf(1000 * 60 * 60)); // 1 hour
+        } else {
+            props.setProperty("mail.imap.connectionpooltimeout", String.valueOf(1000 * 60 * 60)); // 1 hour
         }
+
         Session sess = Session.getInstance(props, null);
 
         try {
