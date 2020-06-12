@@ -11,15 +11,15 @@ plugins {
     id 'eclipse'
 
     // https://imperceptiblethoughts.com/shadow/
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
     
     id 'com.github.spotbugs' version '4.2.2'
 }
 
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = JavaVersion.VERSION_14
+targetCompatibility = JavaVersion.VERSION_14
 
-wrapper.gradleVersion = '6.4.1'
+wrapper.gradleVersion = '6.5'
 
 import org.gradle.internal.os.OperatingSystem
 
