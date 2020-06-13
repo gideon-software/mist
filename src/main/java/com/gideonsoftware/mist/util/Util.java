@@ -154,11 +154,11 @@ public class Util {
                 }
             });
         } catch (InvocationTargetException e) {
-            String msg = "Unable to connect to TntConnect database.\nPlease check your settings and try again.";
+            String msg = "Unable to connect to TntConnect database.";
             reportError("TntConnect database connection failure", msg, e.getCause()); // We want the cause, not the ITE
         } catch (InterruptedException e) {
             // Not currently enabled...
-            log.debug("Connection to TntConnect database canceled.");
+            log.debug("Connection to TntConnect database cancelled.");
             TntDb.disconnect();
         }
     }

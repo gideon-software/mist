@@ -20,16 +20,11 @@
 
 package com.gideonsoftware.mist.controllers;
 
-import java.io.File;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.widgets.MessageBox;
 
-import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.model.MessageModel;
@@ -54,22 +49,6 @@ public class ImportButtonController {
                 } else {
                     // Start import
 
-                    // Check for lock file
-                    if (isLockFileFound()) {
-                        MessageBox msgBox = new MessageBox(view.getShell(), SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
-                        msgBox.setMessage(
-                            "It appears that TntConnect is currently using your TntConnect database. "
-                                + "It is recommended that you close TntConnect before using MIST to "
-                                + "import email. Otherwise it is possible for data corruption to occur.\n\n"
-                                + "Press OK to continue or Cancel to stop the import.");
-                        if (msgBox.open() != SWT.OK)
-                            return;
-                    }
-
-                    //
-                    // Begin importing!
-                    //
-
                     // Clear last import info
                     HistoryModel.init();
                     MessageModel.init();
@@ -84,12 +63,5 @@ public class ImportButtonController {
                 }
             }
         });
-    }
-
-    public boolean isLockFileFound() {
-        String dbPath = MIST.getPrefs().getString(TntDb.PREF_TNT_DBPATH);
-        String ext = dbPath.substring(dbPath.indexOf("."));
-        String lockfile = dbPath.replace(ext, ".lock");
-        return new File(lockfile).exists();
     }
 }

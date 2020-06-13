@@ -196,18 +196,26 @@ public class TntDb {
 
         try {
             conn = DriverManager.getConnection(url, null, "tntMPD");
+
+            if (conn.isReadOnly()) {
+                disconnect();
+                throw new TntDbException("Tnt database is already in use. (Is TntConnect open?)");
+            }
+
             conn.setAutoCommit(false); // We'll commit our own transactions, thank you =)
-            dbPath = databasePath;
         } catch (SQLException e) {
             disconnect();
             throw new TntDbException(String.format("Could not connect to Tnt database at '%s'", databasePath), e);
         }
+
+        dbPath = databasePath;
 
         try {
             // Note: we load these into memory rather than making DB calls simply for efficiency
             CurrencyManager.load();
             PledgeFrequencyManager.load();
         } catch (SQLException e) {
+            disconnect();
             throw new TntDbException("Could not load initialization data from Tnt database", e);
         }
     }
@@ -782,6 +790,8 @@ public class TntDb {
         stopImporting = false;
         addedEmailsCount = 0;
         Util.connectToTntDatabase();
+        if (!TntDb.isConnected())
+            return;
 
         Thread importThread = new Thread() {
 
