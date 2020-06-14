@@ -117,14 +117,19 @@ public class MIST {
         System.setProperty("log.path", logPath);
         System.setProperty("log4j.configurationFile", logConfPath);
         log = LogManager.getRootLogger();
+        String logConfFilePath = null;
         try {
-            String logConfFilePath = new File(logConfPath).getAbsolutePath();
+            logConfFilePath = new File(logConfPath).getAbsolutePath();
             logfilePath = new File(logPath).getAbsolutePath();
-            log.debug("Log configuration path: {}", logConfFilePath);
-            log.debug("Log path: {}", logfilePath);
         } catch (NullPointerException e) {
             System.out.println("Incorrect configuration settings; confPath: " + logConfPath + "; logPath: " + logPath);
         }
+
+        // Log basic app info
+        log.debug(MIST.getAppNameWithVersion());
+
+        log.debug("Log configuration path: {}", logConfFilePath);
+        log.debug("Log path: {}", logfilePath);
 
         // Secure log
         securePath(logPath);
