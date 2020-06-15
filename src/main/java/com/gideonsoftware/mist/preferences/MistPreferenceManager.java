@@ -36,6 +36,7 @@ import com.gideonsoftware.mist.preferences.preferencepages.GmailServerPreference
 import com.gideonsoftware.mist.preferences.preferencepages.ImapServerPreferencePage;
 import com.gideonsoftware.mist.preferences.preferencepages.LoggingPreferencePage;
 import com.gideonsoftware.mist.preferences.preferencepages.TntDbPreferencePage;
+import com.gideonsoftware.mist.preferences.preferencepages.UpdatesPreferencePage;
 
 /**
  *
@@ -46,6 +47,7 @@ public class MistPreferenceManager extends PreferenceManager {
     private static final String PREFNODE_TNT = "tnt";
     private static final String PREFNODE_EMAIL = "email";
     private static final String PREFNODE_LOGGING = "logging";
+    private static final String PREFNODE_UPDATES = "updates";
 
     private static MistPreferenceManager manager;
     private MistPreferenceDialog preferenceDialog;
@@ -99,6 +101,7 @@ public class MistPreferenceManager extends PreferenceManager {
         addToRoot(new SmartPreferenceNode(PREFNODE_EMAIL, new EmailPreferencePage()));
         reloadEmailServerNodes();
         addToRoot(new SmartPreferenceNode(PREFNODE_LOGGING, new LoggingPreferencePage()));
+        addToRoot(new SmartPreferenceNode(PREFNODE_UPDATES, new UpdatesPreferencePage()));
     }
 
     public MistPreferenceDialog createPreferenceDialog(Shell shell) {

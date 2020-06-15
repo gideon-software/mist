@@ -50,6 +50,7 @@ public class Images {
     public static final String ICON_RELOAD = "icon-reload";
     public static final String ICON_SETTINGS = "icon-settings";
     public static final String ICON_TNT = "icon-tnt";
+    public static final String ICON_UPDATES = "icon-updates";
 
     public static final String ICON_STATUS_ADDED = "icon-status-added";
     public static final String ICON_STATUS_ERROR = "icon-status-error";
@@ -119,6 +120,7 @@ public class Images {
         put(ICON_RELOAD, imgLoc + "icons/redo-alt-solid-mod.png");
         put(ICON_SETTINGS, imgLoc + "icons/cog-solid.png");
         put(ICON_TNT, imgLoc + "icons/tnt.png");
+        put(ICON_UPDATES, imgLoc + "icons/star-solid-black.png");
 
         // Load status icons
         put(ICON_STATUS_ADDED, imgLoc + "icons/star-solid.png");

@@ -44,12 +44,16 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.eclipse.jface.util.Util;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
 
 import com.gideonsoftware.mist.controllers.MainWindowController;
+import com.gideonsoftware.mist.controllers.SettingsController;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.model.MessageModel;
+import com.gideonsoftware.mist.model.UpdateModel;
 import com.gideonsoftware.mist.preferences.MistPreferenceManager;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.tntapi.TntDb;
@@ -75,6 +79,7 @@ public class MIST {
     public final static String HOMEPAGE = "https://www.gideonsoftware.com";
     public final static String EMAIL_SUPPORT = "mist4tnt@gmail.com";
     public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
+    public final static String UPDATE_URL = "https://script.google.com/macros/s/AKfycbyHtfo3lysRu8f7PkmtUhNlD_HHuVqsg2_XC-7up23XlYgIZO7U/exec";
 
     public final static String REGEX_EMAILADDRESS = "([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)";
 
@@ -90,6 +95,21 @@ public class MIST {
     private static String appDataDir = "";
     private static String appConfDir = "";
     private static String logfilePath = "";
+
+    private static Display display = null;
+
+    private static void checkInitialSetup() {
+        // If MIST has not been configured, load settings
+        // TODO: Don't ask; just begin configuration!
+        if (!MIST.getPrefs().isConfigured()) {
+            log.debug("MIST is not configured.");
+            MessageBox mBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.YES | SWT.NO);
+            mBox.setText("MIST");
+            mBox.setMessage("MIST is not yet configured.\n\nWould you like to configure MIST now?");
+            if (mBox.open() == SWT.YES)
+                new SettingsController(view.getShell()).openView();
+        }
+    }
 
     public static String configureLogging(@SuppressWarnings("rawtypes") Class clazz) {
         String logConfPath = null;
@@ -210,15 +230,16 @@ public class MIST {
         return view;
     }
 
-    public static void initModel() {
+    private static void initModel() {
         log.trace("initModel()");
         TntDb.init();
         HistoryModel.init();
         MessageModel.init();
         EmailModel.init();
+        UpdateModel.init();
     }
 
-    public static void initPrefs() {
+    private static void initPrefs() {
         // Record first-run date
         if (!MIST.getPrefs().contains(MIST.PREF_FIRST_RUN_DATE))
             MIST.getPrefs().setValue(MIST.PREF_FIRST_RUN_DATE, System.currentTimeMillis());
@@ -253,7 +274,7 @@ public class MIST {
 
         // Display & images
         Display.setAppName(APP_NAME);
-        new Display(); // Needed for ImageManager::init()
+        display = new Display(); // Needed for ImageManager::init()
         Images.init();
 
         //
@@ -265,6 +286,14 @@ public class MIST {
         MainWindowController controller = new MainWindowController(view);
         controller.openView();
 
+        UpdateModel.checkForUpdate();
+        checkInitialSetup();
+
+        // Event loop
+        while (view != null && view.getShell() != null && !view.getShell().isDisposed())
+            if (!display.readAndDispatch())
+                display.sleep();
+
         // Shut down
         shutdown();
     }
@@ -275,7 +304,7 @@ public class MIST {
         options = parser.parse(opts);
     }
 
-    private static void securePath(String dir) {
+    public static void securePath(String dir) {
         if (log != null)
             log.trace("securePath({})", dir);
 
@@ -379,9 +408,9 @@ public class MIST {
             log.error("Could not save preferences.", e);
         }
 
-        if (Display.getDefault() != null && !Display.getDefault().isDisposed()) {
+        if (display != null && !display.isDisposed()) {
             log.trace("shutdown: Disposing display...");
-            Display.getDefault().dispose();
+            display.dispose();
         }
 
         log.trace("=== shutdown complete ===");

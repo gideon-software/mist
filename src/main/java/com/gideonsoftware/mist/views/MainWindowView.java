@@ -23,9 +23,11 @@ package com.gideonsoftware.mist.views;
 import static com.gideonsoftware.mist.util.ui.GridDataUtil.applyGridData;
 import static com.gideonsoftware.mist.util.ui.GridLayoutUtil.applyGridLayout;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jface.util.Util;
 import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
@@ -38,16 +40,21 @@ import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gideonsoftware.mist.MIST;
+import com.gideonsoftware.mist.model.UpdateModel;
+import com.gideonsoftware.mist.util.Util;
 import com.gideonsoftware.mist.util.ui.Images;
 
-public class MainWindowView extends ApplicationWindow {
+public class MainWindowView extends ApplicationWindow implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
 
     public static final String PREF_WINDOW_BOUNDS = "mainwindow.window.bounds";
@@ -70,6 +77,7 @@ public class MainWindowView extends ApplicationWindow {
     public MainWindowView() {
         super(null);
         log.trace("MainWindowView()");
+        UpdateModel.addPropertyChangeListener(this); // Removed in handleShellCloseEvent
     }
 
     @Override
@@ -103,10 +111,11 @@ public class MainWindowView extends ApplicationWindow {
         shell.addListener(SWT.Move, saveShellStateListener);
 
         // Disable full-screen mode on Mac to get around nasty "freeze" bug
+        // TODO: Is this still the case?
         // See https://gist.github.com/azhawkes/5009567
         // See https://bugs.eclipse.org/bugs/show_bug.cgi?id=389486
         // See http://stackoverflow.com/questions/14834207/how-to-disable-fullscreen-button-in-mac-os-in-swt-java-app
-        if (Util.isMac()) {
+        if (org.eclipse.jface.util.Util.isMac()) {
             try {
                 java.lang.reflect.Field field = Control.class.getDeclaredField("view");
                 Object /* NSView */ view = field.get(shell);
@@ -223,6 +232,51 @@ public class MainWindowView extends ApplicationWindow {
 
     public TaskItemView getTaskItemView() {
         return taskItemView;
+    }
+
+    @Override
+    protected void handleShellCloseEvent() {
+        super.handleShellCloseEvent();
+        log.trace("handleShellCloseEvent()");
+        UpdateModel.removePropertyChangeListener(this);
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        log.trace("propertyChange({})", event);
+
+        if (UpdateModel.PROP_STATUS_CHECKED.equals(event.getPropertyName()) && UpdateModel.isUpdateAvailable()) {
+            if (Display.getDefault().isDisposed())
+                return;
+            Display.getDefault().asyncExec(new Runnable() {
+                @Override
+                public void run() {
+                    log.info("A new version of MIST is available: {}", UpdateModel.getNewVersion());
+                    MessageBox mBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.YES | SWT.NO);
+                    mBox.setText("MIST");
+                    mBox.setMessage(
+                        String.format(
+                            "A new version of MIST is available!\n"
+                                + "Current version:\t%s\n"
+                                + "New version:\t%s\n"
+                                + "\n"
+                                + "Would you like to download it now?",
+                            MIST.getAppVersion(),
+                            UpdateModel.getNewVersion()));
+                    if (mBox.open() == SWT.YES) {
+                        String link = UpdateModel.getNewVersionDownloadURL();
+                        if (link.isBlank())
+                            link = MIST.HOMEPAGE;
+                        if (!Program.launch(link)) {
+                            String msg = String.format(
+                                "There was a problem loading your default web browser. You can find download MIST from: %s",
+                                link);
+                            Util.reportError("Unable to load URL in default browser", msg);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**

@@ -89,6 +89,14 @@ dependencies {
     // Gmail API Client Library
     implementation group: 'com.google.apis', name: 'google-api-services-gmail', version: 'v1-rev20200504-1.30.9'
     
+    // For HTTP requests (as in UpdateModel)
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.12'
+    
+    // For JSON parsing (as in UpdateModel) 
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.0'
+    
     // HTML email parsing
     // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
     implementation group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.4'

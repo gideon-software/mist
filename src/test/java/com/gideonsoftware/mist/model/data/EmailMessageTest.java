@@ -26,13 +26,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.gideonsoftware.mist.MIST;
-import com.gideonsoftware.mist.tntapi.TntDbTest;
 
 public class EmailMessageTest {
 
     @BeforeClass
     public static void globalSetUp() {
-        MIST.configureLogging(TntDbTest.class);
+        MIST.configureLogging(EmailMessageTest.class);
     }
 
     @Test

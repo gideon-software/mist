@@ -25,9 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
 
-import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.views.MainWindowView;
 
 public class MainWindowController {
@@ -53,19 +51,6 @@ public class MainWindowController {
         new MessagesController(view.getMessagesView());
         messageDetailsController = new MessageDetailsController(view.getMessageDetailsView());
         new MainMenuController(view.getMainMenuView(), this);
-
-        // If MIST has not been configured, load settings
-
-        // TODO: Don't ask; just begin configuration!
-        if (!MIST.getPrefs().isConfigured()) {
-            log.debug("MIST not yet configured.");
-            MessageBox mBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.YES | SWT.NO);
-            mBox.setText("MIST");
-            mBox.setMessage("MIST is not yet configured.\n\nWould you like to configure MIST now?");
-            if (mBox.open() == SWT.YES)
-                new SettingsController(view.getShell()).openView();
-        }
-        // If MIST is still not configured, the Import Button will simply be disabled
     }
 
     public boolean closeView() {
@@ -80,7 +65,6 @@ public class MainWindowController {
 
     public int openView() {
         log.trace("openView()");
-        view.setBlockOnOpen(true);
         return view.open();
     }
 
