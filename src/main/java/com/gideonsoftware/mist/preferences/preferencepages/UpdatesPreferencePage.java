@@ -27,6 +27,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.UpdateModel;
+import com.gideonsoftware.mist.preferences.fieldeditors.LabelFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SmartComboFieldEditor;
 import com.gideonsoftware.mist.util.ui.Images;
 
@@ -50,6 +51,8 @@ public class UpdatesPreferencePage extends FieldEditorPreferencePage {
     @Override
     protected void createFieldEditors() {
         log.trace("createFieldEditors()");
+
+        addField(new LabelFieldEditor("MIST will check for updates automatically.", getFieldEditorParent()));
 
         // Channel
         MIST.getPrefs().setDefault(UpdateModel.PREF_UPDATE_CHANNEL, UpdateModel.CHANNEL_STABLE); // Default

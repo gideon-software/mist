@@ -208,6 +208,7 @@ public class UpdateModel {
             channel = CHANNEL_STABLE;
             if (MIST.isDevel() || MIST.getAppVersion().contains("beta"))
                 channel = CHANNEL_BETA;
+            MIST.getPrefs().setValue(PREF_UPDATE_CHANNEL, channel);
         }
 
         log.debug("Update channel is '{}'", channel);
@@ -218,7 +219,7 @@ public class UpdateModel {
         if (newVersion.isBlank())
             return false;
 
-        return true;
+        return isVersionNewer(MIST.getAppVersion(), newVersion);
     }
 
     public static boolean isVersionNewer(String currentVersion, String potentiallyNewerVersion) {
