@@ -12,6 +12,7 @@ Change Log for MIST 5.0
 * Automatically mark emails as "Thanks" based on subject matching.
 * Easier control over (and access to) MIST logging.
 * MIST configuration & logs are secured & readable only by the logged-in user.
+* MIST checks for new releases automatically.
 * No longer unnecessarily prefixes Tnt history with "_____ wrote:"
 * Switched from subversion to git for version control.
 * Switched to gradle as build tool.
