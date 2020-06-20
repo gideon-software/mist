@@ -23,6 +23,7 @@ package com.gideonsoftware.mist.preferences.preferencepages;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.BooleanFieldEditor;
+import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -31,8 +32,8 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.MessageBox;
 
 import com.gideonsoftware.mist.exceptions.EmailServerException;
+import com.gideonsoftware.mist.model.data.EmailServer;
 import com.gideonsoftware.mist.model.data.GmailServer;
-import com.gideonsoftware.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SmartComboFieldEditor;
 import com.gideonsoftware.mist.util.ui.Images;
 import com.google.api.services.gmail.model.Label;
@@ -43,7 +44,6 @@ import com.google.api.services.gmail.model.Label;
 public class GmailServerPreferencePage extends EmailServerPreferencePage {
     private static Logger log = LogManager.getLogger();
 
-    private ButtonFieldEditor signInButton;
     private SmartComboFieldEditor<String> labelEditor;
     private BooleanFieldEditor removeLabelEditor;
 
@@ -95,40 +95,20 @@ public class GmailServerPreferencePage extends EmailServerPreferencePage {
         log.trace("addRemoveLabelEditor()");
         removeLabelEditor = new BooleanFieldEditor(
             server.getPrefName(GmailServer.PREF_LABEL_REMOVE_AFTER_IMPORT),
-            "Remove label from successfully-imported history and ignored messages",
+            "Remove label from messages after importing",
             getFieldEditorParent());
         addField(removeLabelEditor);
-    }
-
-    protected void addSignInEditor() {
-        log.trace("addSignInEditor()");
-        signInButton = new ButtonFieldEditor("Sign in with &Google", getFieldEditorParent());
-        signInButton.getButton().addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent event) {
-                log.trace("connectButton.widgetSelected({})", event);
-                if (connectToServer()) {
-                    // Reload the username field
-                    usernameEditor.load();
-
-                    // Notify user that the connection was successful
-                    MessageBox msgBox = new MessageBox(
-                        ((Button) event.getSource()).getShell(),
-                        SWT.ICON_INFORMATION | SWT.OK);
-                    msgBox.setMessage("Sign-in successful!");
-                    msgBox.open();
-                }
-            }
-        });
-        addField(signInButton);
     }
 
     @Override
     protected void addUsernameEditor() {
         log.trace("addUsernameEditor()");
-        super.addUsernameEditor();
+        usernameEditor = new StringFieldEditor(
+            server.getPrefName(EmailServer.PREF_USERNAME),
+            "Gmail account:",
+            getFieldEditorParent());
+        addField(usernameEditor);
         usernameEditor.getTextControl(getFieldEditorParent()).setEditable(false);
-        usernameEditor.setErrorMessage("Please sign in with your Google account.");
     }
 
     @Override
@@ -145,11 +125,7 @@ public class GmailServerPreferencePage extends EmailServerPreferencePage {
 
         addNicknameEditor();
         addEnabledEditor();
-        addSignInEditor();
         addUsernameEditor();
-
-        addSpacer();
-
         addLabelEditor();
         addRemoveLabelEditor();
         addTntUserEditor();

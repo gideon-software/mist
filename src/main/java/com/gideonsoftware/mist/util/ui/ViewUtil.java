@@ -26,7 +26,6 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolTip;
 
 public class ViewUtil {
@@ -34,16 +33,16 @@ public class ViewUtil {
     final static int TOOLTIP_HIDE_DELAY = 0;
     final static int TOOLTIP_SHOW_DELAY = 0;
 
-    public static int getTextHeight(Text text) {
-        GC gc = new GC(text);
+    public static int getTextHeight(Control control) {
+        GC gc = new GC(control);
         FontMetrics fm = gc.getFontMetrics();
         int lineHeight = fm.getHeight();
         gc.dispose();
         return lineHeight;
     }
 
-    public static int getTextWidth(Text text) {
-        GC gc = new GC(text);
+    public static int getTextWidth(Control control) {
+        GC gc = new GC(control);
         FontMetrics fm = gc.getFontMetrics();
         double charWidth = fm.getAverageCharacterWidth();
         gc.dispose();
@@ -65,8 +64,10 @@ public class ViewUtil {
         tip.setAutoHide(false);
 
         control.addListener(SWT.MouseHover, new Listener() {
+            @Override
             public void handleEvent(Event event) {
                 tip.getDisplay().timerExec(TOOLTIP_SHOW_DELAY, new Runnable() {
+                    @Override
                     public void run() {
                         tip.setVisible(true);
                     }
@@ -75,8 +76,10 @@ public class ViewUtil {
         });
 
         control.addListener(SWT.MouseExit, new Listener() {
+            @Override
             public void handleEvent(Event event) {
                 tip.getDisplay().timerExec(TOOLTIP_HIDE_DELAY, new Runnable() {
+                    @Override
                     public void run() {
                         tip.setVisible(false);
                     }

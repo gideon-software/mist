@@ -154,9 +154,9 @@ public class TntDb {
      *
      * @param force
      *            true if a reconnection should be forced; false if an existing connection will do;
-     *            If {@code dbPath} is different from the current connection, a reconnection is always forced
+     *            If {@code databasePath} is different from the current connection, a reconnection is always forced
      * @param databasePath
-     *            path to the TntConnect database to connect to; if null or blank, the previous connection is used.
+     *            path to the TntConnect database to connect to
      * @throws TntDbException
      *             if {@code databasePath} is null or blank and there is no previous connection,
      *             if the TntConnect database cannot be found at {@code databasePath},

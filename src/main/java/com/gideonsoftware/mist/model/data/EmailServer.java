@@ -118,6 +118,17 @@ public abstract class EmailServer implements Cloneable {
         }
     }
 
+    public static String getFormattedTypeName(String type) {
+        switch (type) {
+            case TYPE_IMAP:
+                return "IMAP";
+            case TYPE_GMAIL:
+                return "Gmail";
+            default:
+                return "Email";
+        }
+    }
+
     public static String getPrefName(String name, int serverId) {
         return String.format("%s.%s.%s", PREF_PREFIX, serverId, name);
     }
@@ -130,8 +141,16 @@ public abstract class EmailServer implements Cloneable {
         log.trace("addIgnoreAddress({})", email);
         String[] newIgnoreAddresses = new String[ignoreAddresses.length + 1];
         System.arraycopy(ignoreAddresses, 0, newIgnoreAddresses, 0, ignoreAddresses.length);
-        newIgnoreAddresses[newIgnoreAddresses.length] = email;
+        newIgnoreAddresses[ignoreAddresses.length] = email;
         setIgnoreAddresses(newIgnoreAddresses);
+    }
+
+    public void addMyAddress(String email) {
+        log.trace("addMyAddress({})", email);
+        String[] newMyAddresses = new String[myAddresses.length + 1];
+        System.arraycopy(myAddresses, 0, newMyAddresses, 0, myAddresses.length);
+        newMyAddresses[myAddresses.length] = email;
+        setMyAddresses(newMyAddresses);
     }
 
     public void clearPreferences() {
@@ -264,10 +283,48 @@ public abstract class EmailServer implements Cloneable {
             MIST.getPrefs().setValues(getPrefName(PREF_ADDRESSES_MY), myAddresses);
     }
 
+    /**
+     * Set the nickname for this email server.
+     * 
+     * @param nickname
+     *            Nickname for this server
+     */
     public void setNickname(String nickname) {
+        setNickname(nickname, false);
+    }
+
+    /**
+     * Set the nickname for this email server.
+     * 
+     * @param nickname
+     *            Nickname for this server
+     * @param noDuplicates
+     *            If true and this nickname is a duplicate of an existing server's nickname, the next
+     *            available nickname of the form "&lt;nickname&gt; &lt;num&gt;" will be used instead
+     */
+    public void setNickname(String nickname, boolean noDuplicates) {
         this.nickname = nickname;
-        if (nickname != null)
-            MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), nickname);
+
+        if (nickname == null)
+            return;
+
+        if (noDuplicates) {
+            int num = 1;
+            boolean exists;
+            do {
+                exists = false;
+                for (int i = 0; i < EmailModel.getEmailServerCount(); i++) {
+                    if (EmailModel.getEmailServer(i).getNickname().equals(nickname + (num == 1 ? "" : (" " + num)))) {
+                        exists = true;
+                        num++;
+                    }
+                }
+            } while (exists);
+            if (num > 1)
+                this.nickname = nickname + " " + num;
+        }
+
+        MIST.getPrefs().setValue(getPrefName(PREF_NICKNAME), this.nickname);
     }
 
     public void setTntUserId(Integer tntUserId) {

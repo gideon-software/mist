@@ -44,12 +44,10 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.eclipse.jface.util.Util;
-import org.eclipse.swt.SWT;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.MessageBox;
 
 import com.gideonsoftware.mist.controllers.MainWindowController;
-import com.gideonsoftware.mist.controllers.SettingsController;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.model.MessageModel;
@@ -58,7 +56,9 @@ import com.gideonsoftware.mist.preferences.MistPreferenceManager;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.tntapi.TntDb;
 import com.gideonsoftware.mist.util.ui.Images;
+import com.gideonsoftware.mist.util.ui.SmartWizardDialog;
 import com.gideonsoftware.mist.views.MainWindowView;
+import com.gideonsoftware.mist.wizards.firsttimesetup.FirstTimeSetupWizard;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -99,15 +99,13 @@ public class MIST {
     private static Display display = null;
 
     private static void checkInitialSetup() {
-        // If MIST has not been configured, load settings
-        // TODO: Don't ask; just begin configuration!
+        log.trace("checkInitialSetup()");
+        // If MIST has not been configured, load setup wizard
         if (!MIST.getPrefs().isConfigured()) {
-            log.debug("MIST is not configured.");
-            MessageBox mBox = new MessageBox(view.getShell(), SWT.ICON_INFORMATION | SWT.YES | SWT.NO);
-            mBox.setText("MIST");
-            mBox.setMessage("MIST is not yet configured.\n\nWould you like to configure MIST now?");
-            if (mBox.open() == SWT.YES)
-                new SettingsController(view.getShell()).openView();
+            log.info("MIST is not configured; loading Setup Wizard.");
+            SmartWizardDialog dlg = new SmartWizardDialog(view.getShell(), new FirstTimeSetupWizard());
+            if (dlg.open() == Window.OK)
+                initModel();
         }
     }
 

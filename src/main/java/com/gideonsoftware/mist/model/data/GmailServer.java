@@ -65,6 +65,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.Label;
+import com.google.api.services.gmail.model.LabelColor;
 import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.ListThreadsResponse;
 import com.google.api.services.gmail.model.Message;
@@ -83,6 +84,8 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public final static String PREF_LABEL_NAME = "label.name";
     public final static String PREF_LABEL_REMOVE_AFTER_IMPORT = "label.removeafterimport";
     public final static String PREF_UNIQUE_ID = "uniqueid";
+
+    public final static String NEW_NICKNAME = "Gmail";
 
     // Google authorization data
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
@@ -271,6 +274,32 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         // Init threadMap; see note
         threadMap = new HashMap<String, HashSet<String>>();
+    }
+
+    public void createLabel(String labelName) throws EmailServerException {
+        log.trace("{{}} createLabel({})", getNickname(), labelName);
+
+        if (labelName == null || labelName.isBlank())
+            throw new EmailServerException("Label name cannot be blank");
+
+        if (!isConnected())
+            throw new EmailServerException(String.format("{%s} Not connected", getNickname()));
+
+        // Create the new label
+        Label label = new Label().setName(labelName).setLabelListVisibility("labelShow").setMessageListVisibility(
+            "show");
+        LabelColor labelColor = new LabelColor();
+        labelColor.setTextColor("#000000");
+        labelColor.setBackgroundColor("#16a766");
+        label.setColor(labelColor);
+        try {
+            // https://developers.google.com/gmail/api/v1/reference/users/labels/create
+            label = gmailService.users().labels().create("me", label).execute();
+            setLabelId(label.getId());
+            setLabelName(label.getName());
+        } catch (IOException e) {
+            throw new EmailServerException(e);
+        }
     }
 
     @Override

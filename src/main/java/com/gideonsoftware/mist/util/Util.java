@@ -58,7 +58,7 @@ class EmailConnectionRunnable implements IRunnableWithProgress {
     @Override
     public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
         monitor.beginTask(
-            String.format("%s: Connecting to email server...", server.getNickname()),
+            String.format("%s: Connecting to email account...", server.getNickname()),
             IProgressMonitor.UNKNOWN);
         try {
             server.connect();
@@ -114,7 +114,7 @@ public class Util {
                     dialog.run(true, false, new EmailConnectionRunnable(emailServer));
                 } catch (InvocationTargetException e) {
                     String msg = String.format(
-                        "Unable to connect to email server '%s'.%nPlease check your settings and try again.",
+                        "Unable to connect to email account '%s'.%nPlease check your settings and try again.",
                         emailServer.getNickname());
                     reportError("Email connection failed", msg, e.getCause()); // We want the cause, not the ITE
                 } catch (InterruptedException e) {
@@ -128,9 +128,6 @@ public class Util {
 
     /**
      * Establishes a connection to the TntConnect database
-     * 
-     * @param tntDb
-     *            The TntConnect database
      */
     public static void connectToTntDatabase() {
         log.trace("connectToTntDatabase()");

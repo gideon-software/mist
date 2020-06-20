@@ -28,20 +28,18 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.data.EmailServer;
-import com.gideonsoftware.mist.model.data.GmailServer;
-import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.preferences.fieldeditors.AddEditRemoveListFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SpacerFieldEditor;
 import com.gideonsoftware.mist.util.ui.Images;
-import com.gideonsoftware.mist.wizards.newemailserver.NewEmailServerWizard;
+import com.gideonsoftware.mist.util.ui.SmartWizardDialog;
+import com.gideonsoftware.mist.wizards.newemailaccount.NewEmailAccountWizard;
 
 /**
  *
@@ -60,30 +58,24 @@ public class EmailPreferencePage extends FieldEditorPreferencePage {
         log.trace("EmailPreferencePage()");
         setTitle("Email");
         setImageDescriptor(ImageDescriptor.createFromImage(Images.getImage(Images.ICON_EMAIL)));
-        // TODO: setDescription("Preferences that apply to all email servers");
+        // TODO: setDescription("Preferences that apply to all email accounts");
         noDefaultAndApplyButton();
     }
 
     @Override
     protected void createFieldEditors() {
         // Add Email Server button
-        addServerButton = new ButtonFieldEditor("&Add Email Server...", getFieldEditorParent());
+        addServerButton = new ButtonFieldEditor("&Add Email Account...", getFieldEditorParent());
         addServerButton.getButton().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 log.trace("addServerButton.widgetSelected({})", e);
 
-                NewEmailServerWizard wizard = new NewEmailServerWizard();
-                WizardDialog dlg = new WizardDialog(getShell(), wizard);
+                NewEmailAccountWizard wizard = new NewEmailAccountWizard();
+                SmartWizardDialog dlg = new SmartWizardDialog(getShell(), wizard);
                 if (dlg.open() == Window.OK) {
-                    EmailServer server = null;
-                    if (NewEmailServerWizard.TYPE_IMAP.equals(wizard.getType()))
-                        server = new ImapServer(EmailModel.getEmailServerCount());
-                    else
-                        server = new GmailServer(EmailModel.getEmailServerCount());
-                    server.setNickname(EmailServer.NEW_NICKNAME);
-                    EmailModel.addEmailServer(server);
-
+                    // Get new server
+                    EmailServer server = EmailModel.getEmailServer(EmailModel.getEmailServerCount() - 1);
                     // This refreshes the PreferenceDialog so the new server shows up
                     MIST.getPreferenceManager().addEmailServerNode(server.getId(), true);
                 }

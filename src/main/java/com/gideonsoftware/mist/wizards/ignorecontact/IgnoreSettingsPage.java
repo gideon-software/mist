@@ -98,7 +98,7 @@ public class IgnoreSettingsPage extends WizardPage {
         new Label(comp, SWT.NONE).setText("");
 
         globalCheck = new Button(comp, SWT.CHECK);
-        globalCheck.setText("Add to ignore list for all email servers");
+        globalCheck.setText("Add to ignore list for all email accounts");
         globalCheck.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

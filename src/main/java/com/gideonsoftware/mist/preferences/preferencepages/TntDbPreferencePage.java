@@ -79,7 +79,7 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
         // Limit text size so the path doesn't make a huge preference dialog
         applyGridData(control).widthHint(ViewUtil.getTextWidth(control) * 20).withHorizontalFill();
         // Set selection to end, so we see the actual DB name in a long path
-        // TODO: Trim name to include ellipses instead (use PrefDlg.ShortenText)
+        // Could use Dialog.shortenText, but that'd change the path itself...
         control.addModifyListener(new ModifyListener() {
             @Override
             public void modifyText(ModifyEvent event) {
@@ -95,7 +95,6 @@ public class TntDbPreferencePage extends FieldEditorPreferencePage {
             }
         });
         addField(tntDbPath);
-
     }
 
     @Override

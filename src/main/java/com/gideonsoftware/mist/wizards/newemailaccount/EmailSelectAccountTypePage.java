@@ -1,6 +1,6 @@
 /**
  * MIST: eMail Import System for TntConnect
- * Copyright (C) 2019 Gideon Software
+ * Copyright (C) 2020 Gideon Software
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,30 +18,31 @@
  * For more information, visit https://www.gideonsoftware.com
  */
 
-package com.gideonsoftware.mist.wizards.newemailserver;
+package com.gideonsoftware.mist.wizards.newemailaccount;
 
 import static com.gideonsoftware.mist.util.ui.GridLayoutUtil.applyGridLayout;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
-public class SelectTypePage extends WizardPage {
+import com.gideonsoftware.mist.model.data.EmailServer;
+
+public class EmailSelectAccountTypePage extends WizardPage {
     private static Logger log = LogManager.getLogger();
 
     private Button typeImapRadio;
     private Button typeGmailRadio;
 
-    public SelectTypePage() {
-        super("Select Server Type");
-        log.trace("SelectTypePage()");
-        setTitle("Select Server Type");
-        setDescription("Select which email server type to add.");
+    public EmailSelectAccountTypePage() {
+        super("Add Email Account: Select Account Type");
+        log.trace("EmailSelectAccountTypePage()");
+        setTitle("Add Email Account: Select Account Type");
+        setDescription("Please select your email account type.");
     }
 
     @Override
@@ -52,30 +53,31 @@ public class SelectTypePage extends WizardPage {
         applyGridLayout(comp);
 
         typeImapRadio = new Button(comp, SWT.RADIO);
-        typeImapRadio.setText("IMAP / IMAPS server");
-        typeImapRadio.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                log.trace("typeImapRadio.widgetSelected()");
-                NewEmailServerWizard wizard = (NewEmailServerWizard) getWizard();
-                wizard.setType(NewEmailServerWizard.TYPE_IMAP);
-            }
-        });
-
+        typeImapRadio.setText("IMAP: a common way to access your email across multiple devices");
         typeGmailRadio = new Button(comp, SWT.RADIO);
-        typeGmailRadio.setText("Gmail server");
-        typeGmailRadio.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                log.trace("typeGmailRadio.widgetSelected()");
-                NewEmailServerWizard wizard = (NewEmailServerWizard) getWizard();
-                wizard.setType(NewEmailServerWizard.TYPE_GMAIL);
-            }
-        });
+        typeGmailRadio.setText("Gmail: Google's email service");
 
         typeImapRadio.setSelection(true); // Wizard defaults to IMAP
 
         setControl(comp); // Needed for page to work properly
+    }
+
+    @Override
+    public IWizardPage getNextPage() {
+        log.trace("getNextPage()");
+        NewEmailAccountWizard wizard = ((NewEmailAccountWizard) getWizard());
+        if (isTypeImap())
+            return wizard.getImapAccountConnectionPage();
+        else
+            return wizard.getGmailAccountConnectionPage();
+    }
+
+    public String getType() {
+        if (isTypeImap())
+            return EmailServer.TYPE_IMAP;
+        else if (isTypeGmail())
+            return EmailServer.TYPE_GMAIL;
+        return null;
     }
 
     public boolean isTypeGmail() {
@@ -85,4 +87,5 @@ public class SelectTypePage extends WizardPage {
     public boolean isTypeImap() {
         return typeImapRadio.getSelection();
     }
+
 }

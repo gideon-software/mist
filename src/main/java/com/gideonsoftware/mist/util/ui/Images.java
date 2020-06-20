@@ -35,6 +35,8 @@ public class Images {
     public static final String LOGO_MIST = "logo-mist";
     public static final String LOGO_FACEBOOK = "logo-facebook";
 
+    public static final String SIGNIN_GOOGLE = "signin-google";
+
     public static final String ICON_ABOUT = "icon-about";
     public static final String ICON_EMAIL = "icon-email";
     public static final String ICON_EMAIL_SERVER = "icon-email-server";
@@ -103,6 +105,9 @@ public class Images {
         // Load logo / social icons
         put(LOGO_MIST, imgLoc + "mist-logo.png");
         put(LOGO_FACEBOOK, imgLoc + "facebook-50x50.png");
+
+        // Load signin images
+        put(SIGNIN_GOOGLE, imgLoc + "btn_google_signin_dark_normal_web.png");
 
         // Load icons
         put(ICON_ABOUT, imgLoc + "icons/mist/mist-16x16.png");

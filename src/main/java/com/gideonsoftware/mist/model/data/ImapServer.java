@@ -50,6 +50,8 @@ public class ImapServer extends EmailServer {
     public final static int DEFAULT_PORT_IMAP = 143;
     public final static int DEFAULT_PORT_IMAPS = 993;
 
+    public final static String NEW_NICKNAME = "IMAP";
+
     private String folderName;
     private String host;
     private String password;
@@ -83,8 +85,8 @@ public class ImapServer extends EmailServer {
         port = prefs.getString(getPrefName(PREF_PORT));
     }
 
-    private void closeFolders() {
-        log.trace("{{}} closeFolders()", getNickname());
+    private void closeFolder() {
+        log.trace("{{}} closeFolder()", getNickname());
         if (store != null) {
             try {
                 if (folder != null && folder.isOpen())
@@ -168,10 +170,35 @@ public class ImapServer extends EmailServer {
 
     }
 
+    public void createFolder(String folderName) throws EmailServerException {
+        log.trace("{{}} createFolder({})", getNickname(), folderName);
+
+        if (folderName == null || folderName.isBlank())
+            throw new EmailServerException("Folder name cannot be blank");
+
+        if (!isConnected())
+            throw new EmailServerException(String.format("{%s} Not connected", getNickname()));
+
+        // Create the new folder
+        Folder newFolder = null;
+        try {
+            newFolder = store.getFolder(folderName);
+            if (newFolder.exists())
+                throw new EmailServerException(
+                    String.format("{%s} Folder '%s' already exists", getNickname(), folderName));
+
+            newFolder.create(Folder.HOLDS_MESSAGES);
+            newFolder.setSubscribed(true);
+        } catch (MessagingException e) {
+            newFolder = null;
+            throw new EmailServerException(e);
+        }
+    }
+
     @Override
     public void disconnect() {
         log.trace("{{}} disconnect()", getNickname());
-        closeFolders();
+        closeFolder();
         closeStore();
     }
 

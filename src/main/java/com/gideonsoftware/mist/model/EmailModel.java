@@ -95,7 +95,7 @@ public class EmailModel {
     public static void disconnectServers() {
         log.trace("disconnectServers()");
         for (EmailServer emailServer : emailServers) {
-            if (emailServer.isConnected())
+            if (emailServer != null && emailServer.isConnected())
                 emailServer.disconnect();
         }
     }
@@ -125,8 +125,12 @@ public class EmailModel {
 
     public static String getEmailServerType(int serverId) {
         if (serverId < emailServers.size()) {
-            // Return value from instantiated server
-            return emailServers.get(serverId).getType();
+            EmailServer emailServer = emailServers.get(serverId);
+            // Return value from instantiated server; if the server is null, skip it
+            if (emailServer != null)
+                return emailServers.get(serverId).getType();
+            else
+                return null;
         } else {
             // Return value from preferences (because we're probably trying to instantiate the server)
             return MIST.getPrefs().getString(EmailServer.getPrefName(EmailServer.PREF_TYPE, serverId));
@@ -136,7 +140,7 @@ public class EmailModel {
     public static int getEnabledEmailServerCount() {
         int count = 0;
         for (EmailServer emailServer : emailServers)
-            if (emailServer.isEnabled())
+            if (emailServer != null && emailServer.isEnabled())
                 count++;
         return count;
     }
@@ -190,7 +194,8 @@ public class EmailModel {
 
         // First disconnect any existing servers
         for (EmailServer emailServer : emailServers) {
-            emailServer.disconnect();
+            if (emailServer != null)
+                emailServer.disconnect();
             emailServer = null;
         }
         emailServers.clear(); // Clear the list
@@ -199,6 +204,8 @@ public class EmailModel {
         int emailServerCount = MIST.getPrefs().getInt(PREF_EMAILSERVERS_COUNT);
         for (int i = 0; i < emailServerCount; i++) {
             String type = getEmailServerType(i);
+            if (type == null)
+                continue; // Something's wrong; skip it
             // Email servers will configure themselves from saved preferences
             EmailServer server = null;
             if (EmailServer.TYPE_IMAP.equals(type))
