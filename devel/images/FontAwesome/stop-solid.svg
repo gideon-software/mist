@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   inkscape:export-ydpi="3"
+   inkscape:export-xdpi="3"
+   inkscape:export-filename="C:\Users\hallm\Desktop\stop-solid.png"
+   height="512"
+   width="512"
+   sodipodi:docname="stop-solid.svg"
+   id="svg4"
+   version="1.1"
+   viewBox="0 0 512 512"
+   role="img"
+   class="svg-inline--fa fa-stop fa-w-14"
+   data-icon="stop"
+   data-prefix="fas"
+   focusable="false"
+   aria-hidden="true">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg4"
+     inkscape:window-maximized="0"
+     inkscape:window-y="55"
+     inkscape:window-x="174"
+     inkscape:cy="256"
+     inkscape:cx="224"
+     inkscape:zoom="0.83007813"
+     showgrid="false"
+     id="namedview6"
+     inkscape:window-height="912"
+     inkscape:window-width="1642"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0" />
+  <path
+     style="fill:#ff0000;stroke-width:0.924706"
+     id="path2"
+     d="M 418.74824,48.865882 H 93.251765 c -24.504706,0 -44.385883,19.881177 -44.385883,44.385883 V 418.74824 c 0,24.5047 19.881177,44.38588 44.385883,44.38588 H 418.74824 c 24.5047,0 44.38588,-19.88118 44.38588,-44.38588 V 93.251765 c 0,-24.504706 -19.88118,-44.385883 -44.38588,-44.385883 z"
+     fill="currentColor" />
+</svg>

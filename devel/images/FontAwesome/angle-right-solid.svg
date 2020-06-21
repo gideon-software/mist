@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   inkscape:export-ydpi="6"
+   inkscape:export-xdpi="6"
+   inkscape:export-filename="C:\Users\hallm\Desktop\angle-right-solid@2x.png"
+   height="512"
+   width="512"
+   sodipodi:docname="angle-right-solid.svg"
+   id="svg4"
+   version="1.1"
+   viewBox="0 0 512 512"
+   role="img"
+   class="svg-inline--fa fa-angle-left fa-w-8"
+   data-icon="angle-left"
+   data-prefix="fas"
+   focusable="false"
+   aria-hidden="true">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg4"
+     inkscape:window-maximized="1"
+     inkscape:window-y="-6"
+     inkscape:window-x="-6"
+     inkscape:cy="256"
+     inkscape:cx="128"
+     inkscape:zoom="0.83007813"
+     showgrid="false"
+     id="namedview6"
+     inkscape:window-height="1018"
+     inkscape:window-width="1920"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="stroke-width:1.48173"
+     id="path2"
+     d="M 398.69999,230.81056 197.18447,29.295033 c -13.92828,-13.928279 -36.45061,-13.928279 -50.23071,0 l -33.48714,33.487139 c -13.928283,13.928279 -13.928283,36.450602 0,50.230708 L 256.15739,256 113.31845,398.83895 c -13.928283,13.92828 -13.928283,36.4506 0,50.23071 l 33.48713,33.63531 c 13.92828,13.92828 36.45061,13.92828 50.23071,0 L 398.55182,281.18944 c 14.07645,-13.92828 14.07645,-36.4506 0.14817,-50.37888 z"
+     fill="currentColor" />
+</svg>

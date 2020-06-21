@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   aria-hidden="true"
+   focusable="false"
+   data-prefix="fas"
+   data-icon="book"
+   class="svg-inline--fa fa-book fa-w-14"
+   role="img"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="book-solid.svg"
+   width="512"
+   height="512"
+   inkscape:export-filename="C:\Users\hallm\Desktop\book-solid@2x.png"
+   inkscape:export-xdpi="6"
+   inkscape:export-ydpi="6"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     inkscape:document-rotation="0"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1018"
+     id="namedview6"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:zoom="0.41503906"
+     inkscape:cx="224"
+     inkscape:cy="256"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <rect
+     style="fill:#ffffff;stroke-width:4.987"
+     id="rect835"
+     width="359.00235"
+     height="387.91528"
+     x="81.919998"
+     y="84.329414" />
+  <path
+     fill="currentColor"
+     d="M 480,360 V 24 C 480,10.7 469.3,0 456,0 H 128 C 75,0 32,43 32,96 v 320 c 0,53 43,96 96,96 h 328 c 13.3,0 24,-10.7 24,-24 v -16 c 0,-7.5 -3.5,-14.3 -8.9,-18.7 -4.2,-15.4 -4.2,-59.3 0,-74.7 5.4,-4.3 8.9,-11.1 8.9,-18.6 z M 160,134 c 0,-3.3 2.7,-6 6,-6 h 212 c 3.3,0 6,2.7 6,6 v 20 c 0,3.3 -2.7,6 -6,6 H 166 c -3.3,0 -6,-2.7 -6,-6 z m 0,64 c 0,-3.3 2.7,-6 6,-6 h 212 c 3.3,0 6,2.7 6,6 v 20 c 0,3.3 -2.7,6 -6,6 H 166 c -3.3,0 -6,-2.7 -6,-6 z M 413.4,448 H 128 c -17.7,0 -32,-14.3 -32,-32 0,-17.6 14.4,-32 32,-32 h 285.4 c -1.9,17.1 -1.9,46.9 0,64 z"
+     id="path2"
+     style="fill:#0000ff" />
+</svg>

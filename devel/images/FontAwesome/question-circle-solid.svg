@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   inkscape:export-ydpi="3"
+   inkscape:export-xdpi="3"
+   inkscape:export-filename="C:\Users\hallm\Desktop\question-circle-solid.png"
+   sodipodi:docname="question-circle-solid.svg"
+   id="svg4"
+   version="1.1"
+   viewBox="0 0 512 512"
+   role="img"
+   class="svg-inline--fa fa-question-circle fa-w-16"
+   data-icon="question-circle"
+   data-prefix="fas"
+   focusable="false"
+   aria-hidden="true">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg4"
+     inkscape:window-maximized="0"
+     inkscape:window-y="121"
+     inkscape:window-x="385"
+     inkscape:cy="256"
+     inkscape:cx="256"
+     inkscape:zoom="0.83007813"
+     showgrid="false"
+     id="namedview6"
+     inkscape:window-height="787"
+     inkscape:window-width="1240"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <rect
+     y="66.258827"
+     x="120.47059"
+     height="391.52942"
+     width="271.05884"
+     id="rect835"
+     style="fill:#000000;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     sodipodi:nodetypes="ssssssccccsscsssssssssssss"
+     style="fill:#ffff00;stroke:#000000;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     id="path2"
+     d="M 504,256 C 504,392.997 392.957,504 256,504 119.043,504 8,392.997 8,256 8,119.083 119.043,8 256,8 392.957,8 504,119.083 504,256 Z M 262.655,80 c -54.497,0 -89.255,22.957 -116.549,63.758 -3.536,5.286 -2.353,12.415 2.715,16.258 l 34.699,26.31 c 5.205,3.947 12.621,3.008 16.665,-2.122 17.864,-22.658 30.113,-35.797 57.303,-35.797 20.429,0 45.698,13.148 45.698,32.958 0,14.976 -12.363,22.667 -32.534,33.976 C 247.128,228.528 216,244.941 216,286 v 4 c 0,6.627 5.373,22 12,22 h 56 c 6.627,0 12,-15.373 12,-22 v -1.333 C 296,260.205 379.186,259.02 379.186,182 379.186,123.998 319.021,80 262.655,80 Z M 256,360 c -25.365,0 -46,20.635 -46,46 0,25.364 20.635,46 46,46 25.365,0 46,-20.636 46,-46 0,-25.365 -20.635,-46 -46,-46 z"
+     fill="currentColor" />
+</svg>

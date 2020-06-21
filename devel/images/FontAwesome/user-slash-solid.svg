@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:export-ydpi="2.4000001"
+   inkscape:export-xdpi="2.4000001"
+   inkscape:export-filename="C:\Users\hallm\Desktop\user-slash-solid.png"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   height="640"
+   width="640"
+   sodipodi:docname="user-slash-solid.svg"
+   id="svg4"
+   version="1.1"
+   viewBox="0 0 640 640"
+   role="img"
+   class="svg-inline--fa fa-user-slash fa-w-20"
+   data-icon="user-slash"
+   data-prefix="fas"
+   focusable="false"
+   aria-hidden="true">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg4"
+     inkscape:window-maximized="0"
+     inkscape:window-y="64"
+     inkscape:window-x="173"
+     inkscape:cy="256"
+     inkscape:cx="320"
+     inkscape:zoom="1.596875"
+     showgrid="false"
+     id="namedview6"
+     inkscape:window-height="897"
+     inkscape:window-width="1606"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     id="path2"
+     d="M 633.8,522.1 362.3,312.3 C 412.1,294.7 448,247.8 448,192 448,121.3 390.7,64 320,64 252.9,64 198.5,115.8 193.1,181.4 L 45.5,67.4 C 38.5,62 28.5,63.2 23,70.2 L 3.4,95.4 c -5.4,7 -4.2,17 2.8,22.4 l 588.4,454.7 c 7,5.4 17,4.2 22.5,-2.8 l 19.6,-25.3 c 5.4,-6.8 4.1,-16.9 -2.9,-22.3 z M 96,486.4 V 528 c 0,26.5 21.5,48 48,48 H 494.2 L 207.4,354.3 C 144.2,365.3 96,420 96,486.4 Z"
+     fill="currentColor" />
+</svg>
