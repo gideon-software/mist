@@ -31,10 +31,12 @@ import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.MessageModel;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.util.Util;
+import com.gideonsoftware.mist.util.ui.TipMessageBox;
 
 public abstract class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
 
+    // Preferences
     private final static String PREF_PREFIX = "emailserver";
     public final static String PREF_ADDRESSES_IGNORE = "addresses.ignore";
     public final static String PREF_ADDRESSES_MY = "addresses.my";
@@ -44,6 +46,9 @@ public abstract class EmailServer implements Cloneable {
     public final static String PREF_TNT_USERID = "tnt.user.id";
     public final static String PREF_TNT_USERNAME = "tnt.user.username";
     public final static String PREF_TYPE = "type";
+
+    // Tips
+    public final static String SHOWTIP_IMPORT_COMPLETE = "showtip.import.complete";
 
     public final static String TYPE_IMAP = "imap";
     public final static String TYPE_GMAIL = "gmail";
@@ -183,6 +188,8 @@ public abstract class EmailServer implements Cloneable {
     public String[] getIgnoreAddresses() {
         return ignoreAddresses;
     }
+
+    protected abstract String getImportCompleteTipMessage();
 
     public String[] getMyAddresses() {
         return myAddresses;
@@ -351,6 +358,13 @@ public abstract class EmailServer implements Cloneable {
             MIST.getPrefs().setValue(getPrefName(PREF_USERNAME), username);
     }
 
+    private void showImportCompleteTip() {
+        String title = String.format("'%s' Import Complete", nickname);
+        String message = getImportCompleteTipMessage();
+        (new TipMessageBox(MIST.getView().getShell(), getPrefName(SHOWTIP_IMPORT_COMPLETE), title, message, false))
+            .open();
+    }
+
     /**
      * Starts the email import service for this server.
      */
@@ -384,12 +398,9 @@ public abstract class EmailServer implements Cloneable {
                 try {
                     EmailServer.this.loadMessageList();
                 } catch (EmailServerException e) {
-                    Display.getDefault().syncExec(new Runnable() {
-                        @Override
-                        public void run() {
-                            String msg = String.format("Can't load messages on server '%s'", nickname);
-                            Util.reportError("Email server error", msg, e);
-                        }
+                    Display.getDefault().syncExec(() -> {
+                        String msg = String.format("Can't load messages on server '%s'", nickname);
+                        Util.reportError("Email server error", msg, e);
                     });
                 } finally {
                     setLoadingMessages(false);
@@ -402,15 +413,12 @@ public abstract class EmailServer implements Cloneable {
                             // Add Message to message queue
                             MessageModel.addMessage(getNextMessage());
                         } catch (EmailServerException e) {
-                            Display.getDefault().syncExec(new Runnable() {
-                                @Override
-                                public void run() {
-                                    String msg = String.format(
-                                        "Can't retrieve message %s on server '%s'",
-                                        currentMessageNumber,
-                                        nickname);
-                                    Util.reportError("Email server error", msg, e);
-                                }
+                            Display.getDefault().syncExec(() -> {
+                                String msg = String.format(
+                                    "Can't retrieve message %s on server '%s'",
+                                    currentMessageNumber,
+                                    nickname);
+                                Util.reportError("Email server error", msg, e);
                             });
                         }
                     }
@@ -423,15 +431,17 @@ public abstract class EmailServer implements Cloneable {
                 log.trace("{{}} === Email Server Import Service Stopped ===", nickname);
                 setImportComplete(true);
 
-                // If we're done because there were no messages, tell the user.
                 if (totalMessages == 0) {
+                    // If we're done because there were no messages, tell the user.
                     String msg = String.format("'%s' had no messages to import.", nickname);
                     log.debug(msg);
-                    Display.getDefault().syncExec(new Runnable() {
-                        @Override
-                        public void run() {
-                            MessageDialog.openInformation(MIST.getView().getShell(), "Import complete", msg);
-                        }
+                    Display.getDefault().asyncExec(() -> {
+                        MessageDialog.openInformation(MIST.getView().getShell(), "Import complete", msg);
+                    });
+                } else {
+                    // There were messages; show the import complete tip
+                    Display.getDefault().asyncExec(() -> {
+                        showImportCompleteTip();
                     });
                 }
 

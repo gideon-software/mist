@@ -310,6 +310,25 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
         HistoryModel.removePropertyChangeListener(this);
     }
 
+    @Override
+    protected String getImportCompleteTipMessage() {
+        log.trace("getImportCompleteTipMessage()");
+        String message = String.format("MIST has finished importing from '%s'.%n%n", nickname);
+
+        if (isLabelRemoveAfterImport())
+            message += String.format("The label '%s' has been removed from those messages.", labelName);
+        else
+            message += String.format(
+                "You may want to remove the label '%s' from those messages.%n"
+                    + "However, MIST will never import the same message twice, so you can also leave the%n"
+                    + "label on those messages. (Future imports will simply take longer.)%n%n"
+                    + "Note that MIST can automatically remove labels from imported messages if you like.%n"
+                    + "You can change that in MIST's Settings.",
+                labelName);
+
+        return message;
+    }
+
     public String getLabelId() {
         if (labelId == null)
             return "";

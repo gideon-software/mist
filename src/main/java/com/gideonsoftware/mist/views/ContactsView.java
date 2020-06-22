@@ -43,9 +43,13 @@ import org.eclipse.swt.widgets.List;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
+import com.gideonsoftware.mist.util.ui.TipMessageBox;
 
 public class ContactsView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
+
+    // Tips
+    public final static String SHOWTIP_UNMATCHED_CONTACT = "showtip.contact.unmatched";
 
     // Property change values
     public final static String PROP_CONTACT_SELECTED = "ContactsView.contact.selected";
@@ -53,6 +57,7 @@ public class ContactsView extends Composite implements PropertyChangeListener {
     private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
     private int oldSelectionIndex;
+    private int unmatchedContactFound = 0;
 
     /**
      * The list of contacts that have associated history.
@@ -120,74 +125,69 @@ public class ContactsView extends Composite implements PropertyChangeListener {
             return;
 
         if (HistoryModel.PROP_HISTORY_INIT.equals(event.getPropertyName())) {
-            Display.getDefault().asyncExec(new Runnable() {
-                @Override
-                public void run() {
-                    // Initialize the contact list
-                    contacts = new ArrayList<ContactInfo>();
-                    contactList.removeAll();
-                    oldSelectionIndex = -1;
+            Display.getDefault().asyncExec(() -> {
+                // Initialize the contact list
+                contacts = new ArrayList<ContactInfo>();
+                contactList.removeAll();
+                oldSelectionIndex = -1;
 
-                    // Force UI update (needed on Mac)
-                    contactList.update();
-                }
+                // Force UI update (needed on Mac)
+                contactList.update();
             });
 
         } // PROP_HISTORY_INIT
 
         else if (HistoryModel.PROP_HISTORY_ADD.equals(event.getPropertyName())) {
-            Display.getDefault().asyncExec(new Runnable() {
-                @Override
-                public void run() {
-                    // Get the new history item
-                    History history = (History) event.getNewValue();
+            Display.getDefault().asyncExec(() -> {
+                // Get the new history item
+                History history = (History) event.getNewValue();
 
-                    ContactInfo ci = history.getContactInfo();
-                    String originalName = ci.getName();
-                    if (ci.getId() == null)
-                        ci.setName(" [?] " + ci.getName());
+                ContactInfo ci = history.getContactInfo();
+                String originalName = ci.getName();
+                if (ci.getId() == null) {
+                    ci.setName(" [?] " + ci.getName());
+                    // Show tip if need be (max once per session)
+                    if (unmatchedContactFound++ == 0)
+                        showUnmatchedContactTip();
+                }
 
-                    // If this history item contains a contact not already in the list...
-                    if (!contacts.contains(ci)) {
-                        // Add to our UI list in sorted order (natural string sort)
-                        int pos = 0;
-                        while (pos < contactList.getItemCount() && contactList.getItem(pos).compareTo(ci.getName()) < 0)
-                            pos++;
-                        contactList.add(ci.getName(), pos);
+                // If this history item contains a contact not already in the list...
+                if (!contacts.contains(ci)) {
+                    // Add to our UI list in sorted order (natural string sort)
+                    int pos = 0;
+                    while (pos < contactList.getItemCount() && contactList.getItem(pos).compareTo(ci.getName()) < 0)
+                        pos++;
+                    contactList.add(ci.getName(), pos);
 
-                        // Add it to the contacts list (but without any [?], etc.)
-                        ci.setName(originalName);
-                        contacts.add(pos, ci);
+                    // Add it to the contacts list (but without any [?], etc.)
+                    ci.setName(originalName);
+                    contacts.add(pos, ci);
 
-                        // Force UI update (needed on Mac)
-                        contactList.update();
-                    }
+                    // Force UI update (needed on Mac)
+                    contactList.update();
                 }
             });
         } // PROP_HISTORY_ADD
 
         else if (HistoryModel.PROP_CONTACT_REMOVE.equals(event.getPropertyName())) {
-            Display.getDefault().asyncExec(new Runnable() {
-                @Override
-                public void run() {
-                    // Get the removed contact
-                    ContactInfo ci = (ContactInfo) event.getNewValue();
-                    String name = ci.getName();
-                    if (ci.getId() == null)
-                        ci.setName(String.format(" [?] %s", name));
+            Display.getDefault().asyncExec(() -> {
+                // Get the removed contact
+                ContactInfo ci = (ContactInfo) event.getNewValue();
+                String name = ci.getName();
+                if (ci.getId() == null)
+                    ci.setName(String.format(" [?] %s", name));
 
-                    // Remove the associated contact
-                    int index = contacts.indexOf(ci);
-                    if (index != -1) { // And if not, they were already removed!
-                        contacts.remove(index);
-                        contactList.remove(index);
-                    }
-
-                    oldSelectionIndex = -1;
-
-                    // Force UI update (needed on Mac)
-                    contactList.update();
+                // Remove the associated contact
+                int index = contacts.indexOf(ci);
+                if (index != -1) { // And if not, they were already removed!
+                    contacts.remove(index);
+                    contactList.remove(index);
                 }
+
+                oldSelectionIndex = -1;
+
+                // Force UI update (needed on Mac)
+                contactList.update();
             });
 
         } // PROP_CONTACT_REMOVE
@@ -195,5 +195,20 @@ public class ContactsView extends Composite implements PropertyChangeListener {
 
     public void removePropertyChangeListener(PropertyChangeListener listener) {
         pcs.removePropertyChangeListener(listener);
+    }
+
+    private void showUnmatchedContactTip() {
+        String title = "Unmatched Contacts";
+        String message = """
+            MIST didn't recognize one or more of your contacts because there was no associated
+            email address in TntConnect. These are marked with '[?]' in MIST's contact list.
+
+            For each of these contacts, you can do any of the following:
+              * Match the contact in TntConnect:\tUse the "Match Contact" button
+              * Ignore the contact (this time):\tDo nothing
+              * Ignore the contact (always):\tUse the "Ignore Contact" button
+              * If the contact is actually "you", add it to 'My Email Addresses' in Settings.
+            """;
+        (new TipMessageBox(getShell(), SHOWTIP_UNMATCHED_CONTACT, title, message)).open();
     }
 }

@@ -227,6 +227,18 @@ public class ImapServer extends EmailServer {
     }
 
     @Override
+    protected String getImportCompleteTipMessage() {
+        log.trace("getImportCompleteTipMessage()");
+        return String.format("""
+            MIST has finished importing from '%s'.
+
+            You may want to remove imported messages from the '%s' folder.
+            However, MIST will never import the same message twice, so you can also
+            leave them in the folder. (Future imports will simply take longer.)
+            """, nickname, folderName);
+    }
+
+    @Override
     public EmailMessage getNextMessage() throws EmailServerException {
         log.trace("{{}} getNextMessage()", getNickname());
         try {
