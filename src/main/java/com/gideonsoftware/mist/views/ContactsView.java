@@ -40,10 +40,10 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.List;
 
+import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.HistoryModel;
 import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
-import com.gideonsoftware.mist.util.ui.TipMessageBox;
 
 public class ContactsView extends Composite implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -209,6 +209,6 @@ public class ContactsView extends Composite implements PropertyChangeListener {
               * Ignore the contact (always):\tUse the "Ignore Contact" button
               * If the contact is actually "you", add it to 'My Email Addresses' in Settings.
             """;
-        (new TipMessageBox(getShell(), SHOWTIP_UNMATCHED_CONTACT, title, message)).open();
+        MIST.getView().getTipManager().addTip(SHOWTIP_UNMATCHED_CONTACT, title, message);
     }
 }

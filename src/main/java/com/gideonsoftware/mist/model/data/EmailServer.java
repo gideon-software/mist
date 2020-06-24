@@ -31,7 +31,6 @@ import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.MessageModel;
 import com.gideonsoftware.mist.preferences.Preferences;
 import com.gideonsoftware.mist.util.Util;
-import com.gideonsoftware.mist.util.ui.TipMessageBox;
 
 public abstract class EmailServer implements Cloneable {
     private static Logger log = LogManager.getLogger();
@@ -361,8 +360,7 @@ public abstract class EmailServer implements Cloneable {
     private void showImportCompleteTip() {
         String title = String.format("'%s' Import Complete", nickname);
         String message = getImportCompleteTipMessage();
-        (new TipMessageBox(MIST.getView().getShell(), getPrefName(SHOWTIP_IMPORT_COMPLETE), title, message, false))
-            .open();
+        MIST.getView().getTipManager().addTip(getPrefName(SHOWTIP_IMPORT_COMPLETE), title, message);
     }
 
     /**
@@ -440,9 +438,7 @@ public abstract class EmailServer implements Cloneable {
                     });
                 } else {
                     // There were messages; show the import complete tip
-                    Display.getDefault().asyncExec(() -> {
-                        showImportCompleteTip();
-                    });
+                    showImportCompleteTip();
                 }
 
             } // importThread.run()

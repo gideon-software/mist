@@ -53,6 +53,7 @@ import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.UpdateModel;
 import com.gideonsoftware.mist.util.Util;
 import com.gideonsoftware.mist.util.ui.Images;
+import com.gideonsoftware.mist.util.ui.TipManager;
 
 public class MainWindowView extends ApplicationWindow implements PropertyChangeListener {
     private static Logger log = LogManager.getLogger();
@@ -61,6 +62,9 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
     public static final String PREF_WINDOW_MAXIMIZED = "mainwindow.window.maximized";
     public static final String PREF_SASH_LEFTRIGHT_WEIGHTS = "mainwindow.sash.leftright.weights";
     public static final String PREF_SASH_RIGHTVERT_WEIGHTS = "mainwindow.sash.rightvert.weights";
+
+    private SashForm leftRightSash = null;
+    private SashForm rightVerticalSash = null;
 
     private ContactsView contactsView = null;
     private ContactDetailsView contactDetailsView = null;
@@ -71,13 +75,13 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
     private ProgressBarView progressBarView = null;
     private TaskItemView taskItemView = null;
 
-    private SashForm leftRightSash = null;
-    private SashForm rightVerticalSash = null;
+    private TipManager tipManager = null;
 
     public MainWindowView() {
         super(null);
         log.trace("MainWindowView()");
         UpdateModel.addPropertyChangeListener(this); // Removed in handleShellCloseEvent
+        tipManager = new TipManager();
     }
 
     @Override
@@ -133,6 +137,8 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
                 log.warn("Unable to disable full-screen mode", e);
             }
         }
+
+        tipManager.enableTips(true);
     }
 
     @Override
@@ -234,11 +240,16 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
         return taskItemView;
     }
 
+    public TipManager getTipManager() {
+        return tipManager;
+    }
+
     @Override
     protected void handleShellCloseEvent() {
-        super.handleShellCloseEvent();
         log.trace("handleShellCloseEvent()");
+        tipManager.enableTips(false);
         UpdateModel.removePropertyChangeListener(this);
+        super.handleShellCloseEvent();
     }
 
     @Override
