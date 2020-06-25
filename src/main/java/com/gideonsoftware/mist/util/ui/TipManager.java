@@ -256,7 +256,7 @@ public class TipManager {
                             tipOpen = false;
                         } else {
                             try {
-                                Thread.sleep(200);
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                             }
                         }

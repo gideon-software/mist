@@ -36,11 +36,13 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.program.Program;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.EmailModel;
 import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.tntapi.TntDb;
+import com.gideonsoftware.mist.util.Util;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -223,6 +225,16 @@ public class Preferences extends PreferenceStore {
                 EmailModel.addEmailServer(server);
 
                 log.debug("4.x preferences successfully loaded.");
+
+                // Load upgrade page in browser
+                String mist4UpgradeLink = "https://www.gideonsoftware.com/mist/welcome-to-mist-5";
+                if (!Program.launch(mist4UpgradeLink)) {
+                    String msg = String.format(
+                        "There was a problem loading your default web browser. Please visit %s",
+                        mist4UpgradeLink);
+                    Util.reportError("Unable to load URL in default browser", msg);
+                }
+
                 return true;
             }
         } catch (BackingStoreException e) {
