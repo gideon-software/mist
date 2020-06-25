@@ -7,17 +7,14 @@ Change Log for MIST 5.0
 * Dramatically-improved Gmail support
   * Uses secure Google OAuth2 authentication.
   * No more need to change labels just before import in order to get all email.
-* Import from multiple email servers at once.
+* Import from multiple email accounts at once.
 * Match email addresses using wildcards.
 * Automatically mark emails as "Thanks" based on subject matching.
 * Easier control over (and access to) MIST logging.
 * MIST configuration & logs are secured & readable only by the logged-in user.
-* Easy first-time setup.
+* Easy first-time setup & 'tips' along the way as you get started.
 * MIST checks for new releases automatically.
 * No longer unnecessarily prefixes Tnt history with "_____ wrote:"
-* Switched from subversion to git for version control.
-* Switched to gradle as build tool.
-* Ending support for 32-bit Windows.
 
 Change Log for MIST 4.2.1
 =========================
