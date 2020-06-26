@@ -247,4 +247,8 @@ public class SmartCombo<T> extends Composite {
         }
     }
 
+    @Override
+    public String toString() {
+        return String.format("SmartCombo [%s|%s]", items.size(), getSelectionValue());
+    }
 }

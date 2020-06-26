@@ -342,7 +342,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * Removes all items from the combo.
      */
     public void removeAll() {
-        log.trace("{{}} removeAll()");
+        log.trace("{{}} removeAll()", combo);
         if (combo != null)
             combo.removeAll();
     }
