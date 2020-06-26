@@ -102,7 +102,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
     @Override
     protected void adjustForNumColumns(int numColumns) {
-        log.trace("{{}} adjustForNumColumns({})", combo, numColumns);
+        // log.trace("{{}} adjustForNumColumns({})", combo, numColumns);
         // We only grab excess space if we have to.
         // If another field editor has more columns then we assume it is setting the width.
         if (hasButton) {
@@ -119,7 +119,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *         and <code>false</code> if invalid
      */
     protected boolean checkState() {
-        log.trace("{{}} checkState()", combo);
+        // log.trace("{{}} checkState()", combo);
         boolean result;
         if (emptySelectionAllowed)
             result = true;
@@ -139,7 +139,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
     @Override
     protected void doFillIntoGrid(Composite parent, int numColumns) {
-        log.trace("{{}} doFillIntoGrid({},{})", combo, parent, numColumns);
+        // log.trace("{{}} doFillIntoGrid({},{})", combo, parent, numColumns);
         getLabelControl(parent);
 
         combo = getComboControl(parent);
@@ -154,7 +154,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     @SuppressWarnings("unchecked")
     @Override
     protected void doLoad() {
-        log.trace("{{}} doLoad()", combo);
+        // log.trace("{{}} doLoad()", combo);
         if (combo != null) {
             curItem = (T) getPreferenceStore().getString(getPreferenceName());
             // This might cause problems if malformed; we're probably safe for our purposes
@@ -169,7 +169,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
     @SuppressWarnings("unchecked")
     @Override
     protected void doLoadDefault() {
-        log.trace("{{}} doLoadDefault()", combo);
+        // log.trace("{{}} doLoadDefault()", combo);
         if (combo != null) {
             // This might cause problems if malformed; we're probably safe for our purposes
             curItem = (T) getPreferenceStore().getDefaultString(getPreferenceName());
@@ -179,7 +179,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
     @Override
     protected void doStore() {
-        log.trace("{{}} doStore()", combo);
+        // log.trace("{{}} doStore()", combo);
         if (curItem == null) {
             getPreferenceStore().setToDefault(getPreferenceName());
             return;
@@ -193,7 +193,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * @return the button or null if no button is created [yet]
      */
     protected Button getButtonControl() {
-        log.trace("{{}} getButtonControl()", combo);
+        // log.trace("{{}} getButtonControl()", combo);
         return button;
     }
 
@@ -208,7 +208,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * @return the button
      */
     public Button getButtonControl(Composite parent) {
-        log.trace("{{}} getButtonControl({})", combo, parent);
+        // log.trace("{{}} getButtonControl({})", combo, parent);
         if (!hasButton)
             return null;
         if (button == null) {
@@ -226,7 +226,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * @return the combo control or null if no combo field is created yet
      */
     protected SmartCombo<T> getComboControl() {
-        log.trace("{{}} getComboControl()", combo);
+        // log.trace("{{}} getComboControl()", combo);
         return combo;
     }
 
@@ -241,7 +241,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * @return the combo control
      */
     public SmartCombo<T> getComboControl(Composite parent) {
-        log.trace("{{}} getComboControl({})", combo, parent);
+        // log.trace("{{}} getComboControl({})", combo, parent);
         if (combo == null) {
             combo = new SmartCombo<T>(parent, SWT.BORDER | SWT.READ_ONLY);
             combo.addSelectionListener(new SelectionListener() {
@@ -251,13 +251,13 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
 
                 @Override
                 public void widgetDefaultSelected(SelectionEvent event) {
-                    log.trace("{{}} widgetDefaultSelected({})", combo, event);
+                    // log.trace("{{}} widgetDefaultSelected({})", combo, event);
                     selected(event);
                 }
 
                 @Override
                 public void widgetSelected(SelectionEvent event) {
-                    log.trace("{{}} widgetSelected({})", combo, event);
+                    // log.trace("{{}} widgetSelected({})", combo, event);
                     selected(event);
                 }
             });
@@ -270,7 +270,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
             combo.addDisposeListener(new DisposeListener() {
                 @Override
                 public void widgetDisposed(DisposeEvent event) {
-                    log.trace("{{}} widgetDisposed({})", combo, event);
+                    // log.trace("{{}} widgetDisposed({})", combo, event);
                     combo = null;
                 }
             });
@@ -331,7 +331,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      */
     @Override
     protected void refreshValidState() {
-        log.trace("{{}} refreshValidState()", combo);
+        // log.trace("{{}} refreshValidState()", combo);
         boolean oldState = isValid;
         isValid = checkState();
         if (isValid != oldState)
@@ -342,7 +342,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * Removes all items from the combo.
      */
     public void removeAll() {
-        log.trace("{{}} removeAll()", combo);
+        // log.trace("{{}} removeAll()", combo);
         if (combo != null)
             combo.removeAll();
     }
@@ -355,13 +355,13 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            and <code>false</code> if it is considered invalid
      */
     public void setEmptySelectionAllowed(boolean allowed) {
-        log.trace("{{}} setEmptySelectionAllowed()", combo);
+        // log.trace("{{}} setEmptySelectionAllowed()", combo);
         emptySelectionAllowed = allowed;
     }
 
     @Override
     public void setEnabled(boolean enabled, Composite parent) {
-        log.trace("{{}} setEnabled({},{})", combo, enabled, parent);
+        // log.trace("{{}} setEnabled({},{})", combo, enabled, parent);
         super.setEnabled(enabled, parent);
         getComboControl(parent).setEnabled(enabled);
     }
@@ -373,7 +373,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            the error message
      */
     public void setErrorMessage(String errorMessage) {
-        log.trace("{{}} setErrorMessage({})", combo, errorMessage);
+        // log.trace("{{}} setErrorMessage({})", combo, errorMessage);
         this.errorMessage = errorMessage;
     }
 
@@ -391,7 +391,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      *            the item to select; if item is not found, no selection change is made
      */
     public void setSelection(T item) {
-        log.trace("{{}} setSelection({})", combo, item);
+        // log.trace("{{}} setSelection({})", combo, item);
         if (combo != null) {
             curItem = combo.getSelectionItem();
             combo.select(item);
@@ -403,7 +403,7 @@ public class SmartComboFieldEditor<T> extends FieldEditor {
      * Shows the error message set via <code>setErrorMessage</code>.
      */
     public void showErrorMessage() {
-        log.trace("{{}} showErrorMessage()", combo);
+        // log.trace("{{}} showErrorMessage()", combo);
         showErrorMessage(errorMessage);
     }
 

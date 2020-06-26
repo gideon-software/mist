@@ -146,7 +146,7 @@ public class SmartCombo<T> extends Composite {
     }
 
     public Map<T, String> getItemsMap() {
-        log.trace("getItemsMap()");
+        // log.trace("getItemsMap()");
         Map<T, String> map = new HashMap<T, String>();
         for (int i = 0; i < items.size(); i++)
             map.put(items.get(i), combo.getItem(i));
@@ -163,7 +163,7 @@ public class SmartCombo<T> extends Composite {
      * @return The selected item
      */
     public T getSelectionItem() {
-        log.trace("getSelectionItem()");
+        // log.trace("getSelectionItem()");
         int selectionIndex = getSelectionIndex();
         if (selectionIndex != -1)
             return items.get(selectionIndex);
@@ -171,7 +171,7 @@ public class SmartCombo<T> extends Composite {
     }
 
     public String getSelectionValue() {
-        log.trace("getSelectionValue()");
+        // log.trace("getSelectionValue()");
         int selectionIndex = getSelectionIndex();
         if (selectionIndex != -1)
             return combo.getItem(selectionIndex);
@@ -195,7 +195,7 @@ public class SmartCombo<T> extends Composite {
      * @return whether an item was selected
      */
     public boolean select(T item) {
-        log.trace("select({})", item);
+        log.trace("select([{}|{}])", getSelectionItem(), getSelectionValue());
         for (int i = 0; i < items.size(); i++) {
             // Special case of null item
             if (item == null && items.get(i) == null) {

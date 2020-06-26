@@ -90,7 +90,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      * Adds the string in the text field to the list.
      */
     protected void addButtonSelected() {
-        log.trace("{{}} addButtonSelected()", stringList);
+        // log.trace("{{}} addButtonSelected()", stringList);
         InputDialog dlg = new InputDialog(getPage().getShell(), addDlgTitleStr, addDlgMessageStr, "", null);
         // TODO: dlg.setDescription(addDlgDescriptionStr);
         int result = dlg.open();
@@ -106,7 +106,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void adjustForNumColumns(int numColumns) {
-        log.trace("{{}} adjustForNumColumns({})", stringList, numColumns);
+        // log.trace("{{}} adjustForNumColumns({})", stringList, numColumns);
         // We only grab excess space if we have to.
         // If another field editor has more columns then we assume it is setting the width.
         onGridData(stringList).horizontalSpan(numColumns - 2).grabExcessHorizontalSpace(numColumns - 2 == 1);
@@ -116,7 +116,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      * Set the enablement of the edit and remove buttons depending on the selection in the list.
      */
     private void checkEditRemoveButtonsEnabled() {
-        log.trace("{{}} checkEditRemoveButtonsEnabled()", stringList);
+        // log.trace("{{}} checkEditRemoveButtonsEnabled()", stringList);
         int index = stringList.getSelectionIndex();
         editButton.setEnabled(index >= 0);
         removeButton.setEnabled(index >= 0);
@@ -129,7 +129,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      *         and <code>false</code> if not
      */
     protected boolean checkState() {
-        log.trace("{{}} checkState()", stringList);
+        // log.trace("{{}} checkState()", stringList);
         boolean result;
         if (stringList == null)
             result = false;
@@ -148,7 +148,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void doFillIntoGrid(Composite parent, int numColumns) {
-        log.trace("{{}} doFillIntoGrid({},{})", stringList, parent, numColumns);
+        // log.trace("{{}} doFillIntoGrid({},{})", stringList, parent, numColumns);
         Label label = getLabelControl(parent);
         applyGridData(label).verticalAlignment(SWT.TOP);
 
@@ -210,7 +210,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void doLoad() {
-        log.trace("{{}} doLoad()", stringList);
+        // log.trace("{{}} doLoad()", stringList);
         if (stringList != null) {
             String items = getPreferenceStore().getString(getPreferenceName());
             setList(items);
@@ -223,7 +223,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void doLoadDefault() {
-        log.trace("{{}} doLoadDefault()", stringList);
+        // log.trace("{{}} doLoadDefault()", stringList);
         if (stringList != null) {
             String items = getPreferenceStore().getDefaultString(getPreferenceName());
             setList(items);
@@ -236,7 +236,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void doStore() {
-        log.trace("{{}} doStore()", stringList);
+        // log.trace("{{}} doStore()", stringList);
         if (curListString != null)
             getPreferenceStore().setValue(getPreferenceName(), curListString);
     }
@@ -247,7 +247,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      * @param description
      */
     protected void editButtonSelected() {
-        log.trace("{{}} editButtonSelected({},{},{})", stringList);
+        // log.trace("{{}} editButtonSelected({},{},{})", stringList);
         InputDialog dlg = new InputDialog(
             getPage().getShell(),
             editDlgTitleStr,
@@ -343,7 +343,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      */
     @Override
     protected void refreshValidState() {
-        log.trace("{{}} refreshValidState()", stringList);
+        // log.trace("{{}} refreshValidState()", stringList);
         boolean oldState = isValid;
         isValid = checkState();
         if (isValid != oldState)
@@ -354,7 +354,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      * 
      */
     protected void removeButtonSelected() {
-        log.trace("{{}} removeButtonSelected()", stringList);
+        // log.trace("{{}} removeButtonSelected()", stringList);
         int index = stringList.getSelectionIndex();
         stringList.remove(index);
         if (stringList.getItemCount() > 0) {
@@ -433,7 +433,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
 
     @Override
     public void setEnabled(boolean enabled, Composite parent) {
-        log.trace("{{}} setEnabled({},{})", stringList, enabled, parent);
+        // log.trace("{{}} setEnabled({},{})", stringList, enabled, parent);
         super.setEnabled(enabled, parent);
         if (stringList != null) {
             stringList.setEnabled(enabled);
@@ -449,20 +449,20 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      *            the errorMessage to set
      */
     public void setErrorMessage(String errorMessage) {
-        log.trace("{{}} setErrorMessage({})", stringList, errorMessage);
+        // log.trace("{{}} setErrorMessage({})", stringList, errorMessage);
         this.errorMessage = errorMessage;
     }
 
     @Override
     public void setFocus() {
-        log.trace("{{}} setFocus()", stringList);
+        // log.trace("{{}} setFocus()", stringList);
         if (stringList != null)
             stringList.setFocus();
     }
 
     // Parses the string into separate list items and adds them to the list.
     private void setList(String items) {
-        log.trace("{{}} setList({})", stringList, items);
+        // log.trace("{{}} setList({})", stringList, items);
         String[] itemArray = StringUtils.split(items, Preferences.getSeparator());
         stringList.setItems(itemArray);
     }
@@ -472,7 +472,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      *            the minListSize to set
      */
     public void setMinListSize(int minListSize) {
-        log.trace("{{}} setMinListSize({})", stringList, minListSize);
+        // log.trace("{{}} setMinListSize({})", stringList, minListSize);
         this.minItemCount = minListSize;
     }
 
@@ -491,7 +491,7 @@ public class AddEditRemoveListFieldEditor extends FieldEditor {
      * Shows the error message set via <code>setErrorMessage</code>.
      */
     public void showErrorMessage() {
-        log.trace("{{}} showErrorMessage()", stringList);
+        // log.trace("{{}} showErrorMessage()", stringList);
         showErrorMessage(errorMessage);
     }
 
