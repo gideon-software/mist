@@ -234,9 +234,13 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
 
         // Authorize
         Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(uniqueId);
+        log.debug(String.format("Access token expires in %s seconds", credential.getExpiresInSeconds()));
 
-        // Get the access token
-        credential.refreshToken(); // Don't need to call this if it hasn't expired, but it doesn't hurt to do so
+        // Get the access token if need be
+        if (credential.getAccessToken() == null) {
+            log.debug("Access token has expired. Refreshing..."); // Does this matter? Seems to work anyway...
+            credential.refreshToken();
+        }
         return credential;
     }
 
