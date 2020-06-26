@@ -19,6 +19,13 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_14
 targetCompatibility = JavaVersion.VERSION_14
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs += '--enable-preview'
+}
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}
+
 wrapper.gradleVersion = '6.5'
 
 import org.gradle.internal.os.OperatingSystem
@@ -244,6 +251,7 @@ task createBundle() {
                 '--description', appLongname,
                 '--vendor', appPublisher,
                 '--copyright', appCopyright,
+                '--java-options', '--enable-preview'
             ]
 
             if (operatingSystem.isWindows()) {
