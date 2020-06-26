@@ -27,6 +27,8 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.model.data.EmailServer;
@@ -264,6 +266,15 @@ public class EmailModel {
                 stillImporting = true;
         }
         setImporting(stillImporting);
+
+        // If we're done importing and there were no messages, tell the user
+        if (getMessageCountTotal() == 0) {
+            String msg = "There were no messages to import.";
+            log.info(msg);
+            Display.getDefault().asyncExec(() -> {
+                MessageDialog.openInformation(MIST.getView().getShell(), "Import complete", msg);
+            });
+        }
     }
 
     /**

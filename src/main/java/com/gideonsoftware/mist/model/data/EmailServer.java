@@ -22,7 +22,6 @@ package com.gideonsoftware.mist.model.data;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
 
 import com.gideonsoftware.mist.MIST;
@@ -429,14 +428,7 @@ public abstract class EmailServer implements Cloneable {
                 log.trace("{{}} === Email Server Import Service Stopped ===", nickname);
                 setImportComplete(true);
 
-                if (totalMessages == 0) {
-                    // If we're done because there were no messages, tell the user.
-                    String msg = String.format("'%s' had no messages to import.", nickname);
-                    log.debug(msg);
-                    Display.getDefault().asyncExec(() -> {
-                        MessageDialog.openInformation(MIST.getView().getShell(), "Import complete", msg);
-                    });
-                } else {
+                if (totalMessages > 0) {
                     // There were messages; show the import complete tip
                     showImportCompleteTip();
                 }
