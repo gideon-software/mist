@@ -130,6 +130,7 @@ public class TipManager {
         }
 
         protected Button createDoNotShowAgainCheckBox(Composite parent) {
+            log.trace("createDoNotShowAgainCheckBox({})", parent);
             // increment the number of columns in the button bar
             ((GridLayout) parent.getLayout()).numColumns++;
             doNotShowAgainCheckBox = WidgetFactory.button(SWT.CHECK).text(DONOTSHOWSTR).font(

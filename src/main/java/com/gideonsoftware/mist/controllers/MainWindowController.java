@@ -60,6 +60,14 @@ public class MainWindowController {
         messageDetailsController.commitMessageToTntDb();
         messageDetailsController.commitSubjectToTntDb();
 
+        /*
+         * From view.close below:
+         * "Note that in order to prevent recursive calls to this methodit does not call Shell#close(). As a result
+         * ShellListeners will not receive a shellClosed event."
+         * So we do it manually here.
+         */
+        view.doClose();
+
         return view.close();
     }
 

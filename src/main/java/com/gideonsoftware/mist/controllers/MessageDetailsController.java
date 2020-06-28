@@ -152,7 +152,7 @@ public class MessageDetailsController {
         if (historyId == null || msgStr == null)
             return;
 
-        if (view != null && !view.isDisposed())
+        if (view != null && !view.isDisposed() & view.getHistory() != null)
             view.getHistory().setNotes(msgStr);
 
         try {

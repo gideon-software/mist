@@ -1,19 +1,17 @@
 MIST (eMail Import System for TntConnect) README
 ================================================
-MIST allows you to easily import email into TntConnect history from any IMAP
-(email) server, including Gmail.
+MIST easily imports email to and from your TntConnect contacts.
 
 MIST is free software and is released under the GNU Public License (GPL), 
 which means that the source code for MIST is freely available - and always 
-will be - and therefore can be modified to meet your needs. See "License
-Information" below for more information.
+will be - and therefore can be modified to meet your needs.
 
 Note: MIST is not directly affiliated with TntConnect or TntWare, but we hope 
 it will be useful to the TntConnect community! Please do not seek help for 
 MIST on the TntConnect forums. Use the following links instead:
 
 MIST Homepage: https://www.gideonsoftware.com
-MIST Support: hallmant@gmail.com
+MIST Support: mist4tnt@gmail.com
 
 
 License Information
@@ -22,5 +20,5 @@ MIST is licensed under the GNU General Public License 3.0 (GPL) which is
 found in LICENSE.
 
 The Creative Commons Attribution 4.0 International license can be found at
-https://creativecommons.org/licenses/by/4.0/ and applies to:
-- MIST menu, button & status icons, courtesy of https://fontawesome.com
+https://creativecommons.org/licenses/by/4.0/ and applies to MIST menu, 
+button & status icons, courtesy of https://fontawesome.com

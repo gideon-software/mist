@@ -200,6 +200,15 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
         return mainComposite;
     }
 
+    /**
+     * Called by MainWindowController.closeView()
+     */
+    public void doClose() {
+        log.trace("doClose()");
+        tipManager.enableTips(false);
+        UpdateModel.removePropertyChangeListener(this);
+    }
+
     public ContactDetailsView getContactDetailsView() {
         return contactDetailsView;
     }
@@ -242,14 +251,6 @@ public class MainWindowView extends ApplicationWindow implements PropertyChangeL
 
     public TipManager getTipManager() {
         return tipManager;
-    }
-
-    @Override
-    protected void handleShellCloseEvent() {
-        log.trace("handleShellCloseEvent()");
-        tipManager.enableTips(false);
-        UpdateModel.removePropertyChangeListener(this);
-        super.handleShellCloseEvent();
     }
 
     @Override

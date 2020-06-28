@@ -33,6 +33,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -71,6 +72,7 @@ public class MIST {
     private static Logger log = null;
 
     private static MainWindowView view = null;
+    private static MainWindowController controller = null;
     private static OptionSet options = null;
 
     public final static String APP_NAME = "MIST";
@@ -154,6 +156,18 @@ public class MIST {
 
         // Disable Jericho logging
         net.htmlparser.jericho.Config.LoggerProvider = LoggerProvider.DISABLED;
+
+        // Log system info (alphabetically)
+        if (log.isDebugEnabled()) {
+            String[] propNames = System.getProperties().keySet().toArray(new String[0]);
+            String[] sortedPropNames = new String[propNames.length];
+            System.arraycopy(propNames, 0, sortedPropNames, 0, propNames.length);
+            Arrays.sort(sortedPropNames);
+            for (String propName : sortedPropNames) {
+                String propValue = System.getProperty(propName);
+                log.debug("System property: {}: {}", propName, propValue);
+            }
+        }
 
         return logPath;
     }
@@ -281,7 +295,7 @@ public class MIST {
 
         initModel();
         view = new MainWindowView();
-        MainWindowController controller = new MainWindowController(view);
+        controller = new MainWindowController(view);
         controller.openView();
 
         UpdateModel.checkForUpdate();
@@ -404,6 +418,12 @@ public class MIST {
             MIST.getPrefs().save();
         } catch (IOException e) {
             log.error("Could not save preferences.", e);
+        }
+
+        // Shut down view
+        if (view != null) {
+            log.trace("shutdown: Closing view..."); // Already done by controller?
+            view.close();
         }
 
         if (display != null && !display.isDisposed()) {

@@ -50,7 +50,7 @@ public class FirstTimeSetupWelcomePage extends WizardPage {
         applyGridData(comp).withFill();
 
         String welcomeMsg = """
-            MIST is designed to quickly and easily import email messages sent to and received from your TntConnect contacts.
+            MIST easily imports email to and from your TntConnect contacts.
 
             There are just two steps required to get you started:
             1) Select your TntConnect database

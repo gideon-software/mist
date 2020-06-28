@@ -283,7 +283,7 @@ public class MessagesView extends Composite implements PropertyChangeListener {
                     public void run() {
                         addTableItem(his);
                         // Scroll to the bottom of the table as items are entered
-                        if (!messagesTable.isDisposed())
+                        if (!messagesTable.isDisposed() && messagesTable.getSelectionIndex() == -1)
                             messagesTable.setTopIndex(messagesTable.getItemCount() - 1);
                         // Force UI update (needed on Mac?)
                         messagesTable.update();
