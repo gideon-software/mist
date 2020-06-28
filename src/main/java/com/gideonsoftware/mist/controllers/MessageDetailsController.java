@@ -167,7 +167,7 @@ public class MessageDetailsController {
         if (historyId == null || subjectStr == null)
             return;
 
-        if (view != null && !view.isDisposed())
+        if (view != null && !view.isDisposed() & view.getHistory() != null)
             view.getHistory().setDescription(subjectStr);
 
         try {
