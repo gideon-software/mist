@@ -85,10 +85,10 @@ public class UpdateModel {
         log.trace("checkForUpdate()");
 
         // Don't need to check during development!
-        if (MIST.isDevel()) {
-            log.debug("Skipping check for new version because MIST is in devel mode");
-            return;
-        }
+//        if (MIST.isDevel()) {
+//            log.debug("Skipping check for new version because MIST is in devel mode");
+//            return;
+//        }
 
         pcs.firePropertyChange(PROP_STATUS_CHECKING, false, true);
 
@@ -211,7 +211,7 @@ public class UpdateModel {
             MIST.getPrefs().setValue(PREF_UPDATE_CHANNEL, channel);
         }
 
-        log.debug("Update channel is '{}'", channel);
+        log.info("MIST update channel is '{}'", channel);
         pcs.firePropertyChange(PROP_STATUS_INIT, false, true);
     }
 
@@ -219,7 +219,13 @@ public class UpdateModel {
         if (newVersion.isBlank())
             return false;
 
-        return isVersionNewer(MIST.getAppVersion(), newVersion);
+        boolean updateAvailable = isVersionNewer(MIST.getAppVersion(), newVersion);
+        if (updateAvailable)
+            log.info(
+                "MIST update is available! Current version: {}; New version: {}",
+                MIST.getAppVersion(),
+                newVersion);
+        return updateAvailable;
     }
 
     public static boolean isVersionNewer(String currentVersion, String potentiallyNewerVersion) {
@@ -231,8 +237,14 @@ public class UpdateModel {
             || potentiallyNewerVersion.isBlank())
             return false;
 
-        int[] currVer = parseVersionNumber(currentVersion);
-        int[] testVer = parseVersionNumber(potentiallyNewerVersion);
+        int[] currVer = null;
+        int[] testVer = null;
+        try {
+            currVer = parseVersionNumber(currentVersion);
+            testVer = parseVersionNumber(potentiallyNewerVersion);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
 
         for (int i = 0; i < testVer.length; i++)
             if (testVer[i] != currVer[i])
@@ -248,6 +260,7 @@ public class UpdateModel {
      * @return
      */
     private static int[] parseVersionNumber(String ver) {
+        log.trace("partVersionNumber({})", ver);
         Matcher m = Pattern.compile("(\\d+)\\.(\\d+)(\\.\\d+)?(-beta(\\.\\d+)?)?").matcher(ver);
         if (!m.matches())
             throw new IllegalArgumentException("Malformed version");
