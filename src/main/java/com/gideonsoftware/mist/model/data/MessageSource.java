@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
+import com.gideonsoftware.mist.controllers.ContactDetailsController;
+
 /**
  * Base class for message sources.
  */
@@ -42,7 +44,9 @@ public class MessageSource {
     /**
      * Whether to add "existing" history into the model during processing.
      * <p>
-     * If false, new history, history with unknown contacts, and error state history, will still be added.
+     * Note: If false, new history, history with unknown contacts, and error state history, will still be added.
+     * 
+     * @see ContactDetailsController
      */
     private boolean addExistingHistory = true;
 
@@ -137,6 +141,10 @@ public class MessageSource {
 
     public String getSubject() {
         return subject;
+    }
+
+    public String getUniqueId() {
+        return String.format("%s|%s|%s", sourceId, fromId, date);
     }
 
     public String guessFromName() {

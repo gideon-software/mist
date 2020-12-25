@@ -162,12 +162,13 @@ public class EmailModel {
     }
 
     public static boolean isEmailInIgnoreList(String email) {
-        log.trace("isEmailInList({},{})", email);
+        log.trace("isEmailInList({})", email);
         String[] ignoreList = MIST.getPrefs().getStrings(PREF_ADDRESSES_IGNORE);
         return isEmailInList(email, ignoreList);
     }
 
     public static boolean isEmailInList(String email, String[] list) {
+        log.trace("isEmailInList({},{})", email, list);
         for (String entry : list) {
             if (entry.contains("*") || entry.contains("?")) {
                 // Wildcard match

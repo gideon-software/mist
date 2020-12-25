@@ -69,7 +69,6 @@ import com.google.api.services.gmail.model.LabelColor;
 import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.ListThreadsResponse;
 import com.google.api.services.gmail.model.Message;
-import com.google.api.services.gmail.model.ModifyMessageRequest;
 import com.google.api.services.gmail.model.ModifyThreadRequest;
 import com.google.api.services.oauth2.Oauth2Scopes;
 
@@ -182,6 +181,43 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
             // Could be improved by verifying uniqueness among other servers
             setUniqueId(uuid);
         }
+    }
+
+    /**
+     * Returns true if there is no history associated with this message source, or if:
+     * <ol>
+     * <li>all history from the associated gmail message has been added to our model -and-</li>
+     * <li>all history from the associated gmail message is added or exists (e.g. no errors, "contact not found",
+     * etc).</li>
+     * </ol>
+     * Otherwise returns false.
+     */
+    private static boolean canLabelBeRemoved(MessageSource msg) {
+        log.trace("canLabelBeRemoved({})", msg);
+        History[] historyArr = HistoryModel.getAllHistoryFromMessageSource(msg);
+
+        // If there is no history
+        if (historyArr.length == 0)
+            return true;
+
+        // If all history from the associated gmail message has not yet been added to our model,
+        // we're not ready to consider removing the label. Return false.
+        if (historyArr.length != HistoryModel.getHistoryCountForMessage(msg.getUniqueId()))
+            return false;
+
+        // If any history from the associated gmail message remains unprocessed,
+        // we're not ready to remove the label. Return false.
+        for (History his : historyArr) {
+            switch (his.getStatus()) {
+                case History.STATUS_CONTACT_NOT_FOUND:
+                case History.STATUS_ERROR:
+                case History.STATUS_MULTIPLE_CONTACTS_FOUND:
+                case History.STATUS_NONE:
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     // @see https://stackoverflow.com/questions/49354891/how-do-i-get-the-user-id-token-from-a-credential-object
@@ -453,33 +489,20 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         log.trace("{{}} propertyChange({})", getNickname(), event);
 
-        if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())) {
-            // History has been processed
+        if (TntDb.PROP_HISTORY_PROCESSED.equals(event.getPropertyName())
+            || HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())
+            || HistoryModel.PROP_HISTORY_REMOVE.equals(event.getPropertyName())) {
 
-            // If we're to remove labels after import
             if (isLabelRemoveAfterImport()) {
-                History history = (History) event.getNewValue();
-                // And this is the history's source server
-                // And the history is added/exists
-                if (getId() == history.getMessageSource().getSourceId()
-                    && (history.getStatus() == History.STATUS_ADDED || history.getStatus() == History.STATUS_EXISTS)) {
-                    // Remove the label
-                    try {
-                        removeLabel((GmailMessage) history.getMessageSource());
-                    } catch (EmailServerException e) {
-                        Util.reportError("Gmail error", "Could not remove label", e);
-                    }
+
+                MessageSource msg = null;
+                if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
+                    msg = (MessageSource) event.getNewValue();
+                } else { // TntDb.PROP_HISTORY_PROCESSED or HistoryModel.PROP_MESSAGE_IGNORED
+                    msg = ((History) event.getNewValue()).getMessageSource();
                 }
-            }
 
-        } else if (HistoryModel.PROP_MESSAGE_IGNORED.equals(event.getPropertyName())) {
-            // A message has been ignored
-
-            // If we're to remove labels after import (and also when messages are ignored, btw!)
-            if (isLabelRemoveAfterImport()) {
-                MessageSource msg = (MessageSource) event.getNewValue();
-                // And this is the history's source server
-                if (getId() == msg.getSourceId()) {
+                if (getId() == msg.getSourceId() && canLabelBeRemoved(msg)) {
                     // Remove the label
                     try {
                         removeLabel((GmailMessage) msg);
@@ -489,18 +512,16 @@ public class GmailServer extends EmailServer implements PropertyChangeListener {
                 }
             }
         }
-
     }
 
     public void removeLabel(GmailMessage gmailMessage) throws EmailServerException {
         log.trace("{{}} removeLabel({})", getNickname(), gmailMessage);
-        ModifyMessageRequest modRequest = new ModifyMessageRequest().setRemoveLabelIds(Arrays.asList(getLabelId()));
         try {
-            gmailService.users().messages().modify("me", gmailMessage.getMessage().getId(), modRequest).execute();
-
-            // See note on threadMap
+            // Remove message from threadMap (see note on threadMap)
             HashSet<String> messageSet = threadMap.get(gmailMessage.getMessage().getThreadId());
             messageSet.remove(gmailMessage.getMessage().getId());
+
+            // Remove thread label if no messages remain
             if (messageSet.isEmpty()) {
                 log.debug("{{}} removing thread label from thread containing message: {}", getNickname(), gmailMessage);
                 ModifyThreadRequest modRequestThr = new ModifyThreadRequest().setRemoveLabelIds(

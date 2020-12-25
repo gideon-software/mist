@@ -24,6 +24,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -37,6 +38,7 @@ import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.HistoryException;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.model.data.EmailMessage;
+import com.gideonsoftware.mist.model.data.MessageSource;
 import com.gideonsoftware.mist.tntapi.ContactManager;
 import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
@@ -53,14 +55,27 @@ public class HistoryModel {
     private final static PropertyChangeSupport pcs = new PropertyChangeSupport(HistoryModel.class);
     public final static String PROP_HISTORY_ADD = "historymodel.history.add";
     public final static String PROP_HISTORY_INIT = "historymodel.history.init";
+    public final static String PROP_HISTORY_REMOVE = "historymodel.history.remove";
     public final static String PROP_CONTACT_REMOVE = "historymodel.contact.remove";
     public final static String PROP_MESSAGE_IGNORED = "historymodel.message.ignored";
 
-    // A list of all history added to Tnt (including errors)
+    /**
+     * A list of all history added to Tnt (including errors)
+     */
     private static volatile ArrayList<History> historyArr = new ArrayList<History>();
 
-    // Number of examined emails since init
+    /**
+     * Number of examined emails since init
+     */
     private static int examinedEmailsCount;
+
+    /**
+     * Map of the count of distinct history associated with each message.
+     * <p>
+     * This is needed particularly for tracking when a message has been fully processed (e.g. all its history items are
+     * successfully processed) so that post-processing of message can take place (e.g. Gmail auto-label removal)
+     */
+    private static HashMap<String, Integer> messageHistoryCountMap = null;
 
     /**
      * No instantiation allowed!
@@ -113,6 +128,17 @@ public class HistoryModel {
     public static void addPropertyChangeListener(PropertyChangeListener listener) {
         log.trace("addPropertyChangeListener({})", listener);
         pcs.addPropertyChangeListener(listener);
+    }
+
+    public static History[] getAllHistoryFromMessageSource(MessageSource msg) {
+        log.trace("getAllHistoryFromMessageSource({})", msg);
+        ArrayList<History> retArr = new ArrayList<History>();
+        for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
+            History history = it.next();
+            if (history.getMessageSource().getUniqueId().equals(msg.getUniqueId()))
+                retArr.add(history);
+        }
+        return retArr.toArray(new History[0]);
     }
 
     public static History[] getAllHistoryWithContactInfo(ContactInfo info) {
@@ -179,7 +205,13 @@ public class HistoryModel {
             historyArr = new History[1];
             historyArr[0] = history;
         }
+
+        messageHistoryCountMap.put(msg.getUniqueId(), historyArr.length);
         return historyArr;
+    }
+
+    public static Integer getHistoryCountForMessage(String msgId) {
+        return messageHistoryCountMap.get(msgId);
     }
 
     /**
@@ -301,7 +333,8 @@ public class HistoryModel {
         log.trace("init()");
         historyArr.clear();
         examinedEmailsCount = 0;
-        pcs.firePropertyChange(PROP_HISTORY_INIT, false, true); // Newly-initialized history array!
+        messageHistoryCountMap = new HashMap<String, Integer>();
+        pcs.firePropertyChange(PROP_HISTORY_INIT, false, true);
 
         useAutoThank = MIST.getPrefs().getBoolean(EmailModel.PREF_AUTOTHANK_ENABLED);
         autoThankSubjectArr = MIST.getPrefs().getStrings(EmailModel.PREF_AUTOTHANK_SUBJECTS);
@@ -312,13 +345,7 @@ public class HistoryModel {
      * @param info
      */
     public static void removeAllHistoryWithContactInfo(ContactInfo info) {
-        log.trace("removeAllHistoryWithContactInfo()", info);
-        for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
-            History history = it.next();
-            if (history.getContactInfo().equals(info))
-                it.remove();
-        }
-        pcs.firePropertyChange(PROP_CONTACT_REMOVE, null, info);
+        removeAllHistoryWithContactInfo(info, -1);
     }
 
     /**
@@ -328,11 +355,20 @@ public class HistoryModel {
      * @param serverId
      */
     public static void removeAllHistoryWithContactInfo(ContactInfo info, int serverId) {
-        log.trace("removeAllHistoryWithContactInfo()", info, serverId);
+        log.trace("removeAllHistoryWithContactInfo({}, {})", info, serverId);
         for (Iterator<History> it = historyArr.iterator(); it.hasNext();) {
             History history = it.next();
-            if (history.getContactInfo().equals(info) && history.getMessageSource().getSourceId().equals(serverId))
+            if (history.getContactInfo().equals(info)
+                && (serverId == -1 || history.getMessageSource().getSourceId().equals(serverId))) {
                 it.remove();
+
+                // Update messageHistoryCountMap
+                String uniqueId = history.getMessageSource().getUniqueId();
+                Integer count = messageHistoryCountMap.get(uniqueId);
+                messageHistoryCountMap.put(uniqueId, count - 1);
+
+                pcs.firePropertyChange(PROP_HISTORY_REMOVE, null, history);
+            }
         }
         pcs.firePropertyChange(PROP_CONTACT_REMOVE, null, info);
     }
