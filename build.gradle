@@ -25,6 +25,9 @@ tasks.withType(JavaCompile) {
 tasks.withType(Test) {
     jvmArgs += "--enable-preview"
 }
+tasks.withType(JavaExec) {
+    jvmArgs += '--enable-preview'
+}
 
 wrapper.gradleVersion = '6.5'
 
@@ -110,7 +113,7 @@ dependencies {
 
     // TntConnect MS Access database
     // https://mvnrepository.com/artifact/net.sf.ucanaccess/ucanaccess
-    implementation group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '5.0.0'
+    implementation group: 'net.sf.ucanaccess', name: 'ucanaccess', version: '5.0.1'
 
     // Money type
     // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
@@ -178,10 +181,10 @@ task jdepsReport() {
             result = exec {
                 workingDir "${buildDir}"
     
-                // jdeps --multi-release 14 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
+                // jdeps --multi-release 15 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
                 executable = "${javaHome}/bin/jdeps"
                 args = [
-                    '--multi-release', '14',
+                    '--multi-release', '15',
                     '--ignore-missing-deps',
                     '--print-module-deps',
                     "-cp", "${mistLibraryPath}", 
@@ -216,7 +219,8 @@ task javaRuntime() {
                 '--output', "${javaRuntimePath}",
                 '--no-header-files',
                 '--no-man-pages',
-                '--compress=2',
+                // trying compress=0 for speed and avoiding this bug: https://bugs.openjdk.java.net/browse/JDK-8254920
+                '--compress=0', 
                 '--strip-debug',
                 '--add-modules', moduleList]
         }
@@ -262,6 +266,7 @@ task createBundle() {
                     '-t', 'app-image',
                     '-n', appName,
                     *sharedArgs,
+                    '--win-console', // For debugging
                     '--module-path', "${javaHome}\\jmods",
                     '--icon', file('package/icons/mist.ico')
                 ]

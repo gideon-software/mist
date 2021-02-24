@@ -399,7 +399,7 @@ public class TntDb {
      *             if there is a database access problem
      */
     public static int getAvailableId(String tableName, boolean onlyPositive) throws SQLException {
-        log.trace("getAvailableId({}.{})", tableName, onlyPositive);
+        log.trace("getAvailableId({},{})", tableName, onlyPositive);
 
         // Tnt IDs are generated randomly; find an available one
         Random generator = new Random();
