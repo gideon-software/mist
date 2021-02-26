@@ -28,6 +28,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.util.ui.Images;
 
 public class MainMenuView {
@@ -38,6 +39,7 @@ public class MainMenuView {
     private MenuItem aboutItem = null;
     private MenuItem editSettingsItem = null;
     private MenuItem exitItem = null;
+    private MenuItem testItem = null;
     private Menu menu = null;
 
     public MainMenuView(Shell shell) {
@@ -82,6 +84,17 @@ public class MainMenuView {
             aboutItem.setImage(Images.getImage(Images.ICON_ABOUT));
         }
 
+        // Devel menu
+        if (MIST.isDevel()) {
+            MenuItem develItem = new MenuItem(menu, SWT.CASCADE);
+            develItem.setText("[&Devel]");
+            Menu develMenu = new Menu(menu);
+            develItem.setMenu(develMenu);
+
+            testItem = new MenuItem(develMenu, SWT.NONE);
+            testItem.setText("&Test function");
+        }
+
         shell.setMenuBar(menu);
     }
 
@@ -103,6 +116,10 @@ public class MainMenuView {
 
     public Shell getShell() {
         return shell;
+    }
+
+    public MenuItem getTestItem() {
+        return testItem;
     }
 
 }

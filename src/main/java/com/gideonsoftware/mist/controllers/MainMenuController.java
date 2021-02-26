@@ -20,6 +20,11 @@
 
 package com.gideonsoftware.mist.controllers;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.SQLException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.util.Util;
@@ -76,6 +81,35 @@ public class MainMenuController {
             }
         };
 
+        Listener testListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                log.trace("testListener.handleEvent({})", event);
+                //
+                // Test stuff goes here
+                //
+/*
+                // Load SQL
+                Path sqlFile = Path.of("C:\\Users\\hallm\\git\\mist\\devel\\test.sql");
+                String sqlStr = "";
+                try {
+                    sqlStr = Files.readString(sqlFile);
+                } catch (IOException e) {
+                    log.error(e);
+                }
+
+                // Try inserting SQL
+                try {
+                    TntDb.startImportService(); // Connects, etc.
+                    TntDb.runQuery(sqlStr);
+                    TntDb.stopImportService(); // Disconnects?
+                } catch (SQLException e) {
+                    log.error(e);
+                }
+*/
+            }
+        };
+
         if (Util.isMac()) {
             // Mac - use Mac Application menu
             final CocoaSWTUIEnhancer enhancer = new CocoaSWTUIEnhancer(MIST.APP_NAME);
@@ -84,12 +118,13 @@ public class MainMenuController {
                 exitListener,
                 aboutListener,
                 editSettingsListener);
-
+            view.getTestItem().addListener(SWT.Selection, testListener);
         } else {
             // Windows or Linux
             view.getExitItem().addListener(SWT.Selection, exitListener);
             view.getEditSettingsItem().addListener(SWT.Selection, editSettingsListener);
             view.getAboutItem().addListener(SWT.Selection, aboutListener);
+            view.getTestItem().addListener(SWT.Selection, testListener);
         }
     }
 }
