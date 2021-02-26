@@ -266,7 +266,7 @@ task createBundle() {
                     '-t', 'app-image',
                     '-n', appName,
                     *sharedArgs,
-                    '--win-console', // For debugging
+                    //'--win-console', // For debugging only
                     '--module-path', "${javaHome}\\jmods",
                     '--icon', file('package/icons/mist.ico')
                 ]
