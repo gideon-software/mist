@@ -20,11 +20,6 @@
 
 package com.gideonsoftware.mist.controllers;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.SQLException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.util.Util;
@@ -88,25 +83,25 @@ public class MainMenuController {
                 //
                 // Test stuff goes here
                 //
-/*
-                // Load SQL
-                Path sqlFile = Path.of("C:\\Users\\hallm\\git\\mist\\devel\\test.sql");
-                String sqlStr = "";
-                try {
-                    sqlStr = Files.readString(sqlFile);
-                } catch (IOException e) {
-                    log.error(e);
-                }
 
-                // Try inserting SQL
-                try {
-                    TntDb.startImportService(); // Connects, etc.
-                    TntDb.runQuery(sqlStr);
-                    TntDb.stopImportService(); // Disconnects?
-                } catch (SQLException e) {
-                    log.error(e);
-                }
-*/
+//                // Load SQL
+//                Path sqlFile = Path.of("C:\\Users\\hallm\\git\\mist\\devel\\test.sql");
+//                String sqlStr = "";
+//                try {
+//                    sqlStr = Files.readString(sqlFile);
+//                } catch (IOException e) {
+//                    log.error(e);
+//                }
+//
+//                // Try inserting SQL
+//                try {
+//                    TntDb.startImportService(); // Connects, etc.
+//                    TntDb.runQuery(sqlStr);
+//                    TntDb.stopImportService(); // Disconnects?
+//                } catch (SQLException e) {
+//                    log.error(e);
+//                }
+
             }
         };
 
@@ -118,12 +113,13 @@ public class MainMenuController {
                 exitListener,
                 aboutListener,
                 editSettingsListener);
-            view.getTestItem().addListener(SWT.Selection, testListener);
         } else {
             // Windows or Linux
             view.getExitItem().addListener(SWT.Selection, exitListener);
             view.getEditSettingsItem().addListener(SWT.Selection, editSettingsListener);
             view.getAboutItem().addListener(SWT.Selection, aboutListener);
+        }
+        if (MIST.isDevel()) {
             view.getTestItem().addListener(SWT.Selection, testListener);
         }
     }
