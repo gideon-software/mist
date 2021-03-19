@@ -20,6 +20,7 @@
 
 package com.gideonsoftware.mist.tntapi;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -130,14 +131,14 @@ public class ContactManager {
             }
         }
 
-        String query = String.format(
-            "UPDATE [Contact] SET [%s] = %s, [%s] = -1 WHERE [ContactId] = %s",
-            emailField,
-            TntDb.formatDbString(email),
-            emailField + "IsValid",
-            TntDb.formatDbInt(contactId));
         try {
-            TntDb.runQuery(query);
+            String query = String.format(
+                "UPDATE [Contact] SET [%1$s] = ?, [%1$sIsValid] = -1 WHERE [ContactId] = ?",
+                emailField);
+            PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+            stmt.setString(1, email);
+            stmt.setInt(2, contactId);
+            stmt.executeUpdate();
         } catch (SQLException e) {
             TntDb.rollback();
             throw e;
@@ -145,12 +146,12 @@ public class ContactManager {
 
         // Also update "Email" field if needed
         if (contact.getEmail().isBlank()) {
-            query = String.format(
-                "UPDATE [Contact] SET [Email] = %s, [EmailIsValid] = -1 WHERE [ContactId] = %s",
-                TntDb.formatDbString(email),
-                TntDb.formatDbInt(contactId));
             try {
-                TntDb.runQuery(query);
+                String query = "UPDATE [Contact] SET [Email] = ?, [EmailIsValid] = -1 WHERE [ContactId] = ?";
+                PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+                stmt.setString(1, email);
+                stmt.setInt(2, contactId);
+                stmt.executeUpdate();
             } catch (SQLException e) {
                 TntDb.rollback();
                 throw e;
@@ -201,239 +202,247 @@ public class ContactManager {
 
         contact.setContactId(TntDb.getAvailableId(TntDb.TABLE_CONTACT, true));
         LocalDateTime now = LocalDateTime.now().withNano(0);
-        String[][] colValuePairs = {
-            { "ContactID", contact.getContactId().toString() },
-            { "LastEdit", TntDb.formatDbDate(now) },
-            { "CreatedDate", TntDb.formatDbDateNoTime(now) },
-            { "RejectedDuplicateContactIDs", TntDb.formatDbString(contact.getRejectedDuplicateContactIDs()) },
-            { "FileAs", TntDb.formatDbString(contact.getFileAs(), 75) },
-            { "FileAsIsCustom", TntDb.formatDbBoolean(contact.isFileAsCustom()) },
-            { "FullName", TntDb.formatDbString(contact.getFullName()) },
-            { "FullNameIsCustom", TntDb.formatDbBoolean(contact.isFullNameCustom()) },
-            { "Greeting", TntDb.formatDbString(contact.getGreeting()) },
-            { "GreetingIsCustom", TntDb.formatDbBoolean(contact.isGreetingCustom()) },
-            { "Salutation", TntDb.formatDbString(contact.getSalutation()) },
-            { "SalutationIsCustom", TntDb.formatDbBoolean(contact.isSalutationCustom()) },
-            { "ShortName", TntDb.formatDbString(contact.getShortName()) },
-            { "ShortNameIsCustom", TntDb.formatDbBoolean(contact.isShortNameCustom()) },
-            { "MailingAddressBlock", TntDb.formatDbString(contact.getMailingAddressBlock()) },
-            { "MailingAddressIsDeliverable", TntDb.formatDbBoolean(contact.isMailingAddressDeliverable()) },
-            { "Phone", TntDb.formatDbString(contact.getPhone()) },
-            { "PhoneIsValid", TntDb.formatDbBoolean(contact.isPhoneValid()) },
-            { "Email", TntDb.formatDbString(contact.getEmail()) },
-            { "EmailIsValid", TntDb.formatDbBoolean(contact.isEmailValid()) },
-            { "IsOrganization", TntDb.formatDbBoolean(contact.isOrganization()) },
-            { "OrganizationName", TntDb.formatDbString(contact.getOrganizationName(), 50) },
-            { "OrgContactPerson", TntDb.formatDbString(contact.getOrgContactPerson(), 50) },
-            { "Title", TntDb.formatDbString(contact.getTitle(), 25) },
-            { "FirstName", TntDb.formatDbString(contact.getFirstName(), 25) },
-            { "MiddleName", TntDb.formatDbString(contact.getMiddleName(), 25) },
-            { "LastName", TntDb.formatDbString(contact.getLastName(), 50) },
-            { "Suffix", TntDb.formatDbString(contact.getSuffix(), 25) },
-            { "SpouseTitle", TntDb.formatDbString(contact.getSpouseTitle(), 25) },
-            { "SpouseFirstName", TntDb.formatDbString(contact.getSpouseFirstName(), 25) },
-            { "SpouseMiddleName", TntDb.formatDbString(contact.getSpouseMiddleName(), 25) },
-            { "SpouseLastName", TntDb.formatDbString(contact.getSpouseLastName(), 50) },
-            { "Deceased", TntDb.formatDbBoolean(contact.isDeceased()) },
-            { "MailingAddressType", TntDb.formatDbInt(contact.getMailingAddressType()) },
-            { "MailingStreetAddress", TntDb.formatDbString(contact.getMailingStreetAddress()) },
-            { "MailingCity", TntDb.formatDbString(contact.getMailingCity(), 50) },
-            { "MailingState", TntDb.formatDbString(contact.getMailingState(), 50) },
-            { "MailingPostalCode", TntDb.formatDbString(contact.getMailingPostalCode(), 25) },
-            { "MailingCountry", TntDb.formatDbString(contact.getMailingCountry(), 50) },
-            { "HomeStreetAddress", TntDb.formatDbString(contact.getHomeStreetAddress()) },
-            { "HomeCity", TntDb.formatDbString(contact.getHomeCity(), 50) },
-            { "HomeState", TntDb.formatDbString(contact.getHomeState(), 50) },
-            { "HomePostalCode", TntDb.formatDbString(contact.getHomePostalCode(), 25) },
-            { "HomeCountryID", TntDb.formatDbInt(contact.getHomeCountryId()) },
-            { "HomeCountry", TntDb.formatDbString(contact.getHomeCountry(), 50) },
-            { "HomeAddressIsDeliverable", TntDb.formatDbBoolean(contact.isHomeAddressDeliverable()) },
-            { "HomeAddressBlock", TntDb.formatDbString(contact.getHomeAddressBlock()) },
-            { "HomeAddressBlockIsCustom", TntDb.formatDbBoolean(contact.isHomeAddressBlockCustom()) },
-            { "OtherStreetAddress", TntDb.formatDbString(contact.getOtherStreetAddress()) },
-            { "OtherCity", TntDb.formatDbString(contact.getOtherCity(), 50) },
-            { "OtherState", TntDb.formatDbString(contact.getOtherState(), 50) },
-            { "OtherPostalCode", TntDb.formatDbString(contact.getOtherPostalCode(), 25) },
-            { "OtherCountryID", TntDb.formatDbInt(contact.getOtherCountryId()) },
-            { "OtherCountry", TntDb.formatDbString(contact.getOtherCountry(), 50) },
-            { "OtherAddressIsDeliverable", TntDb.formatDbBoolean(contact.isOtherAddressDeliverable()) },
-            { "OtherAddressBlock", TntDb.formatDbString(contact.getOtherAddressBlock()) },
-            { "OtherAddressBlockIsCustom", TntDb.formatDbBoolean(contact.isOtherAddressBlockCustom()) },
-            { "BusinessName", TntDb.formatDbString(contact.getBusinessName()) },
-            { "BusinessStreetAddress", TntDb.formatDbString(contact.getBusinessStreetAddress()) },
-            { "BusinessCity", TntDb.formatDbString(contact.getBusinessCity(), 50) },
-            { "BusinessState", TntDb.formatDbString(contact.getBusinessState(), 50) },
-            { "BusinessPostalCode", TntDb.formatDbString(contact.getBusinessPostalCode(), 25) },
-            { "BusinessCountryID", TntDb.formatDbInt(contact.getBusinessCountryId()) },
-            { "BusinessCountry", TntDb.formatDbString(contact.getBusinessCountry(), 50) },
-            { "BusinessAddressIsDeliverable", TntDb.formatDbBoolean(contact.isBusinessAddressDeliverable()) },
-            { "BusinessAddressBlock", TntDb.formatDbString(contact.getBusinessAddressBlock()) },
-            { "BusinessAddressBlockIsCustom", TntDb.formatDbBoolean(contact.isBusinessAddressBlockCustom()) },
-            { "SpouseBusinessName", TntDb.formatDbString(contact.getSpouseBusinessName()) },
-            { "SpouseBusinessStreetAddress", TntDb.formatDbString(contact.getSpouseBusinessStreetAddress()) },
-            { "SpouseBusinessCity", TntDb.formatDbString(contact.getSpouseBusinessCity(), 50) },
-            { "SpouseBusinessState", TntDb.formatDbString(contact.getSpouseBusinessState(), 50) },
-            { "SpouseBusinessPostalCode", TntDb.formatDbString(contact.getSpouseBusinessPostalCode(), 25) },
-            { "SpouseBusinessCountryID", TntDb.formatDbInt(contact.getSpouseBusinessCountryId()) },
-            { "SpouseBusinessCountry", TntDb.formatDbString(contact.getSpouseBusinessCountry(), 50) },
+        Object[][] colValuePairs = {
+            { "ContactID", contact.getContactId(), java.sql.Types.INTEGER },
+            { "LastEdit", now, java.sql.Types.TIMESTAMP },
+            { "CreatedDate", now, java.sql.Types.DATE },
+            { "RejectedDuplicateContactIDs", contact.getRejectedDuplicateContactIDs(), java.sql.Types.LONGVARCHAR },
+            { "FileAs", contact.getFileAs(), java.sql.Types.VARCHAR, 75 },
+            { "FileAsIsCustom", contact.isFileAsCustom(), java.sql.Types.BOOLEAN },
+            { "FullName", contact.getFullName(), java.sql.Types.LONGVARCHAR },
+            { "FullNameIsCustom", contact.isFullNameCustom(), java.sql.Types.BOOLEAN },
+            { "Greeting", contact.getGreeting(), java.sql.Types.LONGVARCHAR },
+            { "GreetingIsCustom", contact.isGreetingCustom(), java.sql.Types.BOOLEAN },
+            { "Salutation", contact.getSalutation(), java.sql.Types.LONGVARCHAR },
+            { "SalutationIsCustom", contact.isSalutationCustom(), java.sql.Types.BOOLEAN },
+            { "ShortName", contact.getShortName(), java.sql.Types.VARCHAR },
+            { "ShortNameIsCustom", contact.isShortNameCustom(), java.sql.Types.BOOLEAN },
+            { "MailingAddressBlock", contact.getMailingAddressBlock(), java.sql.Types.VARCHAR },
+            { "MailingAddressIsDeliverable", contact.isMailingAddressDeliverable(), java.sql.Types.BOOLEAN },
+            { "Phone", contact.getPhone(), java.sql.Types.VARCHAR },
+            { "PhoneIsValid", contact.isPhoneValid(), java.sql.Types.BOOLEAN },
+            { "Email", contact.getEmail(), java.sql.Types.VARCHAR },
+            { "EmailIsValid", contact.isEmailValid(), java.sql.Types.BOOLEAN },
+            { "IsOrganization", contact.isOrganization(), java.sql.Types.BOOLEAN },
+            { "OrganizationName", contact.getOrganizationName(), java.sql.Types.VARCHAR, 50 },
+            { "OrgContactPerson", contact.getOrgContactPerson(), java.sql.Types.VARCHAR, 50 },
+            { "Title", contact.getTitle(), java.sql.Types.VARCHAR, 25 },
+            { "FirstName", contact.getFirstName(), java.sql.Types.VARCHAR, 25 },
+            { "MiddleName", contact.getMiddleName(), java.sql.Types.VARCHAR, 25 },
+            { "LastName", contact.getLastName(), java.sql.Types.VARCHAR, 50 },
+            { "Suffix", contact.getSuffix(), java.sql.Types.VARCHAR, 25 },
+            { "SpouseTitle", contact.getSpouseTitle(), java.sql.Types.VARCHAR, 25 },
+            { "SpouseFirstName", contact.getSpouseFirstName(), java.sql.Types.VARCHAR, 25 },
+            { "SpouseMiddleName", contact.getSpouseMiddleName(), java.sql.Types.VARCHAR, 25 },
+            { "SpouseLastName", contact.getSpouseLastName(), java.sql.Types.VARCHAR, 50 },
+            { "Deceased", contact.isDeceased(), java.sql.Types.BOOLEAN },
+            { "MailingAddressType", contact.getMailingAddressType(), java.sql.Types.INTEGER },
+            { "MailingStreetAddress", contact.getMailingStreetAddress(), java.sql.Types.VARCHAR },
+            { "MailingCity", contact.getMailingCity(), java.sql.Types.VARCHAR, 50 },
+            { "MailingState", contact.getMailingState(), java.sql.Types.VARCHAR, 50 },
+            { "MailingPostalCode", contact.getMailingPostalCode(), java.sql.Types.VARCHAR, 25 },
+            { "MailingCountry", contact.getMailingCountry(), java.sql.Types.VARCHAR, 50 },
+            { "HomeStreetAddress", contact.getHomeStreetAddress(), java.sql.Types.VARCHAR },
+            { "HomeCity", contact.getHomeCity(), java.sql.Types.VARCHAR, 50 },
+            { "HomeState", contact.getHomeState(), java.sql.Types.VARCHAR, 50 },
+            { "HomePostalCode", contact.getHomePostalCode(), java.sql.Types.VARCHAR, 25 },
+            { "HomeCountryID", contact.getHomeCountryId(), java.sql.Types.INTEGER },
+            { "HomeCountry", contact.getHomeCountry(), java.sql.Types.VARCHAR, 50 },
+            { "HomeAddressIsDeliverable", contact.isHomeAddressDeliverable(), java.sql.Types.BOOLEAN },
+            { "HomeAddressBlock", contact.getHomeAddressBlock(), java.sql.Types.VARCHAR },
+            { "HomeAddressBlockIsCustom", contact.isHomeAddressBlockCustom(), java.sql.Types.BOOLEAN },
+            { "OtherStreetAddress", contact.getOtherStreetAddress(), java.sql.Types.VARCHAR },
+            { "OtherCity", contact.getOtherCity(), java.sql.Types.VARCHAR, 50 },
+            { "OtherState", contact.getOtherState(), java.sql.Types.VARCHAR, 50 },
+            { "OtherPostalCode", contact.getOtherPostalCode(), java.sql.Types.VARCHAR, 25 },
+            { "OtherCountryID", contact.getOtherCountryId(), java.sql.Types.INTEGER },
+            { "OtherCountry", contact.getOtherCountry(), java.sql.Types.VARCHAR, 50 },
+            { "OtherAddressIsDeliverable", contact.isOtherAddressDeliverable(), java.sql.Types.BOOLEAN },
+            { "OtherAddressBlock", contact.getOtherAddressBlock(), java.sql.Types.VARCHAR },
+            { "OtherAddressBlockIsCustom", contact.isOtherAddressBlockCustom(), java.sql.Types.BOOLEAN },
+            { "BusinessName", contact.getBusinessName(), java.sql.Types.VARCHAR },
+            { "BusinessStreetAddress", contact.getBusinessStreetAddress(), java.sql.Types.VARCHAR },
+            { "BusinessCity", contact.getBusinessCity(), java.sql.Types.VARCHAR, 50 },
+            { "BusinessState", contact.getBusinessState(), java.sql.Types.VARCHAR, 50 },
+            { "BusinessPostalCode", contact.getBusinessPostalCode(), java.sql.Types.VARCHAR, 25 },
+            { "BusinessCountryID", contact.getBusinessCountryId(), java.sql.Types.INTEGER },
+            { "BusinessCountry", contact.getBusinessCountry(), java.sql.Types.VARCHAR, 50 },
+            { "BusinessAddressIsDeliverable", contact.isBusinessAddressDeliverable(), java.sql.Types.BOOLEAN },
+            { "BusinessAddressBlock", contact.getBusinessAddressBlock(), java.sql.Types.VARCHAR },
+            { "BusinessAddressBlockIsCustom", contact.isBusinessAddressBlockCustom(), java.sql.Types.BOOLEAN },
+            { "SpouseBusinessName", contact.getSpouseBusinessName(), java.sql.Types.VARCHAR },
+            { "SpouseBusinessStreetAddress", contact.getSpouseBusinessStreetAddress(), java.sql.Types.VARCHAR },
+            { "SpouseBusinessCity", contact.getSpouseBusinessCity(), java.sql.Types.VARCHAR, 50 },
+            { "SpouseBusinessState", contact.getSpouseBusinessState(), java.sql.Types.VARCHAR, 50 },
+            { "SpouseBusinessPostalCode", contact.getSpouseBusinessPostalCode(), java.sql.Types.VARCHAR, 25 },
+            { "SpouseBusinessCountryID", contact.getSpouseBusinessCountryId(), java.sql.Types.INTEGER },
+            { "SpouseBusinessCountry", contact.getSpouseBusinessCountry(), java.sql.Types.VARCHAR, 50 },
             {
                 "SpouseBusinessAddressIsDeliverable",
-                TntDb.formatDbBoolean(contact.isSpouseBusinessAddressDeliverable()) },
-            { "SpouseBusinessAddressBlock", TntDb.formatDbString(contact.getSpouseBusinessAddressBlock()) },
+                contact.isSpouseBusinessAddressDeliverable(),
+                java.sql.Types.BOOLEAN },
+            { "SpouseBusinessAddressBlock", contact.getSpouseBusinessAddressBlock(), java.sql.Types.VARCHAR },
             {
                 "SpouseBusinessAddressBlockIsCustom",
-                TntDb.formatDbBoolean(contact.isSpouseBusinessAddressBlockCustom()) },
-            { "PreferredPhoneType", TntDb.formatDbInt(contact.getPreferredPhoneType()) },
-            { "PhoneIsValidMask", TntDb.formatDbInt(contact.getPhoneIsValidMask()) },
-            { "PhoneCountryIDs", TntDb.formatDbString(contact.getPhoneCountryIds()) },
-            { "HomePhone", TntDb.formatDbString(contact.getHomePhone()) },
-            { "HomePhone2", TntDb.formatDbString(contact.getHomePhone2()) },
-            { "HomeFax", TntDb.formatDbString(contact.getHomeFax()) },
-            { "OtherPhone", TntDb.formatDbString(contact.getOtherPhone()) },
-            { "OtherFax", TntDb.formatDbString(contact.getOtherFax()) },
-            { "BusinessPhone", TntDb.formatDbString(contact.getBusinessPhone()) },
-            { "BusinessPhone2", TntDb.formatDbString(contact.getBusinessPhone2()) },
-            { "BusinessFax", TntDb.formatDbString(contact.getBusinessFax()) },
-            { "CompanyMainPhone", TntDb.formatDbString(contact.getCompanyMainPhone()) },
-            { "MobilePhone", TntDb.formatDbString(contact.getMobilePhone()) },
-            { "MobilePhone2", TntDb.formatDbString(contact.getMobilePhone2()) },
-            { "PagerNumber", TntDb.formatDbString(contact.getPagerNumber()) },
-            { "SpouseBusinessPhone", TntDb.formatDbString(contact.getSpouseBusinessPhone()) },
-            { "SpouseBusinessPhone2", TntDb.formatDbString(contact.getSpouseBusinessPhone2()) },
-            { "SpouseBusinessFax", TntDb.formatDbString(contact.getSpouseBusinessFax()) },
-            { "SpouseCompanyMainPhone", TntDb.formatDbString(contact.getSpouseCompanyMainPhone()) },
-            { "SpouseMobilePhone", TntDb.formatDbString(contact.getSpouseMobilePhone()) },
-            { "SpouseMobilePhone2", TntDb.formatDbString(contact.getSpouseMobilePhone2()) },
-            { "SpousePagerNumber", TntDb.formatDbString(contact.getSpousePagerNumber()) },
-            { "PreferredEmailTypes", TntDb.formatDbInt(contact.getPreferredEmailTypes()) },
-            { "EmailLabels", TntDb.formatDbString(contact.getEmailLabels()) },
-            { "Email1", TntDb.formatDbString(contact.getEmail1()) },
-            { "Email2", TntDb.formatDbString(contact.getEmail2()) },
-            { "Email3", TntDb.formatDbString(contact.getEmail3()) },
-            { "Email1IsValid", TntDb.formatDbBoolean(contact.isEmail1Valid()) },
-            { "Email2IsValid", TntDb.formatDbBoolean(contact.isEmail2Valid()) },
-            { "Email3IsValid", TntDb.formatDbBoolean(contact.isEmail3Valid()) },
-            { "EmailCustomGreeting", TntDb.formatDbString(contact.getEmailCustomGreeting()) },
-            { "EmailCustomSalutation", TntDb.formatDbString(contact.getEmailCustomSalutation()) },
-            { "SpouseEmail1", TntDb.formatDbString(contact.getSpouseEmail1()) },
-            { "SpouseEmail2", TntDb.formatDbString(contact.getSpouseEmail2()) },
-            { "SpouseEmail3", TntDb.formatDbString(contact.getSpouseEmail3()) },
-            { "SpouseEmail1IsValid", TntDb.formatDbBoolean(contact.isSpouseEmail1Valid()) },
-            { "SpouseEmail2IsValid", TntDb.formatDbBoolean(contact.isSpouseEmail2Valid()) },
-            { "SpouseEmail3IsValid", TntDb.formatDbBoolean(contact.isSpouseEmail3Valid()) },
-            { "SpouseEmailCustomGreeting", TntDb.formatDbString(contact.getSpouseEmailCustomGreeting()) },
-            { "SpouseEmailCustomSalutation", TntDb.formatDbString(contact.getSpouseEmailCustomSalutation()) },
-            { "WebPage1", TntDb.formatDbString(contact.getWebPage1()) },
-            { "WebPage2", TntDb.formatDbString(contact.getWebPage2()) },
-            { "VoiceSkype", TntDb.formatDbString(contact.getVoiceSkype()) },
-            { "IMAddress", TntDb.formatDbString(contact.getImAddress()) },
-            { "SocialWeb1", TntDb.formatDbString(contact.getSocialWeb1()) },
-            { "SocialWeb2", TntDb.formatDbString(contact.getSocialWeb2()) },
-            { "SocialWeb3", TntDb.formatDbString(contact.getSocialWeb3()) },
-            { "SocialWeb4", TntDb.formatDbString(contact.getSocialWeb4()) },
-            { "SpouseWebPage1", TntDb.formatDbString(contact.getSpouseWebPage1()) },
-            { "SpouseWebPage2", TntDb.formatDbString(contact.getSpouseWebPage2()) },
-            { "SpouseVoiceSkype", TntDb.formatDbString(contact.getSpouseVoiceSkype()) },
-            { "SpouseIMAddress", TntDb.formatDbString(contact.getSpouseImAddress()) },
-            { "SpouseSocialWeb1", TntDb.formatDbString(contact.getSpouseSocialWeb1()) },
-            { "SpouseSocialWeb2", TntDb.formatDbString(contact.getSpouseSocialWeb2()) },
-            { "SpouseSocialWeb3", TntDb.formatDbString(contact.getSpouseSocialWeb3()) },
-            { "SpouseSocialWeb4", TntDb.formatDbString(contact.getSpouseSocialWeb4()) },
-            { "NotesAsRTF", TntDb.formatDbString(contact.getNotesAsRtf()) },
-            { "Notes", TntDb.formatDbString(contact.getNotes()) },
-            { "FamilySideID", TntDb.formatDbInt(contact.getFamilySideID()) },
-            { "FamilyLevelID", TntDb.formatDbInt(contact.getFamilyLevelID()) },
-            { "Children", TntDb.formatDbString(contact.getChildren()) },
-            { "Interests", TntDb.formatDbString(contact.getInterests()) },
-            { "Nickname", TntDb.formatDbString(contact.getNickname()) },
-            { "Profession", TntDb.formatDbString(contact.getProfession()) },
-            { "SpouseInterests", TntDb.formatDbString(contact.getSpouseInterests()) },
-            { "SpouseNickname", TntDb.formatDbString(contact.getSpouseNickname()) },
-            { "SpouseProfession", TntDb.formatDbString(contact.getSpouseProfession()) },
-            { "AnniversaryMonth", TntDb.formatDbInt(contact.getAnniversaryMonth()) },
-            { "AnniversaryDay", TntDb.formatDbInt(contact.getAnniversaryDay()) },
-            { "AnniversaryYear", TntDb.formatDbInt(contact.getAnniversaryYear()) },
-            { "BirthdayMonth", TntDb.formatDbInt(contact.getBirthdayMonth()) },
-            { "BirthdayDay", TntDb.formatDbInt(contact.getBirthdayDay()) },
-            { "BirthdayYear", TntDb.formatDbInt(contact.getBirthdayYear()) },
-            { "SpouseBirthdayMonth", TntDb.formatDbInt(contact.getSpouseBirthdayMonth()) },
-            { "SpouseBirthdayDay", TntDb.formatDbInt(contact.getSpouseBirthdayDay()) },
-            { "SpouseBirthdayYear", TntDb.formatDbInt(contact.getSpouseBirthdayYear()) },
-            { "Categories", TntDb.formatDbString(contact.getCategories()) },
-            { "User1", TntDb.formatDbString(contact.getUser1()) },
-            { "User2", TntDb.formatDbString(contact.getUser2()) },
-            { "User3", TntDb.formatDbString(contact.getUser3()) },
-            { "User4", TntDb.formatDbString(contact.getUser4()) },
-            { "User5", TntDb.formatDbString(contact.getUser5()) },
-            { "User6", TntDb.formatDbString(contact.getUser6()) },
-            { "User7", TntDb.formatDbString(contact.getUser7()) },
-            { "User8", TntDb.formatDbString(contact.getUser8()) },
-            { "UserStatus", TntDb.formatDbString(contact.getUserStatus()) },
-            { "MapAddressType", TntDb.formatDbInt(contact.getMapAddressType()) },
-            { "MapLat", TntDb.formatDbInt(contact.getMapLat()) },
-            { "MapLng", TntDb.formatDbInt(contact.getMapLng()) },
-            { "MapStatus", TntDb.formatDbString(contact.getMapStatus()) },
-            { "PledgeAmount", TntDb.formatDbCurrency(contact.getPledgeAmount()) },
-            { "PledgeFrequencyID", TntDb.formatDbInt(contact.getPledgeFrequencyId()) },
-            { "PledgeReceived", TntDb.formatDbBoolean(contact.isPledgeReceived()) },
-            { "PledgeStartDate", TntDb.formatDbDateNoTime(contact.getPledgeStartDate()) },
-            { "PledgeCurrencyID", TntDb.formatDbInt(contact.getPledgeCurrencyId()) },
-            { "ReferredBy", TntDb.formatDbString(contact.getReferredBy()) },
-            { "ReferredByList", TntDb.formatDbString(contact.getReferredByList()) },
-            { "MPDPhaseID", TntDb.formatDbInt(contact.getMpdPhaseId()) },
-            { "FundRepID", TntDb.formatDbInt(contact.getFundRepId()) },
-            { "NextAsk", TntDb.formatDbDateNoTime(contact.getNextAsk()) },
-            { "NextAskAmount", TntDb.formatDbCurrency(contact.getNextAskAmount()) },
-            { "EstimatedAnnualCapacity", TntDb.formatDbCurrency(contact.getEstimatedAnnualCapacity()) },
-            { "NeverAsk", TntDb.formatDbBoolean(contact.isNeverAsk()) },
-            { "Region", TntDb.formatDbString(contact.getRegion()) },
-            { "LikelyToGiveID", TntDb.formatDbInt(contact.getLikelyToGiveId()) },
-            { "ChurchName", TntDb.formatDbString(contact.getChurchName()) },
-            { "SendNewsletter", TntDb.formatDbBoolean(contact.isSendNewsletter()) },
-            { "NewsletterMediaPref", TntDb.formatDbString(contact.getNewsletterMediaPref(), 6) }, // 4 in TntDb
-            { "NewsletterLangID", TntDb.formatDbInt(contact.getNewsletterLangId()) },
-            { "DirectDeposit", TntDb.formatDbBoolean(contact.isDirectDeposit()) },
-            { "Magazine", TntDb.formatDbBoolean(contact.isMagazine()) },
-            { "MonthlyPledge", TntDb.formatDbCurrency(contact.getMonthlyPledge()) },
-            { "FirstGiftDate", TntDb.formatDbDateNoTime(contact.getFirstGiftDate()) },
-            { "LastGiftDate", TntDb.formatDbDateNoTime(contact.getLastGiftDate()) },
-            { "LastGiftAmount", TntDb.formatDbCurrency(contact.getLastGiftAmount()) },
-            { "LastGiftCurrencyID", TntDb.formatDbInt(contact.getLastGiftCurrencyId()) },
-            { "LastGiftOrganizationID", TntDb.formatDbInt(contact.getLastGiftOrganizationId()) },
-            { "LastGiftOrgDonorCode", TntDb.formatDbString(contact.getLastGiftOrgDonorCode()) },
-            { "LastGiftPaymentMethod", TntDb.formatDbString(contact.getLastGiftPaymentMethod()) },
-            { "PrevYearTotal", TntDb.formatDbCurrency(contact.getPrevYearTotal()) },
-            { "YearTotal", TntDb.formatDbCurrency(contact.getYearTotal()) },
-            { "LifetimeTotal", TntDb.formatDbCurrency(contact.getLifetimeTotal()) },
-            { "LifetimeNumberOfGifts", TntDb.formatDbInt(contact.getLifetimeNumberOfGifts()) },
-            { "LargestGift", TntDb.formatDbCurrency(contact.getLargestGift()) },
-            { "GoodUntil", TntDb.formatDbDateNoTime(contact.getGoodUntil()) },
-            { "AveMonthlyGift", TntDb.formatDbCurrency(contact.getAveMonthlyGift()) },
-            { "LastDateInAve", TntDb.formatDbDateNoTime(contact.getLastDateInAve()) },
-            { "TwelveMonthTotal", TntDb.formatDbCurrency(contact.getTwelveMonthTotal()) },
-            { "BaseCurrencyID", TntDb.formatDbInt(contact.getBaseCurrencyId()) },
-            { "BaseMonthlyPledge", TntDb.formatDbCurrency(contact.getBaseMonthlyPledge()) },
-            { "BaseLastGiftAmount", TntDb.formatDbCurrency(contact.getBaseLastGiftAmount()) },
-            { "BasePrevYearTotal", TntDb.formatDbCurrency(contact.getBasePrevYearTotal()) },
-            { "BaseYearTotal", TntDb.formatDbCurrency(contact.getBaseYearTotal()) },
-            { "BaseLifetimeTotal", TntDb.formatDbCurrency(contact.getBaseLifetimeTotal()) },
-            { "BaseLargestGift", TntDb.formatDbCurrency(contact.getBaseLargestGift()) },
-            { "BaseAveMonthlyGift", TntDb.formatDbCurrency(contact.getBaseAveMonthlyGift()) },
-            { "BaseTwelveMonthTotal", TntDb.formatDbCurrency(contact.getBaseTwelveMonthTotal()) },
-            { "LastActivity", TntDb.formatDbDateNoTime(contact.getLastActivity()) },
-            { "LastAppointment", TntDb.formatDbDateNoTime(contact.getLastAppointment()) },
-            { "LastCall", TntDb.formatDbDateNoTime(contact.getLastCall()) },
-            { "LastPreCall", TntDb.formatDbDateNoTime(contact.getLastPreCall()) },
-            { "LastLetter", TntDb.formatDbDateNoTime(contact.getLastLetter()) },
-            { "LastVisit", TntDb.formatDbDateNoTime(contact.getLastVisit()) },
-            { "LastThank", TntDb.formatDbDateNoTime(contact.getLastThank()) },
-            { "LastChallenge", TntDb.formatDbDateNoTime(contact.getLastChallenge()) },
-            { "CampaignsSinceLastGift", TntDb.formatDbInt(contact.getCampaignsSinceLastGift()) },
-            { "ChallengesSinceLastGift", TntDb.formatDbInt(contact.getChallengesSinceLastGift()) },
-            { "OrgDonorCodes", TntDb.formatDbString(contact.getOrgDonorCodes()) } };
+                contact.isSpouseBusinessAddressBlockCustom(),
+                java.sql.Types.BOOLEAN },
+            { "PreferredPhoneType", contact.getPreferredPhoneType(), java.sql.Types.INTEGER },
+            { "PhoneIsValidMask", contact.getPhoneIsValidMask(), java.sql.Types.INTEGER },
+            { "PhoneCountryIDs", contact.getPhoneCountryIds(), java.sql.Types.VARCHAR },
+            { "HomePhone", contact.getHomePhone(), java.sql.Types.VARCHAR },
+            { "HomePhone2", contact.getHomePhone2(), java.sql.Types.VARCHAR },
+            { "HomeFax", contact.getHomeFax(), java.sql.Types.VARCHAR },
+            { "OtherPhone", contact.getOtherPhone(), java.sql.Types.VARCHAR },
+            { "OtherFax", contact.getOtherFax(), java.sql.Types.VARCHAR },
+            { "BusinessPhone", contact.getBusinessPhone(), java.sql.Types.VARCHAR },
+            { "BusinessPhone2", contact.getBusinessPhone2(), java.sql.Types.VARCHAR },
+            { "BusinessFax", contact.getBusinessFax(), java.sql.Types.VARCHAR },
+            { "CompanyMainPhone", contact.getCompanyMainPhone(), java.sql.Types.VARCHAR },
+            { "MobilePhone", contact.getMobilePhone(), java.sql.Types.VARCHAR },
+            { "MobilePhone2", contact.getMobilePhone2(), java.sql.Types.VARCHAR },
+            { "PagerNumber", contact.getPagerNumber(), java.sql.Types.VARCHAR },
+            { "SpouseBusinessPhone", contact.getSpouseBusinessPhone(), java.sql.Types.VARCHAR },
+            { "SpouseBusinessPhone2", contact.getSpouseBusinessPhone2(), java.sql.Types.VARCHAR },
+            { "SpouseBusinessFax", contact.getSpouseBusinessFax(), java.sql.Types.VARCHAR },
+            { "SpouseCompanyMainPhone", contact.getSpouseCompanyMainPhone(), java.sql.Types.VARCHAR },
+            { "SpouseMobilePhone", contact.getSpouseMobilePhone(), java.sql.Types.VARCHAR },
+            { "SpouseMobilePhone2", contact.getSpouseMobilePhone2(), java.sql.Types.VARCHAR },
+            { "SpousePagerNumber", contact.getSpousePagerNumber(), java.sql.Types.VARCHAR },
+            { "PreferredEmailTypes", contact.getPreferredEmailTypes(), java.sql.Types.INTEGER },
+            { "EmailLabels", contact.getEmailLabels(), java.sql.Types.VARCHAR },
+            { "Email1", contact.getEmail1(), java.sql.Types.VARCHAR },
+            { "Email2", contact.getEmail2(), java.sql.Types.VARCHAR },
+            { "Email3", contact.getEmail3(), java.sql.Types.VARCHAR },
+            { "Email1IsValid", contact.isEmail1Valid(), java.sql.Types.BOOLEAN },
+            { "Email2IsValid", contact.isEmail2Valid(), java.sql.Types.BOOLEAN },
+            { "Email3IsValid", contact.isEmail3Valid(), java.sql.Types.BOOLEAN },
+            { "EmailCustomGreeting", contact.getEmailCustomGreeting(), java.sql.Types.VARCHAR },
+            { "EmailCustomSalutation", contact.getEmailCustomSalutation(), java.sql.Types.VARCHAR },
+            { "SpouseEmail1", contact.getSpouseEmail1(), java.sql.Types.VARCHAR },
+            { "SpouseEmail2", contact.getSpouseEmail2(), java.sql.Types.VARCHAR },
+            { "SpouseEmail3", contact.getSpouseEmail3(), java.sql.Types.VARCHAR },
+            { "SpouseEmail1IsValid", contact.isSpouseEmail1Valid(), java.sql.Types.BOOLEAN },
+            { "SpouseEmail2IsValid", contact.isSpouseEmail2Valid(), java.sql.Types.BOOLEAN },
+            { "SpouseEmail3IsValid", contact.isSpouseEmail3Valid(), java.sql.Types.BOOLEAN },
+            { "SpouseEmailCustomGreeting", contact.getSpouseEmailCustomGreeting(), java.sql.Types.VARCHAR },
+            { "SpouseEmailCustomSalutation", contact.getSpouseEmailCustomSalutation(), java.sql.Types.VARCHAR },
+            { "WebPage1", contact.getWebPage1(), java.sql.Types.VARCHAR },
+            { "WebPage2", contact.getWebPage2(), java.sql.Types.VARCHAR },
+            { "VoiceSkype", contact.getVoiceSkype(), java.sql.Types.VARCHAR },
+            { "IMAddress", contact.getImAddress(), java.sql.Types.VARCHAR },
+            { "SocialWeb1", contact.getSocialWeb1(), java.sql.Types.VARCHAR },
+            { "SocialWeb2", contact.getSocialWeb2(), java.sql.Types.VARCHAR },
+            { "SocialWeb3", contact.getSocialWeb3(), java.sql.Types.VARCHAR },
+            { "SocialWeb4", contact.getSocialWeb4(), java.sql.Types.VARCHAR },
+            { "SpouseWebPage1", contact.getSpouseWebPage1(), java.sql.Types.VARCHAR },
+            { "SpouseWebPage2", contact.getSpouseWebPage2(), java.sql.Types.VARCHAR },
+            { "SpouseVoiceSkype", contact.getSpouseVoiceSkype(), java.sql.Types.VARCHAR },
+            { "SpouseIMAddress", contact.getSpouseImAddress(), java.sql.Types.VARCHAR },
+            { "SpouseSocialWeb1", contact.getSpouseSocialWeb1(), java.sql.Types.VARCHAR },
+            { "SpouseSocialWeb2", contact.getSpouseSocialWeb2(), java.sql.Types.VARCHAR },
+            { "SpouseSocialWeb3", contact.getSpouseSocialWeb3(), java.sql.Types.VARCHAR },
+            { "SpouseSocialWeb4", contact.getSpouseSocialWeb4(), java.sql.Types.VARCHAR },
+            { "NotesAsRTF", contact.getNotesAsRtf(), java.sql.Types.VARCHAR },
+            { "Notes", contact.getNotes(), java.sql.Types.VARCHAR },
+            { "FamilySideID", contact.getFamilySideID(), java.sql.Types.INTEGER },
+            { "FamilyLevelID", contact.getFamilyLevelID(), java.sql.Types.INTEGER },
+            { "Children", contact.getChildren(), java.sql.Types.VARCHAR },
+            { "Interests", contact.getInterests(), java.sql.Types.VARCHAR },
+            { "Nickname", contact.getNickname(), java.sql.Types.VARCHAR },
+            { "Profession", contact.getProfession(), java.sql.Types.VARCHAR },
+            { "SpouseInterests", contact.getSpouseInterests(), java.sql.Types.VARCHAR },
+            { "SpouseNickname", contact.getSpouseNickname(), java.sql.Types.VARCHAR },
+            { "SpouseProfession", contact.getSpouseProfession(), java.sql.Types.VARCHAR },
+            { "AnniversaryMonth", contact.getAnniversaryMonth(), java.sql.Types.INTEGER },
+            { "AnniversaryDay", contact.getAnniversaryDay(), java.sql.Types.INTEGER },
+            { "AnniversaryYear", contact.getAnniversaryYear(), java.sql.Types.INTEGER },
+            { "BirthdayMonth", contact.getBirthdayMonth(), java.sql.Types.INTEGER },
+            { "BirthdayDay", contact.getBirthdayDay(), java.sql.Types.INTEGER },
+            { "BirthdayYear", contact.getBirthdayYear(), java.sql.Types.INTEGER },
+            { "SpouseBirthdayMonth", contact.getSpouseBirthdayMonth(), java.sql.Types.INTEGER },
+            { "SpouseBirthdayDay", contact.getSpouseBirthdayDay(), java.sql.Types.INTEGER },
+            { "SpouseBirthdayYear", contact.getSpouseBirthdayYear(), java.sql.Types.INTEGER },
+            { "Categories", contact.getCategories(), java.sql.Types.VARCHAR },
+            { "User1", contact.getUser1(), java.sql.Types.VARCHAR },
+            { "User2", contact.getUser2(), java.sql.Types.VARCHAR },
+            { "User3", contact.getUser3(), java.sql.Types.VARCHAR },
+            { "User4", contact.getUser4(), java.sql.Types.VARCHAR },
+            { "User5", contact.getUser5(), java.sql.Types.VARCHAR },
+            { "User6", contact.getUser6(), java.sql.Types.VARCHAR },
+            { "User7", contact.getUser7(), java.sql.Types.VARCHAR },
+            { "User8", contact.getUser8(), java.sql.Types.VARCHAR },
+            { "UserStatus", contact.getUserStatus(), java.sql.Types.VARCHAR },
+            { "MapAddressType", contact.getMapAddressType(), java.sql.Types.INTEGER },
+            { "MapLat", contact.getMapLat(), java.sql.Types.INTEGER },
+            { "MapLng", contact.getMapLng(), java.sql.Types.INTEGER },
+            { "MapStatus", contact.getMapStatus(), java.sql.Types.VARCHAR },
+            { "PledgeAmount", TntDb.formatDbCurrency(contact.getPledgeAmount()), java.sql.Types.VARCHAR },
+            { "PledgeFrequencyID", contact.getPledgeFrequencyId(), java.sql.Types.INTEGER },
+            { "PledgeReceived", contact.isPledgeReceived(), java.sql.Types.BOOLEAN },
+            { "PledgeStartDate", contact.getPledgeStartDate(), java.sql.Types.DATE },
+            { "PledgeCurrencyID", contact.getPledgeCurrencyId(), java.sql.Types.INTEGER },
+            { "ReferredBy", contact.getReferredBy(), java.sql.Types.VARCHAR },
+            { "ReferredByList", contact.getReferredByList(), java.sql.Types.VARCHAR },
+            { "MPDPhaseID", contact.getMpdPhaseId(), java.sql.Types.INTEGER },
+            { "FundRepID", contact.getFundRepId(), java.sql.Types.INTEGER },
+            { "NextAsk", contact.getNextAsk(), java.sql.Types.DATE },
+            { "NextAskAmount", TntDb.formatDbCurrency(contact.getNextAskAmount()), java.sql.Types.VARCHAR },
+            {
+                "EstimatedAnnualCapacity",
+                TntDb.formatDbCurrency(contact.getEstimatedAnnualCapacity()),
+                java.sql.Types.VARCHAR },
+            { "NeverAsk", contact.isNeverAsk(), java.sql.Types.BOOLEAN },
+            { "Region", contact.getRegion(), java.sql.Types.VARCHAR },
+            { "LikelyToGiveID", contact.getLikelyToGiveId(), java.sql.Types.INTEGER },
+            { "ChurchName", contact.getChurchName(), java.sql.Types.VARCHAR },
+            { "SendNewsletter", contact.isSendNewsletter(), java.sql.Types.BOOLEAN },
+            { "NewsletterMediaPref", contact.getNewsletterMediaPref(), java.sql.Types.VARCHAR, 4 },
+            { "NewsletterLangID", contact.getNewsletterLangId(), java.sql.Types.INTEGER },
+            { "DirectDeposit", contact.isDirectDeposit(), java.sql.Types.BOOLEAN },
+            { "Magazine", contact.isMagazine(), java.sql.Types.BOOLEAN },
+            { "MonthlyPledge", TntDb.formatDbCurrency(contact.getMonthlyPledge()), java.sql.Types.VARCHAR },
+            { "FirstGiftDate", contact.getFirstGiftDate(), java.sql.Types.DATE },
+            { "LastGiftDate", contact.getLastGiftDate(), java.sql.Types.DATE },
+            { "LastGiftAmount", TntDb.formatDbCurrency(contact.getLastGiftAmount()), java.sql.Types.VARCHAR },
+            { "LastGiftCurrencyID", contact.getLastGiftCurrencyId(), java.sql.Types.INTEGER },
+            { "LastGiftOrganizationID", contact.getLastGiftOrganizationId(), java.sql.Types.INTEGER },
+            { "LastGiftOrgDonorCode", contact.getLastGiftOrgDonorCode(), java.sql.Types.VARCHAR },
+            { "LastGiftPaymentMethod", contact.getLastGiftPaymentMethod(), java.sql.Types.VARCHAR },
+            { "PrevYearTotal", TntDb.formatDbCurrency(contact.getPrevYearTotal()), java.sql.Types.VARCHAR },
+            { "YearTotal", TntDb.formatDbCurrency(contact.getYearTotal()), java.sql.Types.VARCHAR },
+            { "LifetimeTotal", TntDb.formatDbCurrency(contact.getLifetimeTotal()), java.sql.Types.VARCHAR },
+            { "LifetimeNumberOfGifts", contact.getLifetimeNumberOfGifts(), java.sql.Types.INTEGER },
+            { "LargestGift", TntDb.formatDbCurrency(contact.getLargestGift()), java.sql.Types.VARCHAR },
+            { "GoodUntil", contact.getGoodUntil(), java.sql.Types.DATE },
+            { "AveMonthlyGift", TntDb.formatDbCurrency(contact.getAveMonthlyGift()), java.sql.Types.VARCHAR },
+            { "LastDateInAve", contact.getLastDateInAve(), java.sql.Types.DATE },
+            { "TwelveMonthTotal", TntDb.formatDbCurrency(contact.getTwelveMonthTotal()), java.sql.Types.VARCHAR },
+            { "BaseCurrencyID", contact.getBaseCurrencyId(), java.sql.Types.INTEGER },
+            { "BaseMonthlyPledge", TntDb.formatDbCurrency(contact.getBaseMonthlyPledge()), java.sql.Types.VARCHAR },
+            { "BaseLastGiftAmount", TntDb.formatDbCurrency(contact.getBaseLastGiftAmount()), java.sql.Types.VARCHAR },
+            { "BasePrevYearTotal", TntDb.formatDbCurrency(contact.getBasePrevYearTotal()), java.sql.Types.VARCHAR },
+            { "BaseYearTotal", TntDb.formatDbCurrency(contact.getBaseYearTotal()), java.sql.Types.VARCHAR },
+            { "BaseLifetimeTotal", TntDb.formatDbCurrency(contact.getBaseLifetimeTotal()), java.sql.Types.VARCHAR },
+            { "BaseLargestGift", TntDb.formatDbCurrency(contact.getBaseLargestGift()), java.sql.Types.VARCHAR },
+            { "BaseAveMonthlyGift", TntDb.formatDbCurrency(contact.getBaseAveMonthlyGift()), java.sql.Types.VARCHAR },
+            {
+                "BaseTwelveMonthTotal",
+                TntDb.formatDbCurrency(contact.getBaseTwelveMonthTotal()),
+                java.sql.Types.VARCHAR },
+            { "LastActivity", contact.getLastActivity(), java.sql.Types.DATE },
+            { "LastAppointment", contact.getLastAppointment(), java.sql.Types.DATE },
+            { "LastCall", contact.getLastCall(), java.sql.Types.DATE },
+            { "LastPreCall", contact.getLastPreCall(), java.sql.Types.DATE },
+            { "LastLetter", contact.getLastLetter(), java.sql.Types.DATE },
+            { "LastVisit", contact.getLastVisit(), java.sql.Types.DATE },
+            { "LastThank", contact.getLastThank(), java.sql.Types.DATE },
+            { "LastChallenge", contact.getLastChallenge(), java.sql.Types.DATE },
+            { "CampaignsSinceLastGift", contact.getCampaignsSinceLastGift(), java.sql.Types.INTEGER },
+            { "ChallengesSinceLastGift", contact.getChallengesSinceLastGift(), java.sql.Types.INTEGER },
+            { "OrgDonorCodes", contact.getOrgDonorCodes(), java.sql.Types.VARCHAR } };
 
         try {
-            TntDb.runQuery(TntDb.createInsertQuery(TntDb.TABLE_CONTACT, colValuePairs));
+            TntDb.insert(TntDb.TABLE_CONTACT, colValuePairs);
             TntDb.commit();
         } catch (SQLException e) {
             TntDb.rollback();
@@ -468,8 +477,13 @@ public class ContactManager {
         if (contactId == null)
             return null;
 
-        String query = String.format("SELECT * FROM [Contact] WHERE [ContactID] = %s", contactId);
-        ResultSet rs = TntDb.runQuery(query);
+        String query = "SELECT * FROM [Contact] WHERE [ContactID] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(
+            query,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        stmt.setInt(1, contactId);
+        ResultSet rs = stmt.executeQuery();
         if (!rs.first())
             return null;
 
@@ -714,11 +728,9 @@ public class ContactManager {
      */
     public static int getChallengesSinceLastGift(int contactId) throws SQLException {
         log.trace("getChallengesSinceLastGift({})", contactId);
-        String query = String.format(
-            "SELECT [ChallengesSinceLastGift] FROM [Contact] WHERE [ContactId] = %s",
-            contactId);
+        String query = "SELECT [ChallengesSinceLastGift] FROM [Contact] WHERE [ContactId] = ?";
         try {
-            return TntDb.getOneInt(query);
+            return TntDb.getOneInt(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return 0;
@@ -769,28 +781,27 @@ public class ContactManager {
         //
         HashSet<Integer> contactIds = new HashSet<Integer>();
 
-        // Add escape clause if any underscores exist; otherwise ignore
-        String emailFormatted = email.replace("_", "\\_");
-        String escapeStr = "";
-        if (!emailFormatted.equals(email))
-            escapeStr = "ESCAPE '\\'";
-
         // Concatenate the email addresses together with commas
-        String query = String.format(
-            "SELECT [ContactID],"
-                + "[Email1] & ',' & [Email2] & ',' & [Email3] & ',' & "
-                + "[SpouseEmail1] & ',' & [SpouseEmail2] & ',' & [SpouseEmail3]"
-                + "FROM [Contact] WHERE "
-                + "[Email1] LIKE '*%1$s*' %2$s OR "
-                + "[Email2] LIKE '*%1$s*' %2$s OR "
-                + "[Email3] LIKE '*%1$s*' %2$s OR "
-                + "[SpouseEmail1] LIKE '*%1$s*' %2$s OR "
-                + "[SpouseEmail2] LIKE '*%1$s*' %2$s OR "
-                + "[SpouseEmail3] LIKE '*%1$s*' %2$s",
-            emailFormatted,
-            escapeStr);
+        String query = "SELECT [ContactID],"
+            + "[Email1] & ',' & [Email2] & ',' & [Email3] & ',' & "
+            + "[SpouseEmail1] & ',' & [SpouseEmail2] & ',' & [SpouseEmail3]"
+            + "FROM [Contact] WHERE "
+            + "[Email1] LIKE ? OR "
+            + "[Email2] LIKE ? OR "
+            + "[Email3] LIKE ? OR "
+            + "[SpouseEmail1] LIKE ? OR "
+            + "[SpouseEmail2] LIKE ? OR "
+            + "[SpouseEmail3] LIKE ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(
+            query,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        for (int i = 0; i < 6; i++) {
+            stmt.setString(i + 1, "%" + email + "%");
+        }
+        ResultSet rs = stmt.executeQuery();
+        log.warn(TntDb.getResultSetString(rs));
 
-        ResultSet rs = TntDb.runQuery(query);
         Pattern pattern = Pattern.compile(MIST.REGEX_EMAILADDRESS);
         while (rs.next()) {
             Integer contactId = rs.getInt("ContactID");
@@ -823,7 +834,8 @@ public class ContactManager {
     public static ContactInfo[] getContactList() throws SQLException {
         log.trace("getContactList()");
         List<ContactInfo> contacts = new ArrayList<ContactInfo>();
-        ResultSet rs = TntDb.runQuery("SELECT [ContactID], [FileAs] FROM [Contact] ORDER BY [FileAs]", false);
+        ResultSet rs = TntDb.getConnection().createStatement().executeQuery(
+            "SELECT [ContactID], [FileAs] FROM [Contact] ORDER BY [FileAs]");
         while (rs.next())
             contacts.add(new ContactInfo(rs.getInt("ContactID"), rs.getString("FileAs")));
         return contacts.toArray(new ContactInfo[0]);
@@ -856,8 +868,7 @@ public class ContactManager {
      */
     public static String getFileAs(int contactId) throws TntDbException, SQLException {
         log.trace("getFileAs({})", contactId);
-        String query = String.format("SELECT [FileAs] FROM [Contact] WHERE [ContactId] = %s", contactId);
-        return TntDb.getOneString(query);
+        return TntDb.getOneString("SELECT [FileAs] FROM [Contact] WHERE [ContactId] = ?", contactId);
     }
 
     /**
@@ -1009,9 +1020,9 @@ public class ContactManager {
      */
     protected static LocalDateTime getLastXDate(int contactId, String lastType) throws SQLException {
         log.trace("getLastXDate({},{})", contactId, lastType);
-        String query = String.format("SELECT [Last%s] FROM [Contact] WHERE [ContactId] = %s", lastType, contactId);
+        String query = String.format("SELECT [Last%s] FROM [Contact] WHERE [ContactId] = ?", lastType);
         try {
-            return TntDb.getOneDate(query);
+            return TntDb.getOneDate(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return null;
@@ -1039,25 +1050,24 @@ public class ContactManager {
             // MassMailing doesn't matter here
             "SELECT COUNT([History].[HistoryID]) "
                 + "FROM [History] INNER JOIN [HistoryContact] ON [History].[HistoryID] = [HistoryContact].[HistoryID] "
-                + "WHERE [HistoryContact].[ContactID] = %s AND "
+                + "WHERE [HistoryContact].[ContactID] = ? AND "
                 + "[History].[HistoryResultID] <> %s AND "
                 + "[History].[IsChallenge] = -1 AND "
                 + "[History].[HistoryDate] >= %s",
-            contactId,
             History.RESULT_ATTEMPTED,
             TntDb.formatDbDateNoTime(lastGiftDate));
         Integer challengesSinceLastGift = 0;
         try {
-            challengesSinceLastGift = TntDb.getOneInt(countQuery);
+            challengesSinceLastGift = TntDb.getOneInt(countQuery, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
         }
 
-        String query = String.format(
-            "UPDATE [Contact] SET [ChallengesSinceLastGift] = %s WHERE [ContactId] = %s",
-            challengesSinceLastGift,
-            contactId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [Contact] SET [ChallengesSinceLastGift] = ? WHERE [ContactId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setInt(1, challengesSinceLastGift);
+        stmt.setInt(2, contactId);
+        stmt.executeUpdate();
     }
 
     /**
@@ -1163,14 +1173,13 @@ public class ContactManager {
             // MassMailing doesn't matter here
             "SELECT MAX([History].[HistoryDate]) "
                 + "FROM [History] INNER JOIN [HistoryContact] ON [History].[HistoryID] = [HistoryContact].[HistoryID] "
-                + "WHERE [HistoryContact].[ContactID] = %s AND "
+                + "WHERE [HistoryContact].[ContactID] = ? AND "
                 + "[History].[HistoryResultID] <> %s AND "
                 + "[History].[IsChallenge] = -1",
-            contactId,
             History.RESULT_ATTEMPTED);
         LocalDateTime maxDate = null;
         try {
-            maxDate = TntDb.getOneDate(query);
+            maxDate = TntDb.getOneDate(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return;
@@ -1227,15 +1236,14 @@ public class ContactManager {
         String query = String.format(
             "SELECT MAX([History].[HistoryDate]) AS maxdate "
                 + "FROM [History] INNER JOIN [HistoryContact] ON [History].[HistoryID] = [HistoryContact].[HistoryID] "
-                + "WHERE [HistoryContact].[ContactID] = %s AND "
+                + "WHERE [HistoryContact].[ContactID] = ? AND "
                 + "[History].[HistoryResultID] <> %s AND "
                 + "[History].[IsMassMailing] = 0 AND "
                 + "[History].[IsThank] = -1",
-            contactId,
             History.RESULT_ATTEMPTED);
         LocalDateTime maxDate = null;
         try {
-            maxDate = TntDb.getOneDate(query);
+            maxDate = TntDb.getOneDate(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return;
@@ -1312,16 +1320,15 @@ public class ContactManager {
         String query = String.format(
             "SELECT MAX([History].[HistoryDate]) "
                 + "FROM [History] INNER JOIN [HistoryContact] ON [History].[HistoryID] = [HistoryContact].[HistoryID] "
-                + "WHERE [HistoryContact].[ContactID] = %s AND "
+                + "WHERE [HistoryContact].[ContactID] = ? AND "
                 + "[History].[HistoryResultID] <> %s AND "
                 + "[History].[IsMassMailing] = 0 AND "
                 + "[History].[TaskTypeID] = %s",
-            contactId,
             History.RESULT_ATTEMPTED,
             taskTypeId);
         LocalDateTime maxDate = null;
         try {
-            maxDate = TntDb.getOneDate(query);
+            maxDate = TntDb.getOneDate(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return;
@@ -1348,7 +1355,7 @@ public class ContactManager {
         String taskTypeQuery = String.format(
             "SELECT [TaskTypeID] FROM [TaskType] WHERE [AffectsLast%s] = -1",
             lastType);
-        ResultSet rs = TntDb.runQuery(taskTypeQuery);
+        ResultSet rs = TntDb.getConnection().createStatement().executeQuery(taskTypeQuery);
         String taskTypeStr = "(";
         while (rs.next()) {
             Integer taskTypeId = rs.getInt("TaskTypeID");
@@ -1361,15 +1368,14 @@ public class ContactManager {
         String query = String.format(
             "SELECT MAX([History].[HistoryDate]) "
                 + "FROM [History] INNER JOIN [HistoryContact] ON [History].[HistoryID] = [HistoryContact].[HistoryID] "
-                + "WHERE [HistoryContact].[ContactID] = %s AND "
+                + "WHERE [HistoryContact].[ContactID] = ? AND "
                 + "[History].[HistoryResultID] <> %s AND "
                 + "[History].[IsMassMailing] = 0 AND "
                 + taskTypeStr,
-            contactId,
             History.RESULT_ATTEMPTED);
         LocalDateTime maxDate = null;
         try {
-            maxDate = TntDb.getOneDate(query);
+            maxDate = TntDb.getOneDate(query, contactId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return;
@@ -1654,12 +1660,15 @@ public class ContactManager {
             return;
 
         if (date == null || lastDate == null || force || lastDate.isBefore(date)) {
-            String query = String.format(
-                "UPDATE [Contact] SET [Last%s] = %s WHERE [ContactId] = %s",
-                lastType,
-                TntDb.formatDbDateNoTime(date),
-                contactId);
-            TntDb.runQuery(query);
+            String query = String.format("UPDATE [Contact] SET [Last%s] = ? WHERE [ContactId] = ?", lastType);
+            PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+            if (date == null) {
+                stmt.setNull(1, java.sql.Types.DATE);
+            } else {
+                stmt.setObject(1, date.toLocalDate());
+            }
+            stmt.setInt(2, contactId);
+            stmt.executeUpdate();
             // LastEdit is not updated for calculated fields
         }
 

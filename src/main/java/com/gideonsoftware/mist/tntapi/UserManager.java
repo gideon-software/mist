@@ -22,6 +22,7 @@ package com.gideonsoftware.mist.tntapi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +51,15 @@ public class UserManager {
     public static User[] getUserList() throws SQLException {
         log.trace("getUserList()");
         List<User> users = new ArrayList<User>();
-        ResultSet rs = TntDb.runQuery("SELECT [UserID], [UserName] FROM [User] ORDER BY [UserName]");
+        Statement stmt = TntDb.getConnection().createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        ResultSet rs = stmt.executeQuery("SELECT [UserID], [UserName] FROM [User] ORDER BY [UserName]");
+
+        // Log result if tracing
+        if (log.isTraceEnabled())
+            log.trace(TntDb.getResultSetString(rs));
+
         while (rs.next())
             users.add(new User(rs.getInt("UserID"), rs.getString("UserName")));
         return users.toArray(new User[0]);
@@ -71,7 +80,7 @@ public class UserManager {
         log.trace("getUserName({})", userId);
         if (userId == null)
             return null;
-        return TntDb.getOneString("SELECT [UserName] FROM [User] WHERE [UserID] = " + userId);
+        return TntDb.getOneString("SELECT [UserName] FROM [User] WHERE [UserID] = ?", userId);
     }
 
 }

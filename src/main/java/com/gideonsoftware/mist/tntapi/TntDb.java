@@ -221,26 +221,6 @@ public class TntDb {
     }
 
     /**
-     * Returns an INSERT query for the specified table based on column/value information from a 2D String array.
-     * Values must already be formatted for DB insertion. See formatDb*()
-     *
-     * @param tableName
-     *            the name of the table
-     * @param colValuePairs
-     *            a 2D String array of the form {{colName1, value1}, {colName2, value2}, ...}
-     */
-    public static String createInsertQuery(String tableName, String[][] colValuePairs) {
-        log.trace("createInsertQuery({},{})", tableName, "<" + colValuePairs.length + " pairs>");
-        StringBuilder colNames = new StringBuilder();
-        StringBuilder values = new StringBuilder();
-        for (int i = 0; i < colValuePairs.length; i++) {
-            colNames.append((i > 0 ? "," : "") + "[" + colValuePairs[i][0] + "]");
-            values.append((i > 0 ? "," : "") + colValuePairs[i][1]);
-        }
-        return String.format("INSERT INTO [%s] (%s) VALUES (%s)", tableName, colNames, values);
-    }
-
-    /**
      * Disconnects from the TntConnect database if a connection exists.
      */
     public static void disconnect() {
@@ -265,17 +245,6 @@ public class TntDb {
      */
     public static FastMoney floatToMoney(float f) {
         return FastMoney.of(f, "USD");
-    }
-
-    /**
-     * Return the specified boolean in the format that TntConnect uses (-1 = true, 0 = false).
-     *
-     * @param bool
-     *            the boolean value to convert
-     * @return the specified boolean in the format that TntConnect uses (-1 = true, 0 = false)
-     */
-    public static String formatDbBoolean(boolean bool) {
-        return bool ? "-1" : "0";
     }
 
     /**
@@ -324,51 +293,6 @@ public class TntDb {
     }
 
     /**
-     * Return the specified integer in the format that TntConnect uses.
-     * 
-     * @param integer
-     *            the integer value to convert
-     * @return
-     *         the specified integer in the format that TntConnect uses
-     */
-    public static String formatDbInt(Integer integer) {
-        if (integer == null)
-            return "NULL";
-        return String.valueOf(integer);
-    }
-
-    /**
-     * Return the specified string in the format that TntConnect uses.
-     *
-     * @param str
-     *            the string value to convert
-     * @return the specified string in the format that TntConnect uses
-     */
-    public static String formatDbString(String string) {
-        if (string == null)
-            return "NULL";
-        return String.format("'%s'", string.replace("'", "''"));
-    }
-
-    /**
-     * Return the specified string in the format that TntConnect uses, trimming it down to {@code maxLen} if necessary.
-     *
-     * @param string
-     *            the string value to convert
-     * @param maxLen
-     *            the maximum string length
-     * @return the specified string in the format that TntConnect uses, trimmed down to {@code maxLen} if necessary
-     */
-    public static String formatDbString(String string, int maxLen) {
-        if (string == null)
-            return "NULL";
-        String newStr = string.replace("'", "''");
-        if (newStr.length() > maxLen)
-            newStr = newStr.substring(0, maxLen);
-        return String.format("'%s'", newStr);
-    }
-
-    /**
      * Gets an available ID for the specified table. Useful for creating foreign key IDs.
      * <p>
      * IDs can be negative or positive.
@@ -404,13 +328,21 @@ public class TntDb {
         // Tnt IDs are generated randomly; find an available one
         Random generator = new Random();
         int id;
-        ResultSet rs;
+        String query;
+        boolean found;
+
         do {
             // Get a random long number
             id = onlyPositive ? generator.nextInt(Integer.MAX_VALUE) : generator.nextInt();
             // Try to find it in the DB table
-            rs = runQuery(String.format("SELECT * FROM [%s] WHERE [%sID] = %s", tableName, tableName, id));
-        } while (rs.next()); // If there are any results, try again (cause it's a duplicate)
+            query = String.format("SELECT [%1$sID] FROM [%1$s] WHERE [%1$sID] = ?", tableName);
+            try {
+                found = getOneInt(query, id) != null;
+            } catch (TntDbException e) { // If more than one value returned; shouldn't happen!
+                log.error(e);
+                found = true;
+            }
+        } while (found); // If there are any results, try again (cause it's a duplicate)
         return id;
     }
 
@@ -442,8 +374,8 @@ public class TntDb {
      */
     protected static String getDescription(String table, int id) throws TntDbException, SQLException {
         log.trace("getDescription({},{})", table, id);
-        String query = String.format("SELECT [Description] FROM [%1$s] WHERE [%1$sId] = %2$s", table, id);
-        return getOneString(query);
+        String query = String.format("SELECT [Description] FROM [%1$s] WHERE [%1$sId] = ?", table);
+        return getOneString(query, id);
     }
 
     /**
@@ -462,58 +394,67 @@ public class TntDb {
     }
 
     /**
-     * Returns one {@code Date} as a result of running the specified query.
+     * Returns one {@code Date} as a result of running the specified query with the specified id parameter.
      *
      * @param query
      *            the query to run
-     * @return one {@code Date} as a result of running the specified query; null if no value exists
+     * @param id
+     *            the id to pass with the query
+     * @return one {@code Date} as a result of running the specified query with id; null if no value exists
      * @throws TntDbException
      *             if there is more than one value returned
      * @throws SQLException
      *             if there is a database access problem
      */
-    public static LocalDateTime getOneDate(String query) throws TntDbException, SQLException {
-        log.trace("getOneDate({})", query);
-        return (LocalDateTime) getOneX(query, TYPE_DATE);
+    public static LocalDateTime getOneDate(String query, int id) throws TntDbException, SQLException {
+        log.trace("getOneDate({},{})", query, id);
+        return (LocalDateTime) getOneX(query, id, TYPE_DATE);
     }
 
     /**
-     * Returns one {@code Integer} as a result of running the specified query.
+     * Returns one {@code Integer} as a result of running the specified query and id.
      *
      * @param query
      *            the query to run
+     * @param id
+     *            the id to pass with the query
      * @return one {@code Integer} as a result of running the specified query; null if no value exists.
      * @throws TntDbException
      *             if there is more than one value returned
      * @throws SQLException
      *             if there is a database access problem
      */
-    public static Integer getOneInt(String query) throws TntDbException, SQLException {
-        log.trace("getOneInt({})", query);
-        return (Integer) getOneX(query, TYPE_INT);
+    public static Integer getOneInt(String query, int id) throws TntDbException, SQLException {
+        log.trace("getOneInt({},{})", query, id);
+        return (Integer) getOneX(query, id, TYPE_INT);
     }
 
     /**
-     * Returns one {@code String} as a result of running the specified query.
+     * Returns one {@code String} as a result of running the specified query and id.
      *
      * @param query
      *            the query to run
+     * @param id
+     *            the id to pass with the query
      * @return one {@code String} as a result of running the specified query; null if no value exists.
      * @throws TntDbException
      *             if there is more than one value returned
      * @throws SQLException
      *             if there is a database access problem
      */
-    public static String getOneString(String query) throws TntDbException, SQLException {
-        log.trace("getOneString({})", query);
-        return (String) getOneX(query, TYPE_STRING);
+    public static String getOneString(String query, int id) throws TntDbException, SQLException {
+        log.trace("getOneString({},{})", query, id);
+        return (String) getOneX(query, id, TYPE_STRING);
     }
 
     /**
-     * Returns one value of type {@code type} as a result of running the specified query, or null if no value exists.
+     * Returns one value of type {@code type} as a result of running the specified query and id, or null if no value
+     * exists.
      *
      * @param query
      *            the query to run
+     * @param id
+     *            the id to pass with the query
      * @param type
      *            the type to return (which must be cast from {@code Object})
      * @return one value of type {@code type} as a result of running the specified; null if no value exists
@@ -523,18 +464,28 @@ public class TntDb {
      * @throws SQLException
      *             if there is a database access problem
      */
-    protected static Object getOneX(String query, String type) throws TntDbException, SQLException {
-        log.trace("getOneX({},{})", query, type);
+    protected static Object getOneX(String query, int id, String type) throws TntDbException, SQLException {
+        log.trace("getOneX({},{},{})", query, id, type);
 
         if (query == null || type == null)
             return null;
 
-        ResultSet rs = runQuery(query);
+        PreparedStatement stmt = conn.prepareStatement(
+            query,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+
+        // Log result if tracing
+        if (log.isTraceEnabled())
+            log.trace(getResultSetString(rs));
+
         // Make sure we only have one result
         int count = getRowCount(rs);
-        if (count == 0)
+        if (count == 0) {
             return null;
-        else if (count == 1) {
+        } else if (count == 1) {
             rs.next();
             switch (type) {
                 case TYPE_DATE:
@@ -546,8 +497,9 @@ public class TntDb {
                 default:
                     throw new TntDbException(String.format("Unknown type '%s'"));
             }
-        } else
+        } else {
             throw new TntDbException(String.format("Expected to find exactly 1 result but found %s", count));
+        }
     }
 
     /**
@@ -660,6 +612,54 @@ public class TntDb {
     }
 
     /**
+     * Run an INSERT {@code PreparedStatement} for the specified table based on column/value information from a 2D
+     * Object array.
+     *
+     * @param tableName
+     *            the name of the table
+     * @param colValuePairs
+     *            a 2D Object array of the form {{colName1, value1, type1}, {colName2, value2, type2}, ...}
+     * @throws SQLException
+     *             if there is a database access problem
+     */
+    public static void insert(String tableName, Object[][] colValuePairs) throws SQLException {
+        log.trace("insert({},{})", tableName, "<" + colValuePairs.length + " pairs>");
+
+        StringBuilder colNames = new StringBuilder();
+        StringBuilder valuesQuestionMarks = new StringBuilder();
+        for (int i = 0; i < colValuePairs.length; i++) {
+            colNames.append((i > 0 ? "," : "") + "[" + colValuePairs[i][0] + "]");
+            valuesQuestionMarks.append(i > 0 ? ",?" : "?");
+        }
+        String query = String.format("INSERT INTO [%s] (%s) VALUES (%s)", tableName, colNames, valuesQuestionMarks);
+        PreparedStatement stmt = conn.prepareStatement(query);
+
+        for (int i = 0; i < colValuePairs.length; i++) {
+            Object val = colValuePairs[i][1];
+            int type = (Integer) colValuePairs[i][2];
+            if (val == null) {
+                stmt.setNull(i + 1, type);
+            } else if (type == java.sql.Types.BOOLEAN) {
+                stmt.setBoolean(i + 1, (Boolean) val);
+            } else if (type == java.sql.Types.INTEGER) {
+                stmt.setInt(i + 1, (Integer) val);
+            } else if (type == java.sql.Types.VARCHAR || type == java.sql.Types.LONGVARCHAR) {
+                String str = (String) val;
+                if (colValuePairs[i].length > 3) {
+                    int maxLen = (Integer) colValuePairs[i][3];
+                    if (str.length() > maxLen)
+                        str = str.substring(0, maxLen);
+                }
+                stmt.setString(i + 1, str);
+            } else {
+                stmt.setObject(i + 1, val);
+            }
+        }
+
+        stmt.executeUpdate();
+    }
+
+    /**
      * Returns whether a connection currently exists to the TntConnect database.
      *
      * @return true if a connection exists; false otherwise
@@ -705,55 +705,6 @@ public class TntDb {
         } catch (SQLException e) {
             throw new TntDbException("Unable to roll back failed transaction. Data corruption may have occured.", e);
         }
-    }
-
-    /**
-     * Runs the specified query on the TntConnect database.
-     * <p>
-     * Does NOT automatically commit changes to the Tnt database.
-     *
-     * @param query
-     *            the query to run
-     * @return a {@link ResultSet} in the query was a {@code SELECT} statement, otherwise null
-     * @throws SQLException
-     *             if there is a database access problem
-     */
-    public static ResultSet runQuery(String query) throws SQLException {
-        return runQuery(query, true);
-    }
-
-    /**
-     * Runs the specified query on the TntConnect database.
-     * <p>
-     * Does NOT automatically commit changes to the Tnt database.
-     *
-     * @param query
-     *            the query to run
-     * @param enableResultLogging
-     *            true shows result in TRACE logging; false skips it
-     * @return a {@link ResultSet} in the query was a {@code SELECT} statement, otherwise null
-     * @throws SQLException
-     *             if there is a database access problem
-     */
-    public static ResultSet runQuery(String query, boolean enableResultLogging) throws SQLException {
-        log.trace("runQuery({})", query);
-        if (!enableResultLogging)
-            log.trace("** Result logging DISABLED for previous query **");
-
-        // Create statement that we can scroll over (important for getting size of resultsets)
-        PreparedStatement stmt = conn.prepareStatement(
-            query,
-            ResultSet.TYPE_SCROLL_INSENSITIVE,
-            ResultSet.CONCUR_READ_ONLY);
-        ResultSet rs = null;
-        if (query.startsWith("SELECT")) {
-            rs = stmt.executeQuery();
-            if (log.isTraceEnabled() && enableResultLogging)
-                log.trace(getResultSetString(rs));
-        } else {
-            stmt.executeUpdate();
-        }
-        return rs;
     }
 
     /**
@@ -898,13 +849,11 @@ public class TntDb {
     public static void updateTableLastEdit(String tableName, int id) throws SQLException {
         log.trace("updateTableLastEdit({},{})", tableName, id);
 
-        String query = String.format(
-            "UPDATE [%s] SET [LastEdit] = %s WHERE [%sId] = %s",
-            tableName,
-            formatDbDate(LocalDateTime.now().withNano(0)),
-            tableName,
-            id);
-        runQuery(query);
+        String query = String.format("UPDATE [%1$s] SET [LastEdit] = ? WHERE [%1$sId] = ?", tableName);
+        PreparedStatement stmt = conn.prepareStatement(query);
+        stmt.setObject(1, LocalDateTime.now().withNano(0));
+        stmt.setInt(2, id);
+        stmt.executeUpdate();
     }
 
 }

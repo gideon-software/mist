@@ -291,7 +291,7 @@ public class ContactManagerTest {
      */
     @Test
     public void getContactIdByEmailFoundWithBrackets() throws TntDbException, SQLException {
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             "UPDATE [Contact] SET [Email3] = '\"Bob Parr\" <parrb@metroinsurance.com>' WHERE [ContactID] = "
                 + MRINCREDIBLE_CONTACTID);
         assertEquals(1, ContactManager.getContactsByEmailCount("parrb@metroinsurance.com"));
@@ -303,9 +303,13 @@ public class ContactManagerTest {
      */
     @Test
     public void getContactIdByEmailFoundWithUnderscores() throws TntDbException, SQLException {
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             "UPDATE [Contact] SET [Email3] = 'parr_b@metroinsurance.com' WHERE [ContactID] = "
                 + MRINCREDIBLE_CONTACTID);
+        TntDb.getConnection().createStatement().executeUpdate(
+            "UPDATE [Contact] SET [Email3] = '______@metroinsurance.com' WHERE [ContactID] = "
+                + GEORGEJETSON_CONTACTID);
+
         assertEquals(1, ContactManager.getContactsByEmailCount("parr_b@metroinsurance.com"));
         assertEquals(MRINCREDIBLE_CONTACTID, ContactManager.getContactIdByEmail("parr_b@metroinsurance.com"));
     }
@@ -316,8 +320,9 @@ public class ContactManagerTest {
     @Test
     public void getContactIdByEmailMultipleFound() throws TntDbException, SQLException {
         // Add duplicate email address to primary contact
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             "UPDATE [Contact] SET [Email3] = 'dduck@disney.org' WHERE [ContactID] = " + MRINCREDIBLE_CONTACTID);
+
         assertEquals(2, ContactManager.getContactsByEmailCount("dduck@disney.org"));
         try {
             ContactManager.getContactIdByEmail("dduck@disney.org");
@@ -468,7 +473,7 @@ public class ContactManagerTest {
             ContactManager.getChallengesSinceLastGift(BAMBIDEER_CONTACTID));
 
         // Set number of challenges to 0
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format(
                 "UPDATE [Contact] SET [ChallengesSinceLastGift] = 0 WHERE [ContactID] = %s",
                 BAMBIDEER_CONTACTID));
@@ -498,12 +503,12 @@ public class ContactManagerTest {
     @Test
     public void recalculateHistoryData() throws TntDbException, SQLException {
         // Set all the dates to null
-        String query = String.format(
-            "UPDATE [Contact] SET [LastActivity] = NULL, [LastAppointment] = NULL, [LastCall] = NULL, "
-                + "[LastChallenge] = NULL, [LastLetter] = NULL, [LastPreCall] = NULL, [LastThank] = NULL, "
-                + "[LastVisit] = NULL WHERE [ContactId] = %s",
-            GEORGEJETSON_CONTACTID);
-        TntDb.runQuery(query);
+        TntDb.getConnection().createStatement().executeUpdate(
+            String.format(
+                "UPDATE [Contact] SET [LastActivity] = NULL, [LastAppointment] = NULL, [LastCall] = NULL, "
+                    + "[LastChallenge] = NULL, [LastLetter] = NULL, [LastPreCall] = NULL, [LastThank] = NULL, "
+                    + "[LastVisit] = NULL WHERE [ContactId] = %s",
+                GEORGEJETSON_CONTACTID));
 
         // Recalculate everything
         ContactManager.recalculateHistoryData(GEORGEJETSON_CONTACTID);
@@ -528,7 +533,7 @@ public class ContactManagerTest {
         assertEquals(MRINCREDIBLE_LASTACTIVITY, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
 
         // Remove last activity
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastActivity] = null WHERE [ContactID] = %s", MRINCREDIBLE_CONTACTID));
         assertEquals(null, ContactManager.getLastActivityDate(MRINCREDIBLE_CONTACTID));
 
@@ -561,7 +566,7 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTAPPOINTMENT, ContactManager.getLastAppointmentDate(GEORGEJETSON_CONTACTID));
 
         // Remove last appointment
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format(
                 "UPDATE [Contact] SET [LastAppointment] = null WHERE [ContactID] = %s",
                 GEORGEJETSON_CONTACTID));
@@ -583,7 +588,7 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTCALL, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
 
         // Remove last call
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastCall] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
         assertEquals(null, ContactManager.getLastCallDate(GEORGEJETSON_CONTACTID));
 
@@ -603,7 +608,7 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTCHALLENGE, ContactManager.getLastChallengeDate(GEORGEJETSON_CONTACTID));
 
         // Remove last challenge
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format(
                 "UPDATE [Contact] SET [LastChallenge] = null WHERE [ContactID] = %s",
                 GEORGEJETSON_CONTACTID));
@@ -625,8 +630,9 @@ public class ContactManagerTest {
         assertEquals(MRINCREDIBLE_LASTLETTER, ContactManager.getLastLetterDate(MRINCREDIBLE_CONTACTID));
 
         // Remove last letter
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastLetter] = null WHERE [ContactID] = %s", MRINCREDIBLE_CONTACTID));
+
         assertEquals(null, ContactManager.getLastLetterDate(MRINCREDIBLE_CONTACTID));
 
         // Recalculate
@@ -647,7 +653,7 @@ public class ContactManagerTest {
         assertEquals(BAMBIDEER_LASTPRECALL, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
 
         // Remove last pre-call
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastPreCall] = null WHERE [ContactID] = %s", BAMBIDEER_CONTACTID));
         assertEquals(null, ContactManager.getLastPreCallDate(BAMBIDEER_CONTACTID));
 
@@ -667,7 +673,7 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTTHANK, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
 
         // Remove last thank
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastThank] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
         assertEquals(null, ContactManager.getLastThankDate(GEORGEJETSON_CONTACTID));
 
@@ -687,7 +693,7 @@ public class ContactManagerTest {
         assertEquals(GEORGEJETSON_LASTVISIT, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
 
         // Remove last visit
-        TntDb.runQuery(
+        TntDb.getConnection().createStatement().executeUpdate(
             String.format("UPDATE [Contact] SET [LastVisit] = null WHERE [ContactID] = %s", GEORGEJETSON_CONTACTID));
         assertEquals(null, ContactManager.getLastVisitDate(GEORGEJETSON_CONTACTID));
 

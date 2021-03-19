@@ -22,6 +22,7 @@ package com.gideonsoftware.mist.tntapi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -83,7 +84,10 @@ public class CurrencyManager {
     public static void load() throws SQLException {
         log.trace("load()");
 
-        ResultSet rs = TntDb.runQuery("SELECT * FROM [Currency]");
+        Statement stmt = TntDb.getConnection().createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        ResultSet rs = stmt.executeQuery("SELECT * FROM [Currency]");
 
         while (rs.next()) {
             Currency currency = new Currency();
@@ -101,5 +105,8 @@ public class CurrencyManager {
             currency.setLastRateUpdate(TntDb.timestampToDate(rs.getTimestamp("LastRateUpdate")));
             values.add(currency);
         }
+
+        if (log.isTraceEnabled())
+            log.trace(TntDb.getResultSetString(rs));
     }
 }

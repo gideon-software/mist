@@ -20,11 +20,6 @@
 
 package com.gideonsoftware.mist.controllers;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.SQLException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.util.Util;
@@ -88,25 +83,6 @@ public class MainMenuController {
                 //
                 // Test stuff goes here
                 //
-
-                // Load SQL
-                Path sqlFile = Path.of("devel\\test.sql");
-                String sqlStr = "";
-                try {
-                    sqlStr = Files.readString(sqlFile);
-                } catch (IOException e) {
-                    log.error(e);
-                }
-
-                // Try inserting SQL
-                try {
-                    TntDb.startImportService(); // Connects, etc.
-                    TntDb.runQuery(sqlStr);
-                    TntDb.stopImportService(); // Disconnects?
-                } catch (SQLException e) {
-                    log.error(e);
-                }
-
             }
         };
 

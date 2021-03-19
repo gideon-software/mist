@@ -22,6 +22,7 @@ package com.gideonsoftware.mist.tntapi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -67,7 +68,10 @@ public class PledgeFrequencyManager {
     public static void load() throws SQLException {
         log.trace("load()");
 
-        ResultSet rs = TntDb.runQuery("SELECT * FROM [PledgeFrequency]", false);
+        Statement stmt = TntDb.getConnection().createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        ResultSet rs = stmt.executeQuery("SELECT * FROM [PledgeFrequency]");
 
         while (rs.next()) {
             PledgeFrequency pf = new PledgeFrequency();

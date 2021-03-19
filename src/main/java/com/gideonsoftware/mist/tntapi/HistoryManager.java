@@ -20,6 +20,7 @@
 
 package com.gideonsoftware.mist.tntapi;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -55,12 +56,16 @@ public class HistoryManager {
         if (history == null || historyId == null)
             return false;
 
-        String query = String.format(
-            "SELECT * FROM [History] JOIN [HistoryContact] "
-                + "ON ([History].[HistoryID] = [HistoryContact].[HistoryID]) "
-                + "WHERE [HistoryID] = %s",
-            historyId);
-        ResultSet rs = TntDb.runQuery(query);
+        String query = "SELECT * FROM [History] JOIN [HistoryContact] "
+            + "ON ([History].[HistoryID] = [HistoryContact].[HistoryID]) "
+            + "WHERE [HistoryID] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(
+            query,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        stmt.setInt(1, historyId);
+        ResultSet rs = stmt.executeQuery();
+
         if (!rs.first())
             return false;
 
@@ -144,38 +149,41 @@ public class HistoryManager {
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
         // History
-        String[][] historyColValuePairs = {
-            { "HistoryID", TntDb.formatDbInt(history.getHistoryId()) },
-            { "LastEdit", TntDb.formatDbDate(history.getLastEdit()) },
-            { "CampaignID", TntDb.formatDbInt(history.getCampaignId()) },
-            { "TaskTypeID", TntDb.formatDbInt(history.getTaskTypeId()) },
-            { "Description", TntDb.formatDbString(history.getDescription(), 150) },
-            { "HistoryDate", TntDb.formatDbDate(historyDate) },
-            { "Notes", TntDb.formatDbString(history.getNotes()) },
-            { "LoggedByUserID", TntDb.formatDbInt(history.getLoggedByUserId()) },
-            { "InMPDWeeklyUpdate", TntDb.formatDbBoolean(history.isInMpdWeeklyUpdate()) },
-            { "IsChallenge", TntDb.formatDbBoolean(history.isChallenge()) },
-            { "IsThank", TntDb.formatDbBoolean(history.isThank()) },
-            { "IsMassMailing", TntDb.formatDbBoolean(history.isMassMailing()) },
-            { "AutoGenCode", TntDb.formatDbString(history.getAutoGenCode(), 50) },
-            { "HistoryResultID", TntDb.formatDbInt(history.getHistoryResultId()) },
-            { "DataChangeLogAsCsv", TntDb.formatDbString(history.getDataChangeLogAsCsv()) },
-            { "PledgeChangeAmount", TntDb.formatDbCurrency(history.getPledgeChangeAmount()) },
-            { "PledgeChangeCurrencyID", TntDb.formatDbInt(history.getPledgeChangeCurrencyId()) },
-            { "BasePledgeChangeAmount", TntDb.formatDbCurrency(history.getBasePledgeChangeAmount()) },
-            { "BaseCurrencyID", TntDb.formatDbInt(history.getBaseCurrencyId()) } };
+        Object[][] historyColValuePairs = {
+            { "HistoryID", history.getHistoryId(), java.sql.Types.INTEGER },
+            { "LastEdit", history.getLastEdit(), java.sql.Types.TIMESTAMP },
+            { "CampaignID", history.getCampaignId(), java.sql.Types.INTEGER },
+            { "TaskTypeID", history.getTaskTypeId(), java.sql.Types.INTEGER },
+            { "Description", history.getDescription(), java.sql.Types.VARCHAR, 150 },
+            { "HistoryDate", historyDate, java.sql.Types.TIMESTAMP },
+            { "Notes", history.getNotes(), java.sql.Types.VARCHAR },
+            { "LoggedByUserID", history.getLoggedByUserId(), java.sql.Types.INTEGER },
+            { "InMPDWeeklyUpdate", history.isInMpdWeeklyUpdate(), java.sql.Types.BOOLEAN },
+            { "IsChallenge", history.isChallenge(), java.sql.Types.BOOLEAN },
+            { "IsThank", history.isThank(), java.sql.Types.BOOLEAN },
+            { "IsMassMailing", history.isMassMailing(), java.sql.Types.BOOLEAN },
+            { "AutoGenCode", history.getAutoGenCode(), java.sql.Types.VARCHAR, 50 },
+            { "HistoryResultID", history.getHistoryResultId(), java.sql.Types.INTEGER },
+            { "DataChangeLogAsCsv", history.getDataChangeLogAsCsv(), java.sql.Types.VARCHAR },
+            { "PledgeChangeAmount", TntDb.formatDbCurrency(history.getPledgeChangeAmount()), java.sql.Types.VARCHAR },
+            { "PledgeChangeCurrencyID", history.getPledgeChangeCurrencyId(), java.sql.Types.INTEGER },
+            {
+                "BasePledgeChangeAmount",
+                TntDb.formatDbCurrency(history.getBasePledgeChangeAmount()),
+                java.sql.Types.VARCHAR },
+            { "BaseCurrencyID", history.getBaseCurrencyId(), java.sql.Types.INTEGER } };
 
         // HistoryContact
-        String[][] historyContactColValuePairs = {
-            { "HistoryContactID", TntDb.formatDbInt(TntDb.getAvailableId(TntDb.TABLE_HISTORYCONTACT)) },
-            { "LastEdit", TntDb.formatDbDate(now) },
-            { "HistoryID", TntDb.formatDbInt(history.getHistoryId()) },
-            { "ContactID", TntDb.formatDbInt(history.getContactInfo().getId()) } };
+        Object[][] historyContactColValuePairs = {
+            { "HistoryContactID", TntDb.getAvailableId(TntDb.TABLE_HISTORYCONTACT), java.sql.Types.INTEGER },
+            { "LastEdit", now, java.sql.Types.TIMESTAMP },
+            { "HistoryID", history.getHistoryId(), java.sql.Types.INTEGER },
+            { "ContactID", history.getContactInfo().getId(), java.sql.Types.INTEGER } };
 
         // Run queries
         try {
-            TntDb.runQuery(TntDb.createInsertQuery(TntDb.TABLE_HISTORY, historyColValuePairs));
-            TntDb.runQuery(TntDb.createInsertQuery(TntDb.TABLE_HISTORYCONTACT, historyContactColValuePairs));
+            TntDb.insert(TntDb.TABLE_HISTORY, historyColValuePairs);
+            TntDb.insert(TntDb.TABLE_HISTORYCONTACT, historyContactColValuePairs);
 
             switch (history.getTaskTypeId()) {
                 case TaskType.APPOINTMENT:
@@ -231,19 +239,27 @@ public class HistoryManager {
     public static History get(int contactId, int taskType, LocalDateTime date, int result) throws SQLException {
         log.trace("get({},{},{},{})", contactId, taskType, date, result);
 
-        String query = String.format(
-            "SELECT [History].[HistoryID] FROM [History], [HistoryContact] WHERE "
-                + "[HistoryContact].[ContactID] = %s AND "
-                + "[History].[TaskTypeID] = %s AND "
-                + "[History].[HistoryDate] = %s AND "
-                + "[History].[HistoryResultID] = %s AND "
-                + "[HistoryContact].[HistoryID] = [History].[HistoryID]",
-            contactId,
-            taskType,
-            TntDb.formatDbDate(date),
-            result);
+        String query = "SELECT [History].[HistoryID] FROM [History], [HistoryContact] WHERE "
+            + "[HistoryContact].[ContactID] = ? AND "
+            + "[History].[TaskTypeID] = ? AND "
+            + "[History].[HistoryDate] = ? AND "
+            + "[History].[HistoryResultID] = ? AND "
+            + "[HistoryContact].[HistoryID] = [History].[HistoryID]";
 
-        ResultSet rs = TntDb.runQuery(query);
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(
+            query,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        stmt.setInt(1, contactId);
+        stmt.setInt(2, taskType);
+        stmt.setObject(3, date);
+        stmt.setInt(4, result);
+        ResultSet rs = stmt.executeQuery();
+
+        // Log result if tracing
+        if (log.isTraceEnabled())
+            log.trace(TntDb.getResultSetString(rs));
+
         if (rs.first())
             return get(rs.getInt("HistoryID"));
         else
@@ -281,9 +297,9 @@ public class HistoryManager {
      */
     public static LocalDateTime getLastEditDate(int historyId) throws SQLException {
         log.trace("getLastEditDate({})", historyId);
-        String query = String.format("SELECT [LastEdit] FROM [History] WHERE [HistoryId] = %s", historyId);
+
         try {
-            return TntDb.getOneDate(query);
+            return TntDb.getOneDate("SELECT [LastEdit] FROM [History] WHERE [HistoryId] = ?", historyId);
         } catch (TntDbException e) {
             log.error(e); // Nothing useful can be done in this case
             return null;
@@ -305,11 +321,12 @@ public class HistoryManager {
     public static void updateDescription(int historyId, String description) throws SQLException {
         log.trace("updateDescription({},{})", historyId, description);
 
-        String query = String.format(
-            "UPDATE [History] SET [Description] = %s WHERE [HistoryId] = %s",
-            TntDb.formatDbString(description, 150),
-            historyId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [History] SET [Description] = ? WHERE [HistoryId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setString(1, description);
+        stmt.setInt(2, historyId);
+        stmt.executeUpdate();
+
         updateLastEdit(historyId);
 
         TntDb.commit();
@@ -330,11 +347,12 @@ public class HistoryManager {
     public static void updateIsChallenge(int historyId, boolean isChallenge) throws SQLException {
         log.trace("updateIsChallenge({},{})", historyId, isChallenge);
 
-        String query = String.format(
-            "UPDATE [History] SET [IsChallenge] = %s WHERE [HistoryId] = %s",
-            isChallenge ? -1 : 0, // true = -1
-            historyId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [History] SET [IsChallenge] = ? WHERE [HistoryId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setBoolean(1, isChallenge);
+        stmt.setInt(2, historyId);
+        stmt.executeUpdate();
+
         updateLastEdit(historyId);
 
         // Also update Contact's LastChallenge if needed
@@ -360,14 +378,15 @@ public class HistoryManager {
      * @throws SQLException
      *             if there is a database access problem
      */
-    public static void updateIsMassMailing(int historyId, boolean isThank) throws SQLException {
-        log.trace("updateIsMassMailing({},{})", historyId, isThank);
+    public static void updateIsMassMailing(int historyId, boolean isMassMailing) throws SQLException {
+        log.trace("updateIsMassMailing({},{})", historyId, isMassMailing);
 
-        String query = String.format(
-            "UPDATE [History] SET [IsMassMailing] = %s WHERE [HistoryId] = %s",
-            isThank ? -1 : 0, // true = -1
-            historyId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [History] SET [IsMassMailing] = ? WHERE [HistoryId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setBoolean(1, isMassMailing);
+        stmt.setInt(2, historyId);
+        stmt.executeUpdate();
+
         updateLastEdit(historyId);
 
         // Mass Mailing affects a lot of history data, so recalculate
@@ -393,11 +412,12 @@ public class HistoryManager {
     public static void updateIsThank(int historyId, boolean isThank) throws SQLException {
         log.trace("updateIsThank({},{})", historyId, isThank);
 
-        String query = String.format(
-            "UPDATE [History] SET [IsThank] = %s WHERE [HistoryId] = %s",
-            isThank ? -1 : 0, // true = -1
-            historyId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [History] SET [IsThank] = ? WHERE [HistoryId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setBoolean(1, isThank);
+        stmt.setInt(2, historyId);
+        stmt.executeUpdate();
+
         updateLastEdit(historyId);
 
         // Also update Contact's LastThank if needed
@@ -438,11 +458,12 @@ public class HistoryManager {
     public static void updateNotes(int historyId, String notes) throws SQLException {
         log.trace("updateNotes({},{})", historyId, notes);
 
-        String query = String.format(
-            "UPDATE [History] SET [Notes] = %s WHERE [HistoryId] = %s",
-            TntDb.formatDbString(notes),
-            historyId);
-        TntDb.runQuery(query);
+        String query = "UPDATE [History] SET [Notes] = ? WHERE [HistoryId] = ?";
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(query);
+        stmt.setString(1, notes);
+        stmt.setInt(2, historyId);
+        stmt.executeUpdate();
+
         updateLastEdit(historyId);
 
         TntDb.commit();

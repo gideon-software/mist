@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -122,17 +123,6 @@ public class TntDbTest {
     }
 
     /**
-     * Tests creating insertion query from 2D String array
-     */
-    @Test
-    public void createInsertQuery() {
-        String tableName = "MyTableName";
-        String[][] colValuePairs = { { "Col1", "'Value1'" }, { "Col2", "'Value2'" }, { "Col3", "'Value3'" } };
-        String expected = "INSERT INTO [MyTableName] ([Col1],[Col2],[Col3]) VALUES ('Value1','Value2','Value3')";
-        assertEquals(expected, TntDb.createInsertQuery(tableName, colValuePairs));
-    }
-
-    /**
      * Tests converting float to money
      */
     @Test
@@ -149,15 +139,6 @@ public class TntDbTest {
             FastMoney.of(10.12, "USD") };
         for (int i = 0; i < expected.length; i++)
             assertEquals(String.valueOf(expected[i]), TntDb.floatToMoney(input[i]).toString());
-    }
-
-    /**
-     * Tests formatting DB booleans
-     */
-    @Test
-    public void formatDbBoolean() {
-        assertEquals("-1", TntDb.formatDbBoolean(true));
-        assertEquals("0", TntDb.formatDbBoolean(false));
     }
 
     /**
@@ -191,41 +172,6 @@ public class TntDbTest {
         date = LocalDateTime.of(2007, 11, 6, 15, 27, 21);
         assertEquals("#2007-11-06 15:27:21#", TntDb.formatDbDate(date));
         assertEquals("#2007-11-06#", TntDb.formatDbDateNoTime(date));
-    }
-
-    /**
-     * Tests formatting DB ints
-     */
-    @Test
-    public void formatDbInt() {
-        Integer[] input = { null, 0, 10, 100000 };
-        String[] expected = { "NULL", "0", "10", "100000" };
-        for (int i = 0; i < expected.length; i++)
-            assertEquals(expected[i], TntDb.formatDbInt(input[i]));
-    }
-
-    /**
-     * Tests formatting DB strings
-     */
-    @Test
-    public void formatDbString() {
-        String[][] tests = {
-            { "", "''" },
-            { null, "NULL" },
-            { "test", "'test'" },
-            { "'test'", "'''test'''" },
-            { "What''s up?", "'What''''s up?'" } };
-        for (int i = 0; i < tests.length; i++)
-            assertEquals(tests[i][1], TntDb.formatDbString(tests[i][0]));
-
-        String[][] testsMaxLen = {
-            { "", "''" },
-            { null, "NULL" },
-            { "test", "'test'" },
-            { "'test'", "'''test'" },
-            { "What''s up?", "'What'''" } };
-        for (int i = 0; i < testsMaxLen.length; i++)
-            assertEquals(testsMaxLen[i][1], TntDb.formatDbString(testsMaxLen[i][0], 6));
     }
 
     /**
@@ -269,7 +215,7 @@ public class TntDbTest {
     public void getOneX_MultipleValues() throws TntDbException, SQLException {
         assertEquals(null, ContactManager.getFileAs(0)); // Verify initial state
         try {
-            TntDb.getOneX("SELECT [ContactID] FROM [Contact] WHERE [ContactID] > 0", TntDb.TYPE_INT);
+            TntDb.getOneX("SELECT [ContactID] FROM [Contact] WHERE [ContactID] > ?", 0, TntDb.TYPE_INT);
             fail("Can't get 'one' when multiple values exist");
         } catch (TntDbException e) {
         }
@@ -281,7 +227,7 @@ public class TntDbTest {
     @Test
     public void getOneX_NoValues() throws TntDbException, SQLException {
         assertEquals(null, ContactManager.getFileAs(0)); // Verify initial state
-        Object obj = TntDb.getOneX("SELECT [ContactID] FROM [Contact] WHERE [ContactID] = 0", TntDb.TYPE_INT);
+        Object obj = TntDb.getOneX("SELECT [ContactID] FROM [Contact] WHERE [ContactID] = ?", 0, TntDb.TYPE_INT);
         assertEquals(null, obj);
     }
 
@@ -293,51 +239,44 @@ public class TntDbTest {
         Object obj = null;
 
         // Null values
-        assertEquals(null, TntDb.getOneX(null, null));
-        assertEquals(null, TntDb.getOneX(null, TntDb.TYPE_INT));
-        assertEquals(null, TntDb.getOneX("SELECT * FROM [Contact] LIMIT 1", null));
+        assertEquals(null, TntDb.getOneX(null, 0, null));
+        assertEquals(null, TntDb.getOneX(null, 0, TntDb.TYPE_INT));
+        assertEquals(null, TntDb.getOneX("SELECT * FROM [Contact] LIMIT 1", 0, null));
 
         // Integer
-        String intQueryStr = String.format(
-            "SELECT [HistoryID] FROM [History] WHERE [HistoryID] = %s",
-            BAMBIDEER_HISTORYID);
-        obj = TntDb.getOneX(intQueryStr, TntDb.TYPE_INT);
+        String intQueryStr = "SELECT [HistoryID] FROM [History] WHERE [HistoryID] = ?";
+        obj = TntDb.getOneX(intQueryStr, BAMBIDEER_HISTORYID, TntDb.TYPE_INT);
         assertEquals(true, obj instanceof Integer);
         assertEquals(BAMBIDEER_HISTORYID, obj);
 
-        Integer intResult = TntDb.getOneInt(intQueryStr);
+        Integer intResult = TntDb.getOneInt(intQueryStr, BAMBIDEER_HISTORYID);
         assertEquals(BAMBIDEER_HISTORYID, intResult);
-        assertEquals(null, TntDb.getOneInt(null));
+        assertEquals(null, TntDb.getOneInt(null, BAMBIDEER_HISTORYID));
 
         // Date
-        String dateQueryStr = String.format(
-            "SELECT [HistoryDate] FROM [History] WHERE [HistoryID] = %s",
-            BAMBIDEER_HISTORYID);
-        obj = TntDb.getOneX(dateQueryStr, TntDb.TYPE_DATE);
+        String dateQueryStr = "SELECT [HistoryDate] FROM [History] WHERE [HistoryID] = ?";
+        obj = TntDb.getOneX(dateQueryStr, BAMBIDEER_HISTORYID, TntDb.TYPE_DATE);
         assertEquals(true, obj instanceof LocalDateTime);
         assertEquals(BAMBIDEER_HISTORY_DATE_STR, TntDb.formatDbDate((LocalDateTime) obj));
 
-        LocalDateTime dateResult = TntDb.getOneDate(dateQueryStr);
+        LocalDateTime dateResult = TntDb.getOneDate(dateQueryStr, BAMBIDEER_HISTORYID);
         assertEquals(BAMBIDEER_HISTORY_DATE_STR, TntDb.formatDbDate(dateResult));
-        assertEquals(null, TntDb.getOneDate(null));
+        assertEquals(null, TntDb.getOneDate(null, BAMBIDEER_HISTORYID));
 
         // String
-        String strQueryStr = String.format(
-            "SELECT [Description] FROM [History] WHERE [HistoryID] = %s",
-            BAMBIDEER_HISTORYID);
-        obj = TntDb.getOneX(strQueryStr, TntDb.TYPE_STRING);
+        String strQueryStr = "SELECT [Description] FROM [History] WHERE [HistoryID] = ?";
+        obj = TntDb.getOneX(strQueryStr, BAMBIDEER_HISTORYID, TntDb.TYPE_STRING);
         assertEquals(true, obj instanceof String);
         assertEquals(BAMBIDEER_HISTORY_SUBJECT, obj);
 
-        String strResult = TntDb.getOneString(strQueryStr);
+        String strResult = TntDb.getOneString(strQueryStr, BAMBIDEER_HISTORYID);
         assertEquals(BAMBIDEER_HISTORY_SUBJECT, strResult);
-        assertEquals(null, TntDb.getOneString(null));
+        assertEquals(null, TntDb.getOneString(null, BAMBIDEER_HISTORYID));
 
         // Multiple columns is also allowed, but only first column's value is returned
         obj = TntDb.getOneX(
-            String.format(
-                "SELECT [Description], [LastEdit] FROM [History] WHERE [HistoryID] = %s",
-                BAMBIDEER_HISTORYID),
+            "SELECT [Description], [LastEdit] FROM [History] WHERE [HistoryID] = ?",
+            BAMBIDEER_HISTORYID,
             TntDb.TYPE_STRING);
         assertEquals(true, obj instanceof String);
         assertEquals(BAMBIDEER_HISTORY_SUBJECT, obj);
@@ -348,13 +287,16 @@ public class TntDbTest {
      */
     @Test
     public void getRowCount() throws SQLException, TntDbException {
-        ResultSet rs = null;
-        rs = TntDb.runQuery("SELECT * FROM [Contact] WHERE [FileAs] LIKE 'Nobody'");
-        assertEquals(0, TntDb.getRowCount(rs));
-        rs = TntDb.runQuery("SELECT * FROM [Contact] WHERE [FileAs] LIKE 'Kent%'");
-        assertEquals(1, TntDb.getRowCount(rs)); // Clark & Lois
-        rs = TntDb.runQuery("SELECT * FROM [Contact] WHERE [FileAs] LIKE 'Bear%'");
-        assertEquals(2, TntDb.getRowCount(rs)); // Yogi, Baloo & Balinda
+        PreparedStatement stmt = TntDb.getConnection().prepareStatement(
+            "SELECT * FROM [Contact] WHERE [FileAs] LIKE ?",
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY);
+        stmt.setString(1, "Nobody");
+        assertEquals(0, TntDb.getRowCount(stmt.executeQuery()));
+        stmt.setString(1, "Kent%");
+        assertEquals(1, TntDb.getRowCount(stmt.executeQuery())); // Clark & Lois
+        stmt.setString(1, "Bear%");
+        assertEquals(2, TntDb.getRowCount(stmt.executeQuery())); // Yogi, Baloo & Balinda
     }
 
     /**
@@ -362,11 +304,22 @@ public class TntDbTest {
      */
     @Test
     public void getRSInteger() throws TntDbException, SQLException {
-        ResultSet rs = TntDb.runQuery("SELECT * FROM [Contact] WHERE [ContactID] = " + BAMBIDEER_CONTACTID);
+        ResultSet rs = TntDb.getConnection().createStatement().executeQuery(
+            "SELECT * FROM [Contact] WHERE [ContactID] = " + BAMBIDEER_CONTACTID);
         rs.next();
         assertEquals(Integer.valueOf(272072119), TntDb.getRSInteger(rs, "ContactID"));
         assertEquals(Integer.valueOf(840), TntDb.getRSInteger(rs, "HomeCountryID"));
         assertEquals(null, TntDb.getRSInteger(rs, "AnniversaryYear"));
+    }
+
+    /**
+     * Tests insert from 2D String array
+     */
+    @Test
+    public void insert() {
+        // String tableName = "MyTableName";
+        // String[][] colValuePairs = { { "Col1", "'Value1'" }, { "Col2", "'Value2'" }, { "Col3", "'Value3'" } };
+        // TODO
     }
 
     /**
@@ -384,12 +337,12 @@ public class TntDbTest {
     @Test
     public void updateTableLastEdit() throws SQLException, TntDbException {
         LocalDateTime prevDate = TntDb.getOneDate(
-            String.format("SELECT [LastEdit] FROM [Contact] WHERE [ContactID] = %s", BAMBIDEER_CONTACTID));
+            "SELECT [LastEdit] FROM [Contact] WHERE [ContactID] = ?",
+            BAMBIDEER_CONTACTID);
         TntDb.updateTableLastEdit("Contact", BAMBIDEER_CONTACTID);
         LocalDateTime newDate = TntDb.getOneDate(
-            String.format("SELECT [LastEdit] FROM [Contact] WHERE [ContactID] = %s", BAMBIDEER_CONTACTID));
-        System.out.println(prevDate);
-        System.out.println(newDate);
+            "SELECT [LastEdit] FROM [Contact] WHERE [ContactID] = ?",
+            BAMBIDEER_CONTACTID);
         assertTrue(newDate.compareTo(prevDate) > 0); // New date is newer than prev date
         assertTrue(newDate.plusMinutes(1).compareTo(LocalDateTime.now()) > 0); // A minute later is in the future
     }

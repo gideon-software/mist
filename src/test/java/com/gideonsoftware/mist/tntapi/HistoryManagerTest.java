@@ -170,7 +170,7 @@ public class HistoryManagerTest {
     }
 
     /**
-     * Tests adding history with a long (100+ char) description
+     * Tests adding history with long (100+ char) descriptions
      */
     @Test
     public void addHistoryLongDescription() throws TntDbException, SQLException {
@@ -181,6 +181,15 @@ public class HistoryManagerTest {
         assertEquals(History.STATUS_ADDED, history.getStatus());
         History addedHistoryLongStr1 = HistoryManager.get(history.getHistoryId());
         assertEquals(history.getDescription().substring(0, 150), addedHistoryLongStr1.getDescription());
+        TntDb.rollback();
+
+        history = new History(MRINCREDIBLE_HISTORY);
+        String quoteStr = StringUtils.repeat("'", 151);
+        history.setDescription(quoteStr);
+        HistoryManager.create(history);
+        assertEquals(History.STATUS_ADDED, history.getStatus());
+        History addedHistoryQuoteStr = HistoryManager.get(history.getHistoryId());
+        assertEquals(history.getDescription().substring(0, 150), addedHistoryQuoteStr.getDescription());
         TntDb.rollback();
 
         history = new History(MRINCREDIBLE_HISTORY);
@@ -222,13 +231,23 @@ public class HistoryManagerTest {
      */
     @Test
     public void addHistoryNewLines() throws TntDbException, SQLException {
-        History history = new History(MRINCREDIBLE_HISTORY);
         String nl = System.lineSeparator();
-        String nlStr = "Let's see if" + nl + "newline characters" + nl + nl + "work correctly.";
+        String nlStr = "Let's see if" + nl + "newline characters" + nl + nl + "work correctly." + nl;
+
+        History history = new History(MRINCREDIBLE_HISTORY);
         history.setNotes(nlStr);
         HistoryManager.create(history);
         History addedHistoryNLs = HistoryManager.get(history.getHistoryId());
         assertEquals(history.getNotes(), addedHistoryNLs.getNotes());
+        TntDb.rollback();
+
+        history = new History(MRINCREDIBLE_HISTORY);
+        String nlStrLong = StringUtils.repeat(nlStr, 1000);
+        history.setNotes(nlStrLong);
+        HistoryManager.create(history);
+        addedHistoryNLs = HistoryManager.get(history.getHistoryId());
+        assertEquals(history.getNotes(), addedHistoryNLs.getNotes());
+        TntDb.rollback();
     }
 
     /**
