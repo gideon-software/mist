@@ -348,4 +348,19 @@ if (operatingSystem.isWindows()) {
     }
 
     createBundle.finalizedBy innoSetup
+    
+} else if (operatingSystem.isLinux()) {
+
+    task renameDeb (type: Copy) {
+        from "$bundlePath"
+        into "$bundlePath"
+        rename '(.+)-.+','$1-linux.deb'
+    }
+    
+    task removeOldDeb (type: Delete) {
+    	delete fileTree("$bundlePath").matching { include "*-1*.*" }
+    }
+    
+    createBundle.finalizedBy renameDeb, removeOldDeb
+    
 }
