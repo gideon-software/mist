@@ -348,6 +348,20 @@ if (operatingSystem.isWindows()) {
     }
 
     createBundle.finalizedBy innoSetup
+
+} else if (operatingSystem.isMacOsX()) {
+
+    task renameDmg (type: Copy) {
+        from "$bundlePath"
+        into "$bundlePath"
+        rename '(.+)\\..+','$1-macos.dmg'
+    }
+    
+    task removeOldDmg (type: Delete) {
+    	delete fileTree("$bundlePath").matching { exclude "*macos.*" }
+    }
+    
+    createBundle.finalizedBy renameDmg, removeOldDmg
     
 } else if (operatingSystem.isLinux()) {
 
