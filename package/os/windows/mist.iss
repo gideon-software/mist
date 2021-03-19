@@ -19,6 +19,7 @@ DefaultGroupName={#AppName}
 SourceDir=..\..\..
 OutputDir=build\bundle
 OutputBaseFilename={#AppName}-{#AppVersion}-{#AppDist}-setup
+UninstallDisplayIcon={app}\mist.ico
 AllowNoIcons=no
 
 [Tasks]
