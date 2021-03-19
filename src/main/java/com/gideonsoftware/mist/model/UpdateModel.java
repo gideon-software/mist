@@ -85,10 +85,10 @@ public class UpdateModel {
         log.trace("checkForUpdate()");
 
         // Don't need to check during development!
-//        if (MIST.isDevel()) {
-//            log.debug("Skipping check for new version because MIST is in devel mode");
-//            return;
-//        }
+        if (MIST.isDevel()) {
+            log.debug("Skipping check for new version because MIST is in devel mode");
+            return;
+        }
 
         pcs.firePropertyChange(PROP_STATUS_CHECKING, false, true);
 
