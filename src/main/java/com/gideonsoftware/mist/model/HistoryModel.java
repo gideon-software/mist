@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +41,9 @@ import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 import com.gideonsoftware.mist.util.Util;
+
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 public class HistoryModel {
     private static Logger log = LogManager.getLogger();

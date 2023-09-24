@@ -78,10 +78,10 @@ public class MIST {
     public final static String APP_NAME = "MIST";
     public final static String COMPANY_NAME = "Gideon Software";
     public final static String COMPANY_NAME_NO_SPACES = "GideonSoftware";
-    public final static String HOMEPAGE = "https://www.gideonsoftware.com";
-    public final static String EMAIL_SUPPORT = "mist4tnt@gmail.com";
+    public final static String HOMEPAGE = "https://www.gideonsoftware.com/mist";
+    public final static String EMAIL_SUPPORT = "gideonsoftwaresolutions@gmail.com";
     public final static String FACEBOOK = "http://www.facebook.com/MIST4Tnt";
-    public final static String UPDATE_URL = "https://script.google.com/macros/s/AKfycbyHtfo3lysRu8f7PkmtUhNlD_HHuVqsg2_XC-7up23XlYgIZO7U/exec";
+    public final static String UPDATE_URL = "https://script.google.com/macros/s/AKfycbwkxT5ga-qwVbuzKUOklQByqYG4Oip-9nOR7xWIJfIIWE2VWvWb07UY2yIb6B6GfbqmOw/exec";
 
     public final static String REGEX_EMAILADDRESS = "([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)";
 

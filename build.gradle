@@ -11,13 +11,15 @@ plugins {
     id 'eclipse'
 
     // https://imperceptiblethoughts.com/shadow/
-    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     
-    id 'com.github.spotbugs' version '4.2.2'
+    id 'com.github.spotbugs' version '6.0.0-beta.3'
 }
 
-sourceCompatibility = JavaVersion.VERSION_15
-targetCompatibility = JavaVersion.VERSION_15
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 tasks.withType(JavaCompile) {
     options.compilerArgs += '--enable-preview'
@@ -29,14 +31,14 @@ tasks.withType(JavaExec) {
     jvmArgs += '--enable-preview'
 }
 
-wrapper.gradleVersion = '6.5'
+wrapper.gradleVersion = '8.3'
 
 import org.gradle.internal.os.OperatingSystem
 
 ext {
     mainClass = 'com.gideonsoftware.mist.MIST';
-    swtVersion = "4.15"
-    shadowJar.classifier = "fat"
+    swtVersion = "4.29"
+    shadowJar.archiveClassifier.set("fat")
 
     mistLibraryPath = file("${buildDir}/libs")
     shadowJarPath   = file("${mistLibraryPath}/" + shadowJar.archiveFileName.get())
@@ -81,15 +83,15 @@ jar {
 dependencies {
     // Logging
     // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.20.0'
 
     // Command line option processing
     // https://mvnrepository.com/artifact/net.sf.jopt-simple/jopt-simple
-    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.5'
+    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '5.0.4'
 
     // IMAP server access & Gmail server response parsing functions
-    // https://mvnrepository.com/artifact/com.sun.mail/javax.mail
-    implementation group: 'com.sun.mail', name: 'javax.mail', version: '1.6.2' 
+    // https://mvnrepository.com/artifact/com.sun.mail/jakarta.mail
+    implementation group: 'com.sun.mail', name: 'jakarta.mail', version: '2.0.1'
 
     // Google (Gmail) authentication    
     implementation group: 'com.google.apis', name: 'google-api-services-oauth2', version: 'v2-rev20190313-1.30.1'
@@ -100,12 +102,12 @@ dependencies {
     implementation group: 'com.google.apis', name: 'google-api-services-gmail', version: 'v1-rev20200504-1.30.9'
     
     // For HTTP requests (as in UpdateModel)
-    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
-    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.12'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5
+    implementation group: 'org.apache.httpcomponents.client5', name: 'httpclient5', version: '5.2.1'
     
     // For JSON parsing (as in UpdateModel) 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.15.2'
     
     // HTML email parsing
     // https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
@@ -117,19 +119,20 @@ dependencies {
 
     // Money type
     // https://mvnrepository.com/artifact/org.javamoney.moneta/moneta-core
-    implementation group: 'org.javamoney.moneta', name: 'moneta-core', version: '1.4'
+    implementation group: 'org.javamoney.moneta', name: 'moneta-core', version: '1.4.2'
 
-    // SWT/JFace UI; note that SWT is platform-specific and is stored locally    
+    // SWT/JFace UI; note that SWT is platform-specific and is stored locally
     // https://mvnrepository.com/artifact/org.eclipse.platform/org.eclipse.jface
-    implementation (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.19.0') {
+    implementation (group: 'org.eclipse.platform', name: 'org.eclipse.jface', version: '3.31.0') {
         exclude group:'org.eclipse.platform', module: 'org.eclipse.swt'
     }
     implementation files("lib/swt/${swtOs}/swt-${swtVersion}.jar")
 
     // https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations
-    implementation group: 'com.github.spotbugs', name: 'spotbugs-annotations', version: '4.0.3'
+    implementation group: 'com.github.spotbugs', name: 'spotbugs-annotations', version: '4.7.3'
     
-    testImplementation group: 'junit', name: 'junit', version: '4.13'
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
 }
 
 eclipse {
@@ -157,6 +160,9 @@ eclipse {
 //    reportLevel = "low"
 //}
 
+project.gradle.startParameter.excludedTaskNames.add(":spotbugsMain")
+project.gradle.startParameter.excludedTaskNames.add(":spotbugsTest")
+
 // Pro tip: If this task is failing, it could be due to an old gradle daemon.
 // Try shutting down that daemon and a new (working) one will be created. 
 task jdepsReport() {
@@ -181,10 +187,10 @@ task jdepsReport() {
             result = exec {
                 workingDir "${buildDir}"
     
-                // jdeps --multi-release 15 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
+                // jdeps --multi-release 17 --ignore-missing-deps --print-module-deps -cp libs <fat MIST jar>
                 executable = "${javaHome}/bin/jdeps"
                 args = [
-                    '--multi-release', '15',
+                    '--multi-release', '17',
                     '--ignore-missing-deps',
                     '--print-module-deps',
                     "-cp", "${mistLibraryPath}", 
@@ -222,6 +228,7 @@ task javaRuntime() {
                 // trying compress=0 for speed and avoiding this bug: https://bugs.openjdk.java.net/browse/JDK-8254920
                 '--compress=0', 
                 '--strip-debug',
+                '--module-path', "${javaHome}/jmods",
                 '--add-modules', moduleList]
         }
     }

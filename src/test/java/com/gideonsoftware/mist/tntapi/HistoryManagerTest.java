@@ -20,26 +20,24 @@
 
 package com.gideonsoftware.mist.tntapi;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 
-@RunWith(JUnit4.class)
+//@RunWith(JUnit4.class)
 public class HistoryManagerTest {
     // private static Logger log;
 
@@ -92,14 +90,14 @@ public class HistoryManagerTest {
         DONALDDUCK_CONTACTID = Integer.valueOf(608241759);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         MIST.configureLogging(HistoryManager.class);
         TntDbTest.setupTntDb();
         createTestData();
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         TntDbTest.teardownTntDb();
     }
@@ -294,7 +292,7 @@ public class HistoryManagerTest {
         assertEquals(BAMBIDEER_CONTACTID, history.getContactInfo().getId());
     }
 
-    @After
+    @AfterEach
     public void rollback() throws TntDbException {
         TntDb.rollback();
     }

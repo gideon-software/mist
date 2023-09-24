@@ -20,19 +20,17 @@
 
 package com.gideonsoftware.mist.tntapi;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
@@ -41,7 +39,7 @@ import com.gideonsoftware.mist.tntapi.entities.ContactInfo;
 import com.gideonsoftware.mist.tntapi.entities.History;
 import com.gideonsoftware.mist.tntapi.entities.TaskType;
 
-@RunWith(JUnit4.class)
+//@RunWith(JUnit5.class)
 public class ContactManagerTest {
     // private static Logger log;
 
@@ -152,14 +150,14 @@ public class ContactManagerTest {
         NONEXISTENT_CONTACTID = Integer.valueOf(2);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         MIST.configureLogging(ContactManager.class);
         TntDbTest.setupTntDb();
         createTestData();
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         TntDbTest.teardownTntDb();
     }
@@ -722,7 +720,7 @@ public class ContactManagerTest {
         assertEquals(null, ContactManager.getLastPreCallDate(GEORGEJETSON_CONTACTID));
     }
 
-    @After
+    @AfterEach
     public void rollback() throws TntDbException {
         TntDb.rollback();
     }

@@ -23,9 +23,6 @@ package com.gideonsoftware.mist.wizards.newemailaccount;
 import static com.gideonsoftware.mist.util.ui.GridDataUtil.applyGridData;
 import static com.gideonsoftware.mist.util.ui.GridLayoutUtil.applyGridLayout;
 
-import javax.mail.Folder;
-import javax.mail.MessagingException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -46,6 +43,9 @@ import com.gideonsoftware.mist.util.ui.Images;
 import com.gideonsoftware.mist.util.ui.SmartCombo;
 import com.gideonsoftware.mist.util.ui.SmartWizardPage;
 import com.gideonsoftware.mist.util.ui.ViewUtil;
+
+import jakarta.mail.Folder;
+import jakarta.mail.MessagingException;
 
 public class ImapAccountFolderPage extends SmartWizardPage {
     private static Logger log = LogManager.getLogger();

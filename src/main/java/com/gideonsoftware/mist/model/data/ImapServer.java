@@ -22,18 +22,18 @@ package com.gideonsoftware.mist.model.data;
 
 import java.util.Properties;
 
-import javax.mail.Folder;
-import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
-import javax.mail.Store;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.EmailServerException;
 import com.gideonsoftware.mist.preferences.Preferences;
+
+import jakarta.mail.Folder;
+import jakarta.mail.MessagingException;
+import jakarta.mail.NoSuchProviderException;
+import jakarta.mail.Session;
+import jakarta.mail.Store;
 
 /**
  * 

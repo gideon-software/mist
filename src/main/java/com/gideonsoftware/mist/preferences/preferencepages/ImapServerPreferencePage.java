@@ -20,9 +20,6 @@
 
 package com.gideonsoftware.mist.preferences.preferencepages;
 
-import javax.mail.Folder;
-import javax.mail.MessagingException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jface.preference.BooleanFieldEditor;
@@ -39,6 +36,9 @@ import com.gideonsoftware.mist.model.data.ImapServer;
 import com.gideonsoftware.mist.preferences.fieldeditors.ButtonFieldEditor;
 import com.gideonsoftware.mist.preferences.fieldeditors.SmartComboFieldEditor;
 import com.gideonsoftware.mist.util.ui.Images;
+
+import jakarta.mail.Folder;
+import jakarta.mail.MessagingException;
 
 /**
  *

@@ -20,9 +20,9 @@
 
 package com.gideonsoftware.mist.tntapi;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -40,17 +40,15 @@ import javax.money.MonetaryAmount;
 
 import org.apache.logging.log4j.Logger;
 import org.javamoney.moneta.FastMoney;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 
-@RunWith(JUnit4.class)
+//@RunWith(JUnit4.class)
 public class TntDbTest {
 
     private static Logger log;
@@ -76,7 +74,7 @@ public class TntDbTest {
         BAMBIDEER_HISTORY_SUBJECT = "Email tasks this color (BLACK)";
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         MIST.configureLogging(TntDbTest.class);
         setupTntDb();
@@ -107,7 +105,7 @@ public class TntDbTest {
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         teardownTntDb();
     }
@@ -325,7 +323,7 @@ public class TntDbTest {
     /**
      * Rolls back the database after each test
      */
-    @After
+    @AfterEach
     public void rollback() throws SQLException, TntDbException {
         TntDb.rollback();
         assertEquals(TntDb.getConnection().getAutoCommit(), false);

@@ -20,22 +20,20 @@
 
 package com.gideonsoftware.mist.tntapi;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.SQLException;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.gideonsoftware.mist.MIST;
 import com.gideonsoftware.mist.exceptions.TntDbException;
 import com.gideonsoftware.mist.tntapi.entities.User;
 
-@RunWith(JUnit4.class)
+//@RunWith(JUnit4.class)
 public class UserManagerTest {
     // private static Logger log;
     private static Integer USERID_TOM;
@@ -46,14 +44,14 @@ public class UserManagerTest {
         USERID_DAVID = Integer.valueOf(1404378063);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         MIST.configureLogging(UserManager.class);
         TntDbTest.setupTntDb();
         createTestData();
     }
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         TntDbTest.teardownTntDb();
     }
@@ -81,7 +79,7 @@ public class UserManagerTest {
         assertEquals("Tom", users[1].getUsername());
     }
 
-    @After
+    @AfterEach
     public void rollback() throws TntDbException {
         TntDb.rollback();
     }
